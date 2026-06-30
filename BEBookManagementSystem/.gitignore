@@ -9,9 +9,9 @@ build/
 
 # Environment variables
 
-
+.env
+.env.*
 !.env.example
-.env.example 
 
 # Logs
 
@@ -20,16 +20,24 @@ logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+
+# Runtime data
+
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage
+
+coverage/
 
 # TypeScript
 
 *.tsbuildinfo
 
-# Test coverage
-
-coverage/
-
-# IDE settings
+# IDE
 
 .vscode/
 .idea/
@@ -44,12 +52,23 @@ Thumbs.db
 tmp/
 temp/
 
-# Uploads (if your application stores uploaded files locally)
+# ESLint cache
+
+.eslintcache
+
+# Testing
+
+.nyc_output/
+
+# Uploads (nếu có lưu file upload local)
 
 uploads/
 
-# Runtime files
+# Docker
 
-*.pid
-*.seed
-*.pid.lock
+.docker/
+
+# Misc
+
+*.swp
+*.swo
