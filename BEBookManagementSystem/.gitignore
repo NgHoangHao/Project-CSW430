@@ -10,10 +10,8 @@ build/
 # Environment variables
 
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
 
 # Logs
 
@@ -22,24 +20,16 @@ logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
 
-# Runtime files
-
-pids/
-*.pid
-*.seed
-*.pid.lock
-
-# Coverage reports
-
-coverage/
-
-# TypeScript cache
+# TypeScript
 
 *.tsbuildinfo
 
-# IDE files
+# Test coverage
+
+coverage/
+
+# IDE settings
 
 .vscode/
 .idea/
@@ -54,21 +44,12 @@ Thumbs.db
 tmp/
 temp/
 
-# Prisma generated files (optional)
+# Uploads (if your application stores uploaded files locally)
 
-prisma/dev.db
-prisma/dev.db-journal
+uploads/
 
-# Testing
+# Runtime files
 
-.nyc_output/
-
-# Package manager lock files
-
-# Uncomment the one you don't use
-
-# package-lock.json
-
-# yarn.lock
-
-# pnpm-lock.yaml
+*.pid
+*.seed
+*.pid.lock
