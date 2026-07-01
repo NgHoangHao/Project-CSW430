@@ -20,8 +20,10 @@
     "express": "^5.2.1",
     "helmet": "^8.2.0",
     "mysql2": "^3.22.5",
+    "reflect-metadata": "^0.2.2",
     "swagger-jsdoc": "^6.3.0",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "typeorm": "^1.0.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",

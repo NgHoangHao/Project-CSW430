@@ -1,7 +1,7 @@
 import express from "express";
 import swaggerUi from "swagger-ui-express";
 import swaggerJsdoc from "swagger-jsdoc";
-import userRoutes from "./modules/users/user.routes";
+// import userRoutes from "./modules/users/user.routes";
 
 const app = express();
 
@@ -23,8 +23,8 @@ app.use(
     swaggerUi.setup(specs)
 );
 
-app.use("/api/users", userRoutes);
-app.post("/api/users", userRoutes);
-app.delete("/api/users/:id", userRoutes);
+// app.use("/api/users", userRoutes);
+// app.post("/api/users", userRoutes);
+// app.delete("/api/users/:id", userRoutes);
 
 export default app;
