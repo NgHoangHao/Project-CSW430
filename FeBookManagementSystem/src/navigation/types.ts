@@ -8,3 +8,10 @@ export interface AuthStackParamList {
     // ForgotPassword: undefined;
     // ResetPassword: undefined;
 }
+
+export interface UserStackParamList {
+    Home: undefined;
+    Books: undefined;
+    Borrow: undefined;
+    Profile: undefined;
+}
