@@ -1,6 +1,6 @@
 // Loan.ts
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
-import { LoanStatus } from './enums';
+import { LoanStatus } from '../utils/enums';
 import { User } from './User';
 import { LoanDetail } from './LoanDetail';
 

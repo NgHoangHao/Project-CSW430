@@ -43,3 +43,57 @@ export const resendOtp = async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+export const login = async (req: Request, res: Response) => {
+  try {
+    const { username, password } = req.body;
+    const tokens = await authService.loginService(username, password);
+    if (!tokens) {
+      return res.status(401).json({ message: "Login failed: Incorrect username or password" });
+    }
+    res.cookie('refreshToken', tokens.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 7 * 24 * 60 * 60 * 1000 
+    });
+    return res.json({ accessToken: tokens.accessToken });
+  } catch (error) {
+    console.error("Login Error: ", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const refreshToken = async (req: Request, res: Response) => {
+  try {
+    const token = req.cookies.refreshToken;
+    if (!token) {
+      return res.status(403).json({ message: "No refresh token provided" });
+    }
+    const newAccessToken = await authService.refreshAccessTokenService(token);
+    if (!newAccessToken) {
+      res.clearCookie('refreshToken'); 
+      return res.status(401).json({ message: "Redirect to login" });
+    }
+    return res.json({ accessToken: newAccessToken });
+
+  } catch (error) {
+    console.error("Refresh Token Controller Error: ", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const logout = async (req: Request, res: Response) => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+    });
+
+    return res.status(200).json({ message: "Logged out successfully" });
+
+  } catch (error) {
+    console.error("Logout Error: ", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};

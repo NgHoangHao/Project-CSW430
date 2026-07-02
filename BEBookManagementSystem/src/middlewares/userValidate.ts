@@ -14,3 +14,13 @@ export const validateRegister = (req: Request, res: Response, next: NextFunction
   if (error) return res.status(400).json({ message: error.details[0].message });
   next();
 };
+
+export const validateLogin = (req: Request, res: Response, next: NextFunction) => {
+  const schema = Joi.object({
+    userName: Joi.string().required(),
+    password: Joi.string().min(8).required(),
+  });
+  const { error } = schema.validate(req.body);
+  if (error) return res.status(400).json({ message: error.details[0].message });
+  next();
+};
