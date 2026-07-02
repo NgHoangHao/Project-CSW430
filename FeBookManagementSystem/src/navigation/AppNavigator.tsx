@@ -5,7 +5,7 @@ import { UserNavigator } from './UserNavigator';
 export const AppNavigator = () => {
   return (
     <NavigationContainer>
-      {/* <AuthNavigator/> */}
+      {/* <AuthNavigator /> */}
       <UserNavigator />
     </NavigationContainer>
   );

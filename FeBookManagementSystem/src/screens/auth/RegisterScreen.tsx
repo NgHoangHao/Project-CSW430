@@ -156,7 +156,7 @@ export const RegisterScreen = ({ navigation }: { navigation: any }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 30,
+    paddingHorizontal: 20,
   },
   scrollContainer: {
     flexGrow: 1,
@@ -166,12 +166,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    height: 100,
+    height: 70,
     width: '100%',
   },
   logo: {
-    width: 50,
-    height: 50,
+    width: 40,
+    height: 40,
   },
   loginButtonText: {
     color: '#2c9e56ff',
