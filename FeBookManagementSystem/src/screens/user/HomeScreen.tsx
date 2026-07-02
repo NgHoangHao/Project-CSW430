@@ -2,7 +2,6 @@ import { Avatar } from '@rneui/themed';
 import { Bell, Book, ClipboardCheck } from 'lucide-react-native';
 import React from 'react';
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Card } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
@@ -21,7 +20,11 @@ export default function HomeScreen() {
           </View>
           <Bell size={25} color="#000" />
         </View>
-        <ScrollView style={styles.main}>
+        <ScrollView
+          style={styles.main}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 20 }}
+        >
           <View>
             <View style={styles.contentProfile}>
               <View>
@@ -39,8 +42,10 @@ export default function HomeScreen() {
             <View style={styles.stats}>
               <View style={styles.statsRow}>
                 <View style={styles.statsItem}>
-                  <View>
-                    <Book size={30} color="#000" />
+                  <View
+                    style={[styles.statsIcon, { backgroundColor: '#b9fdd3' }]}
+                  >
+                    <Book size={30} color="#32ee03ff" />
                   </View>
                   <View style={styles.statsItemInfo}>
                     <Text style={styles.statsItemLabel}>Read Books</Text>
@@ -48,8 +53,10 @@ export default function HomeScreen() {
                   </View>
                 </View>
                 <View style={styles.statsItem}>
-                  <View>
-                    <ClipboardCheck size={30} color="#000" />
+                  <View
+                    style={[styles.statsIcon, { backgroundColor: '#fffeddff' }]}
+                  >
+                    <ClipboardCheck size={30} color="#e2e600ff" />
                   </View>
                   <View style={styles.statsItemInfo}>
                     <Text style={styles.statsItemLabel}>Borrowed Books</Text>
@@ -57,8 +64,10 @@ export default function HomeScreen() {
                   </View>
                 </View>
                 <View style={styles.statsItem}>
-                  <View>
-                    <ClipboardCheck size={30} color="#000" />
+                  <View
+                    style={[{ backgroundColor: '#c8ccffff' }, styles.statsIcon]}
+                  >
+                    <ClipboardCheck size={30} color="#0011ffff" />
                   </View>
                   <View style={styles.statsItemInfo}>
                     <Text style={styles.statsItemLabel}>Return Books</Text>
@@ -89,7 +98,64 @@ export default function HomeScreen() {
                     </View>
                   </View>
                 </View>
+                <View style={styles.bookContainer}>
+                  <View style={styles.bookImageContainer}>
+                    <Image
+                      source={{
+                        uri: 'https://skyhorse-us.imgix.net/covers/9781949846386.jpg?auto=format&w=298',
+                      }}
+                      style={styles.bookImage}
+                    />
+                  </View>
+                  <View style={styles.bookInfoContainer}>
+                    <Text style={styles.bookTitle}>The Great Gatsby</Text>
+                    <Text style={styles.bookAuthor}>F. Scott Fitzgerald</Text>
+                    <Text style={styles.bookProgress}>60% read</Text>
+                    <View style={styles.bookProgressContainer}>
+                      <View style={styles.bookProgressBar}></View>
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.bookContainer}>
+                  <View style={styles.bookImageContainer}>
+                    <Image
+                      source={{
+                        uri: 'https://skyhorse-us.imgix.net/covers/9781949846386.jpg?auto=format&w=298',
+                      }}
+                      style={styles.bookImage}
+                    />
+                  </View>
+                  <View style={styles.bookInfoContainer}>
+                    <Text style={styles.bookTitle}>The Great Gatsby</Text>
+                    <Text style={styles.bookAuthor}>F. Scott Fitzgerald</Text>
+                    <Text style={styles.bookProgress}>60% read</Text>
+                    <View style={styles.bookProgressContainer}>
+                      <View style={styles.bookProgressBar}></View>
+                    </View>
+                  </View>
+                </View>
               </View>
+            </View>
+            {/* Recommended Books */}
+            <View>
+              <Text style={styles.textReadingBooks}>Recommended Books</Text>
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.listRecommendBooks}
+              >
+                <View style={styles.recommendBookContainer}>
+                  <Image
+                    source={{
+                      uri: 'https://skyhorse-us.imgix.net/covers/9781949846386.jpg?auto=format&w=298',
+                    }}
+                    style={styles.bookImage}
+                  />
+                  <Text>"Book Title"</Text>
+                  <Text>"Author Name"</Text>
+                </View>
+              </ScrollView>
             </View>
           </View>
         </ScrollView>
@@ -101,6 +167,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
@@ -130,7 +197,6 @@ const styles = StyleSheet.create({
   },
   main: {
     paddingHorizontal: 20,
-    marginTop: 20,
   },
   contentProfile: {
     flexDirection: 'row',
@@ -161,11 +227,19 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     paddingHorizontal: 6,
     paddingVertical: 12,
-    backgroundColor: '#fff',
-    borderRadius: 8,
+    borderWidth: 0.5,
+    borderColor: '#afafaf',
+    borderRadius: 12,
   },
   statsItemInfo: {
     flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statsIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -186,13 +260,17 @@ const styles = StyleSheet.create({
   },
   listBookCard: {
     marginVertical: 12,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    flexDirection: 'column',
+    gap: 10,
   },
   bookContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     padding: 12,
-    backgroundColor: '#fff',
+    backgroundColor: '#e6f7e3ff',
     borderRadius: 8,
   },
   bookImageContainer: {
@@ -239,5 +317,26 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: '#081730',
     borderRadius: 3,
+  },
+  listRecommendBooks: {
+    flexDirection: 'row',
+    gap: 12,
+    flexWrap: 'wrap',
+  },
+  recommendBookContainer: {
+    width: 120,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 10,
+    alignItems: 'center',
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
 });

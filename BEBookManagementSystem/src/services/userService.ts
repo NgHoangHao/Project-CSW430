@@ -1,5 +1,4 @@
 // services/user.service.ts
-import { DataSource } from 'typeorm';
 import { User } from '../entities/User'; // [cite: 1, 3]
 import { UserProfileDto } from '../dtos/user/userProfileDTO';
 import { AppDataSource } from '../config/database';
