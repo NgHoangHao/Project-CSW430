@@ -2,13 +2,12 @@ import HomeScreen from '../screens/user/HomeScreen';
 import BookScreen from '../screens/user/BookScreen';
 import BorrowedBookScreen from '../screens/user/BorrowedBookScreen';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import ProfileScreen from '../screens/user/ProfileScreen';
 import { book, borrowBook, home, profile } from '../constants/icon';
-import { USER_ROUTES } from '../constants/routes';
+import { ADMIN_ROUTES } from '../constants/routes';
 
 const Tab = createBottomTabNavigator();
 
-export const UserNavigator = () => {
+export const AdminNavigator = () => {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -17,18 +16,16 @@ export const UserNavigator = () => {
         tabBarInactiveTintColor: '#828282',
         tabBarIcon: ({ color }) => {
           let IconComponent: any = home;
-          if (route.name === USER_ROUTES.HOME) IconComponent = home;
-          else if (route.name == USER_ROUTES.BOOKS) IconComponent = book;
-          else if (route.name == USER_ROUTES.BORROW) IconComponent = borrowBook;
-          else if (route.name == USER_ROUTES.PROFILE) IconComponent = profile;
+          if (route.name === ADMIN_ROUTES.DASHBOARD) IconComponent = home;
+          else if (route.name == ADMIN_ROUTES.BOOKS) IconComponent = book;
+          else if (route.name == ADMIN_ROUTES.USER) IconComponent = borrowBook;
           return <IconComponent color={color} size={24} />;
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Dashboard" component={HomeScreen} />
       <Tab.Screen name="Books" component={BookScreen} />
-      <Tab.Screen name="Borrow" component={BorrowedBookScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="User" component={BorrowedBookScreen} />
     </Tab.Navigator>
   );
 };

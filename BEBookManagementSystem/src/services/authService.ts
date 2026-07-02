@@ -100,7 +100,8 @@ export const loginService = async (email: string, password: string) => {
   if (!isPasswordMatch) {
     return null;
   }
-  return generateTokens(user);
+  const roleNames = user.roles ? user.roles.map(role => role.roleName) : [];
+  return { ...generateTokens(user), roleNames: roleNames };
 };
 
 export const refreshAccessTokenService = async (refreshToken: string) => {
