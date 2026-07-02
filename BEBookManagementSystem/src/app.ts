@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import swaggerJsdoc from "swagger-jsdoc";
 import authRouters from "./routes/authRoute";
 import userRouters from "./routes/userRoute";
+import roleRoute from "./routes/roleRoute";
 
 const app = express();
 
@@ -26,10 +27,9 @@ app.use(
     swaggerUi.setup(specs)
 );
 
-// app.use("/api/users", userRoutes);
-// app.post("/api/users", userRoutes);
-// app.delete("/api/users/:id", userRoutes);
-app.use("/api/auth",authRouters)
-app.use("/api/user",userRouters);
+
+app.use("/api/auth", authRouters)
+app.use("/api/user", userRouters);
+app.use("/api/role", roleRoute);
 
 export default app;

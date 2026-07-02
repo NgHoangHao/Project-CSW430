@@ -4,7 +4,7 @@ import { getUserProfile } from '../services/userService';
 
 export const getProfile = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.userId; 
+    const userId = (req as any).user.id;
     const profile = await getUserProfile(userId);
     return res.status(200).json(profile);
   } catch (error: any) {

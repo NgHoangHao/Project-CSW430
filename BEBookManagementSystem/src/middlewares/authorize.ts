@@ -3,7 +3,7 @@ import * as jwt from 'jsonwebtoken';
 
 interface AuthRequest extends Request {
   user?: {
-    userId: string;
+    id: string;
     email: string;
     roles: string[];
   }
@@ -12,7 +12,7 @@ interface AuthRequest extends Request {
 export const authorize = (allowedRoles: string[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; 
+    const token = authHeader && authHeader.split(' ')[1];
     if (!token) return res.status(401).json({ message: "Unauthorized" });
     try {
       const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!) as any;
@@ -23,7 +23,7 @@ export const authorize = (allowedRoles: string[]) => {
       }
       next();
     } catch (err) {
-      return res.status(401).json({ message: "Token expired or invalid" }); 
+      return res.status(401).json({ message: "Token expired or invalid" });
     }
   };
 };
