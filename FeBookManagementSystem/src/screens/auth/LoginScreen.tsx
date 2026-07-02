@@ -59,9 +59,9 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
               style={[styles.input]}
               placeholder="Enter your password"
               placeholderTextColor="#aaa"
-              secureTextEntry={isVisiblePassword}
+              secureTextEntry={isVisiblePassword == false}
             />
-            {!isVisiblePassword ? (
+            {isVisiblePassword ? (
               <TouchableOpacity
                 onPress={() => {
                   setIsVisiblePassword(!isVisiblePassword);
@@ -88,6 +88,14 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
         >
           <Text style={styles.buttonText}>Login</Text>
         </TouchableHighlight>
+        <View style={styles.footerSection}>
+          <Text>You already have an account? </Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+            <Text style={{ color: '#2c9e56ff', fontWeight: 'bold' }}>
+              Register
+            </Text>
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -162,5 +170,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  footerSection: {
+    top: 20,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
