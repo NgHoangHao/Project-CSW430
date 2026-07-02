@@ -1,6 +1,6 @@
 // User.ts
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToMany, JoinTable, OneToMany } from 'typeorm';
-import { UserStatus } from './enums';
+import { UserStatus } from '../utils/enums';
 import { Role } from './Role';
 import { Loan } from './Loan';
 

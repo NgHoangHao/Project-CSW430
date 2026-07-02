@@ -1,12 +1,14 @@
 import express from "express";
 import swaggerUi from "swagger-ui-express";
+import cookieParser from 'cookie-parser';
 import swaggerJsdoc from "swagger-jsdoc";
-import router from "./routes/authRoute";
-// import userRoutes from "./modules/users/user.routes";
+import authRouters from "./routes/authRoute";
+import userRouters from "./routes/userRoute";
 
 const app = express();
 
 app.use(express.json());
+app.use(cookieParser());
 const specs = swaggerJsdoc({
     definition: {
         openapi: "3.0.0",
@@ -27,6 +29,7 @@ app.use(
 // app.use("/api/users", userRoutes);
 // app.post("/api/users", userRoutes);
 // app.delete("/api/users/:id", userRoutes);
-app.use("/api/auth",router)
+app.use("/api/auth",authRouters)
+app.use("/api/user",userRouters);
 
 export default app;

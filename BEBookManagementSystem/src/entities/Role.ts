@@ -1,6 +1,6 @@
 // Role.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToMany } from 'typeorm';
-import { RoleName } from './enums';
+import { RoleName } from '../utils/enums';
 import { User } from './User';
 
 @Entity()

@@ -1,16 +1,22 @@
 // src/routes/auth.routes.ts
 import { Router } from 'express';
-import { register } from '../controllers/authController';
+import { login, logout, refreshToken, register } from '../controllers/authController';
 import { verifyOtp } from'../controllers/authController' ;
 import { resendOtp } from'../controllers/authController' ;
 import { validateRegister } from '../middlewares/userValidate';
 
-const router = Router();
+const authRouters = Router();
 
-router.post('/register', validateRegister, register);
+authRouters.post('/register', validateRegister, register);
 
-router.post('/verify-otp', verifyOtp);
+authRouters.post('/verify-otp', verifyOtp);
 
-router.post('/resend-otp', resendOtp);
+authRouters.post('/resend-otp', resendOtp);
 
-export default router;
+authRouters.post('/login',login);
+
+authRouters.post('/refresh',refreshToken);
+
+authRouters.post('/logout',logout);
+
+export default authRouters;
