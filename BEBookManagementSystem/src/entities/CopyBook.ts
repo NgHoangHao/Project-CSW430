@@ -1,6 +1,6 @@
 // CopyBook.ts
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
-import { CopyBookStatus } from './enums';
+import { CopyBookStatus } from '../utils/enums';
 import { Book } from './Book';
 import { LoanDetail } from './LoanDetail';
 

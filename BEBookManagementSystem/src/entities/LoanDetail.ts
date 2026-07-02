@@ -1,6 +1,6 @@
 // LoanDetail.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { LoanStatus } from './enums';
+import { LoanStatus } from '../utils/enums';
 import { Loan } from './Loan';
 import { CopyBook } from './CopyBook';
 
