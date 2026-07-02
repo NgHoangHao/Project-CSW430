@@ -5,8 +5,14 @@ import swaggerJsdoc from "swagger-jsdoc";
 import authRouters from "./routes/authRoute";
 import userRouters from "./routes/userRoute";
 import roleRoute from "./routes/roleRoute";
+import cors from "cors";
 
 const app = express();
+
+app.use(cors({
+    origin: "*",
+    credentials: true
+}))
 
 app.use(express.json());
 app.use(cookieParser());

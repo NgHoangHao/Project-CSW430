@@ -15,3 +15,9 @@ export interface UserStackParamList {
     Borrow: undefined;
     Profile: undefined;
 }
+
+export interface AdminStackParamList {
+    Dashboard: undefined;
+    Books: undefined;
+    User: undefined;
+}
