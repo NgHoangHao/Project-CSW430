@@ -3,6 +3,7 @@ export enum UserStatus {
   ACTIVE = 'ACTIVE',
   INACTIVE='INACTIVE',
   LOCK = 'LOCK',
+  FORGOTPASS='FORGOTPASS'
 }
 
 export enum RoleName {

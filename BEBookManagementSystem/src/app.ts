@@ -7,6 +7,7 @@ import userRouters from "./routes/userRoute";
 import roleRoute from "./routes/roleRoute";
 import cors from "cors";
 
+
 const app = express();
 
 app.use(cors({
@@ -37,5 +38,6 @@ app.use(
 app.use("/api/auth", authRouters)
 app.use("/api/user", userRouters);
 app.use("/api/role", roleRoute);
+
 
 export default app;

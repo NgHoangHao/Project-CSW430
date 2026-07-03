@@ -9,6 +9,7 @@ import { AppDataSource } from '../config/database';
 import { mailService } from './mailService';
 import { RoleName, UserStatus } from '../utils/enums';
 
+
 export const registerService = async (data: RegisterDTO) => {
   const { userName, email, password } = data;
   const userRepository = AppDataSource.getRepository(User);
@@ -53,13 +54,14 @@ export const resendOtpService = async (email: string) => {
   const userRepository = AppDataSource.getRepository(User);
   const user = await userRepository.findOneBy({ email });
   if (!user) throw new Error('User not found');
-  if (user.status === UserStatus.ACTIVE) throw new Error('Account already activated');
   const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
   const hashOtp = await bcrypt.hash(newOtp, 10);
   otpStoreUtils.set(email, hashOtp, 300);
   await mailService.sendOtp(email, newOtp);
   return { message: "New OTP has been sent to your email" };
 };
+
+
 
 export const generateTokens = (user: User) => {
   const roleNames = user.roles ? user.roles.map(role => role.roleName) : [];
@@ -126,3 +128,4 @@ export const refreshAccessTokenService = async (refreshToken: string) => {
     return null;
   }
 };
+
