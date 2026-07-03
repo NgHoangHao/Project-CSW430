@@ -56,12 +56,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const login = async (data: LoginDTO) => {
     try {
       const res = await authApi.login(data);
-      const { accessToken, refreshToken, roles } = res.data;
+      const { accessToken, refreshToken, roleNames } = res.data;
       setLoggedIn(true);
-      setUserRole(roles);
+      setUserRole(roleNames);
       await EncryptedStorage.setItem('accessToken', accessToken);
       await EncryptedStorage.setItem('refreshToken', refreshToken);
-      await EncryptedStorage.setItem('userRole', JSON.stringify(roles));
+      await EncryptedStorage.setItem('userRole', JSON.stringify(roleNames));
     } catch (error) {
       console.log('Error login', error);
       setLoggedIn(false);

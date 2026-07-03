@@ -1,10 +1,24 @@
 import { Avatar } from '@rneui/themed';
 import { Bell, Book, ClipboardCheck } from 'lucide-react-native';
 import React from 'react';
-import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import {
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { RECOMMEND_BOOK_DATA } from '../../data/data';
+import { USER_ROUTES } from '../../constants/routes';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { UserStackParamList } from '../../navigation/types';
 
 export default function HomeScreen() {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<UserStackParamList>>();
   return (
     <>
       <SafeAreaView style={styles.container}>
@@ -138,23 +152,36 @@ export default function HomeScreen() {
             </View>
             {/* Recommended Books */}
             <View>
-              <Text style={styles.textReadingBooks}>Recommended Books</Text>
+              <View style={styles.recommendedBookContainer}>
+                <Text style={styles.textReadingBooks}>Recommended Books</Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    navigation.navigate('Books');
+                  }}
+                >
+                  <Text>See all</Text>
+                </TouchableOpacity>
+              </View>
 
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                style={styles.listRecommendBooks}
+                contentContainerStyle={styles.listRecommendBooksContent}
               >
-                <View style={styles.recommendBookContainer}>
-                  <Image
-                    source={{
-                      uri: 'https://skyhorse-us.imgix.net/covers/9781949846386.jpg?auto=format&w=298',
-                    }}
-                    style={styles.bookImage}
-                  />
-                  <Text>"Book Title"</Text>
-                  <Text>"Author Name"</Text>
-                </View>
+                {RECOMMEND_BOOK_DATA.map(book => (
+                  <View style={styles.recommendBookContainer} key={book.id}>
+                    <Image
+                      source={{
+                        uri: 'https://skyhorse-us.imgix.net/covers/9781949846386.jpg?auto=format&w=298',
+                      }}
+                      style={styles.recommendBookImage}
+                    />
+                    <Text style={styles.recommendBookTitle}>{book.title}</Text>
+                    <Text style={styles.recommendBookAuthor}>
+                      {book.author}
+                    </Text>
+                  </View>
+                ))}
               </ScrollView>
             </View>
           </View>
@@ -257,6 +284,7 @@ const styles = StyleSheet.create({
   textReadingBooks: {
     fontSize: 20,
     fontWeight: 'bold',
+    marginBottom: 12,
   },
   listBookCard: {
     marginVertical: 12,
@@ -318,13 +346,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#081730',
     borderRadius: 3,
   },
-  listRecommendBooks: {
+  recommendedBookContainer: {
     flexDirection: 'row',
-    gap: 12,
-    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  listRecommendBooksContent: {
+    flexDirection: 'row',
+    gap: 20, // Gap hoạt động chuẩn 100% khi nằm ở đây
+    paddingBottom: 20,
+    paddingHorizontal: 2, // Tạo chút khoảng trống ở 2 đầu nếu cần
   },
   recommendBookContainer: {
-    width: 120,
+    minWidth: 120,
+    maxHeight: 230,
     backgroundColor: '#fff',
     borderRadius: 8,
     padding: 10,
@@ -338,5 +373,20 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
+  },
+  recommendBookImage: {
+    width: 100,
+    height: 150,
+    borderRadius: 4,
+    overflow: 'hidden',
+    backgroundColor: '#f0f0f0',
+  },
+  recommendBookTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  recommendBookAuthor: {
+    fontSize: 12,
+    color: '#666',
   },
 });

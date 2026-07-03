@@ -4,8 +4,9 @@ import BorrowedBookScreen from '../screens/user/BorrowedBookScreen';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { book, borrowBook, home, profile } from '../constants/icon';
 import { ADMIN_ROUTES } from '../constants/routes';
+import { AdminStackParamList } from './types';
 
-const Tab = createBottomTabNavigator();
+const Tab = createBottomTabNavigator<AdminStackParamList>();
 
 export const AdminNavigator = () => {
   return (

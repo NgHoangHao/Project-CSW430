@@ -23,10 +23,16 @@ api.interceptors.response.use(async (response) =>
         const originalRequest = error.config;
 
         if (error.response?.status === 401 && !originalRequest._retry) {
+            originalRequest._retry = true;
             try {
                 const refreshToken = await EncryptedStorage.getItem('refreshToken');
 
-                const res = await api.post('/auth/refresh', { refreshToken: refreshToken })
+                if (!refreshToken) {
+                    await EncryptedStorage.clear();
+                    return Promise.reject(error);
+                }
+
+                const res = await axios.post(`${BACKEND_URL}/auth/refresh`, { refreshToken: refreshToken })
 
                 await EncryptedStorage.setItem('accessToken', res.data.accessToken)
 
