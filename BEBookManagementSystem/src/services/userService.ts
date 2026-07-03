@@ -1,14 +1,16 @@
 // services/user.service.ts
-import { DataSource } from 'typeorm';
-import { User } from '../entities/User'; 
-import { UserProfileDto } from '../dtos/user/UserProfileDTO';
+import { User } from '../entities/User';
 import { AppDataSource } from '../config/database';
 import { otpStoreUtils } from '../utils/otpStore';
 import { UserStatus } from '../utils/enums';
 import bcrypt from 'bcrypt';
 import { ResetPasswordDto } from '../dtos/auth/ResetPasswordDTO';
+import { UserProfileDto } from '../dtos/user/userProfileDTO';
+import { addRoleUser, deleteRoleUser, getUserById } from '../repositories/userRepository';
+import { getAllRoles } from './roleService';
+import { NotFoundException } from '../common/errors/error';
 
-export const getUserProfile = async ( userId: string): Promise<UserProfileDto> => {
+export const getUserProfile = async (userId: string): Promise<UserProfileDto> => {
   const userRepository = AppDataSource.getRepository(User);
   const user = await userRepository.findOne({
     where: { userId },
@@ -50,7 +52,7 @@ export const verifyForgotPasswordOtp = async (email: string, clientOtp: string):
   otpStoreUtils.delete(email);
 };
 
-export const changePasswordAfterForgot = async ( dto: ResetPasswordDto): Promise<void> => {
+export const changePasswordAfterForgot = async (dto: ResetPasswordDto): Promise<void> => {
   const userRepository = AppDataSource.getRepository(User);
   if (dto.newPass !== dto.confirmPass) {
     throw new Error('Password not match.');
@@ -66,3 +68,31 @@ export const changePasswordAfterForgot = async ( dto: ResetPasswordDto): Promise
   user.status = UserStatus.ACTIVE;
   await userRepository.save(user);
 };
+
+export const assignRoleUser = async (userId: string, roleId: string[]) => {
+  const user = await getUserById(userId);
+  if (!user) {
+    throw new NotFoundException('User not found');
+  }
+  const role = await getAllRoles();
+  const validRole = role.filter((r) => roleId.includes(r.roleId));
+  if (validRole.length === 0) {
+    throw new NotFoundException('Role not found');
+  }
+  const validRoleId = validRole.map(role => role.roleId)
+  await addRoleUser(userId, validRoleId);
+}
+
+export const removeRoleUser = async (userId: string, roleIds: string[]) => {
+  const user = await getUserById(userId);
+  if (!user) {
+    throw new NotFoundException('User not found');
+  }
+  const role = await getAllRoles();
+  const validRole = role.filter((r) => roleIds.includes(r.roleId));
+  if (validRole.length === 0) {
+    throw new NotFoundException('Role not found');
+  }
+  const validRoleId = validRole.map(role => role.roleId)
+  await deleteRoleUser(userId, validRoleId);
+}

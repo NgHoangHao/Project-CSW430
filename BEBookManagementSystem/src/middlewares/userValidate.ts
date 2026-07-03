@@ -35,3 +35,13 @@ export const validateForgetPassword = (req: Request, res: Response, next: NextFu
   if (error) return res.status(400).json({ message: error.details[0].message });
   next();
 };
+
+export const validateAssignAndDeleteRole = (req: Request, res: Response, next: NextFunction) => {
+  const schema = Joi.object({
+    userId: Joi.string().required(),
+    roleIds: Joi.array().items(Joi.string()).required()
+  });
+  const { error } = schema.validate(req.body);
+  if (error) return res.status(400).json({ message: error.details[0].message });
+  next();
+};

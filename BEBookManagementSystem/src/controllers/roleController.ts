@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { createRolesService } from "../services/roleService";
+import { createRolesService, getAllRoles } from "../services/roleService";
 import { CreateRoleDTO } from "../dtos/role/roleDTO";
 
 export const createRolesController = async (req: Request<{}, {}, CreateRoleDTO>, res: Response) => {
@@ -9,6 +9,18 @@ export const createRolesController = async (req: Request<{}, {}, CreateRoleDTO>,
     } catch (error: any) {
         if (error.message === 'Role already exists') {
             return res.status(400).json({ message: error.message });
+        }
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export const getAllRolesController = async (req: Request, res: Response) => {
+    try {
+        const result = await getAllRoles();
+        return res.status(200).json(result);
+    } catch (error: any) {
+        if (error.message === 'Roles not found') {
+            return res.status(404).json({ message: error.message });
         }
         return res.status(500).json({ message: "Internal server error" });
     }

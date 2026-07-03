@@ -1,6 +1,7 @@
 import { AppDataSource } from "../config/database";
 import { CreateRoleDTO } from "../dtos/role/roleDTO";
 import { Role } from "../entities/Role";
+import { getRoles } from "../repositories/roleRepository";
 
 export const createRolesService = async (data: CreateRoleDTO) => {
     const roleRepository = AppDataSource.getRepository(Role);
@@ -8,4 +9,9 @@ export const createRolesService = async (data: CreateRoleDTO) => {
     if (existingRole) throw new Error('Role already exists');
     const newRole = roleRepository.create(data);
     return await roleRepository.save(newRole);
+}
+
+export const getAllRoles = async () => {
+    const roles = getRoles();
+    return roles;
 }

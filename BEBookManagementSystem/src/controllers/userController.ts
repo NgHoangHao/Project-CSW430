@@ -1,7 +1,9 @@
 
 import { Request, Response } from 'express';
-import { getUserProfile } from '../services/userService';
+import { assignRoleUser, getUserProfile, removeRoleUser } from '../services/userService';
 import { changePasswordAfterForgot, verifyForgotPasswordOtp } from '../services/userService';
+import { NotFoundException } from '../common/errors/error';
+import { AssignRoleUserDto, DeleteRoleUserDto } from '../dtos/user/user';
 
 export const getProfile = async (req: Request, res: Response) => {
   try {
@@ -52,3 +54,51 @@ export const resetPasswordHandler = async (req: Request, res: Response): Promise
     });
   }
 };
+
+export const assignRoleUserController = async (req: Request<{}, {}, AssignRoleUserDto>, res: Response): Promise<void> => {
+  try {
+    const { userId, roleIds }: AssignRoleUserDto = req.body;
+    await assignRoleUser(userId, roleIds);
+    res.status(200).json({
+      success: true,
+      message: 'Role assigned successfully.'
+    });
+  } catch (error: any) {
+    if (error instanceof NotFoundException) {
+      const statusCode = error.message == 'User not found' || 'Role not found' ? 404 : 400;
+      res.status(statusCode).json({
+        success: false,
+        message: error.message
+      });
+      return;
+    }
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal Server Error.'
+    });
+  }
+}
+
+export const deleteRoleUserController = async (req: Request<{}, {}, DeleteRoleUserDto>, res: Response): Promise<void> => {
+  try {
+    const { userId, roleIds }: DeleteRoleUserDto = req.body;
+    await removeRoleUser(userId, roleIds);
+    res.status(200).json({
+      success: true,
+      message: 'Role deleted successfully.'
+    });
+  } catch (error: any) {
+    if (error instanceof NotFoundException) {
+      const statusCode = error.message == 'User not found' || 'Role not found' ? 404 : 400;
+      res.status(statusCode).json({
+        success: false,
+        message: error.message
+      });
+      return;
+    }
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal Server Error.'
+    });
+  }
+}
