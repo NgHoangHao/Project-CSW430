@@ -5,8 +5,9 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import ProfileScreen from '../screens/user/ProfileScreen';
 import { book, borrowBook, home, profile } from '../constants/icon';
 import { USER_ROUTES } from '../constants/routes';
+import { UserStackParamList } from './types';
 
-const Tab = createBottomTabNavigator();
+const Tab = createBottomTabNavigator<UserStackParamList>();
 
 export const UserNavigator = () => {
   return (

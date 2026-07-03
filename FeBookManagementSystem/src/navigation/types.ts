@@ -1,22 +1,22 @@
-export interface RootStackParamList {
+export type RootStackParamList = {
     AuthStack: undefined;
 }
 
-export interface AuthStackParamList {
+export type AuthStackParamList = {
     Login: undefined;
     Register: undefined;
     // ForgotPassword: undefined;
     // ResetPassword: undefined;
 }
 
-export interface UserStackParamList {
+export type UserStackParamList = {
     Home: undefined;
     Books: undefined;
     Borrow: undefined;
     Profile: undefined;
 }
 
-export interface AdminStackParamList {
+export type AdminStackParamList = {
     Dashboard: undefined;
     Books: undefined;
     User: undefined;
