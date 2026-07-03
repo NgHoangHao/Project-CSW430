@@ -84,10 +84,10 @@ export const generateTokens = (user: User) => {
   return { accessToken, refreshToken };
 };
 
-export const loginService = async (userName: string, password: string) => {
+export const loginService = async (email: string, password: string) => {
   const userRepository = AppDataSource.getRepository(User);
   const user = await userRepository.findOne({
-    where: { userName },
+    where: { email },
     relations: {
       roles: true
     }
@@ -102,7 +102,8 @@ export const loginService = async (userName: string, password: string) => {
   if (!isPasswordMatch) {
     return null;
   }
-  return generateTokens(user);
+  const roleNames = user.roles ? user.roles.map(role => role.roleName) : [];
+  return { ...generateTokens(user), roleNames: roleNames };
 };
 
 export const refreshAccessTokenService = async (refreshToken: string) => {

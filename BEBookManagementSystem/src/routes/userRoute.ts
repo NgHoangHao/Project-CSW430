@@ -5,7 +5,7 @@ import { authorize } from '../middlewares/authorize';
 
 const userRouters = Router();
 
-userRouters.get('/profile',authorize(['USER','LIBRARIAN', 'ADMIN']), getProfile);
+userRouters.get('/profile', authorize(['USER', 'LIBRARIAN', 'ADMIN']), getProfile);
 
 userRouters.post('/verify-forget',verifyOtpHandler );
 

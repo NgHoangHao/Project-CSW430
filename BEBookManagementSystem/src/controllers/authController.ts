@@ -46,8 +46,8 @@ export const resendOtp = async (req: Request, res: Response) => {
 
 export const login = async (req: Request, res: Response) => {
   try {
-    const { username, password } = req.body;
-    const tokens = await authService.loginService(username, password);
+    const { email, password } = req.body;
+    const tokens = await authService.loginService(email, password);
     if (!tokens) {
       return res.status(401).json({ message: "Login failed: Incorrect username or password" });
     }
@@ -56,7 +56,7 @@ export const login = async (req: Request, res: Response) => {
       secure: process.env.NODE_ENV === 'production',
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
-    return res.json({ accessToken: tokens.accessToken });
+    return res.json({ accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, roleNames: tokens.roleNames as string[] });
   } catch (error) {
     console.error("Login Error: ", error);
     return res.status(500).json({ message: "Internal server error" });
@@ -65,9 +65,14 @@ export const login = async (req: Request, res: Response) => {
 
 export const refreshToken = async (req: Request, res: Response) => {
   try {
-    const token = req.cookies.refreshToken;
+    const token = req.cookies?.refreshToken || req.body?.refreshToken;
+
+    // Nếu Mobile gửi qua Header dạng "Bearer <token>" thì có thể check thêm:
+    // if (!refreshToken && req.headers.authorization) {
+    //   refreshToken = req.headers.authorization.split(' ')[1];
+    // }
     if (!token) {
-      return res.status(403).json({ message: "No refresh token provided" });
+      return res.status(401).json({ message: "No refresh token provided" });
     }
     const newAccessToken = await authService.refreshAccessTokenService(token);
     if (!newAccessToken) {

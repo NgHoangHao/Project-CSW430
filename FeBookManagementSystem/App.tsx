@@ -5,8 +5,9 @@
 //  * @format
 //  */
 
-import { SafeAreaProvider } from "react-native-safe-area-context"
-import { AppNavigator } from "./src/navigation/AppNavigator"
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AppNavigator } from './src/navigation/AppNavigator';
+import { AuthProvider } from './src/store/authProvider';
 
 // import { NewAppScreen } from '@react-native/new-app-screen';
 // import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
@@ -50,9 +51,11 @@ import { AppNavigator } from "./src/navigation/AppNavigator"
 const App = () => {
   return (
     <SafeAreaProvider>
-      <AppNavigator/>
+      <AuthProvider>
+        <AppNavigator />
+      </AuthProvider>
     </SafeAreaProvider>
-  )
-}
+  );
+};
 
 export default App;
