@@ -18,7 +18,7 @@ export const mailService = {
         from: '"My App" <no-reply@myapp.com>',
         to,
         subject: 'Mã xác thực OTP',
-        text: `Mã OTP của bạn là: ${otp}. Mã này sẽ hết hạn sau 5 phút.`,
+        text: `Your OTP is: ${otp}. This OTP will be expired after 5 minutes.`,
       });
       console.log(`OTP sent to ${to}`);
     } catch (error) {

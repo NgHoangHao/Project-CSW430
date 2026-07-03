@@ -5,6 +5,7 @@ import swaggerJsdoc from "swagger-jsdoc";
 import authRouters from "./routes/authRoute";
 import userRouters from "./routes/userRoute";
 
+
 const app = express();
 
 app.use(express.json());
@@ -29,7 +30,8 @@ app.use(
 // app.use("/api/users", userRoutes);
 // app.post("/api/users", userRoutes);
 // app.delete("/api/users/:id", userRoutes);
-app.use("/api/auth",authRouters)
+app.use("/api/auth",authRouters);
 app.use("/api/user",userRouters);
+
 
 export default app;

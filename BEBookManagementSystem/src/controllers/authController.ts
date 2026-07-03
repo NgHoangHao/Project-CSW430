@@ -54,7 +54,7 @@ export const login = async (req: Request, res: Response) => {
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 7 * 24 * 60 * 60 * 1000 
+      maxAge: 7 * 24 * 60 * 60 * 1000
     });
     return res.json({ accessToken: tokens.accessToken });
   } catch (error) {
@@ -71,7 +71,7 @@ export const refreshToken = async (req: Request, res: Response) => {
     }
     const newAccessToken = await authService.refreshAccessTokenService(token);
     if (!newAccessToken) {
-      res.clearCookie('refreshToken'); 
+      res.clearCookie('refreshToken');
       return res.status(401).json({ message: "Redirect to login" });
     }
     return res.json({ accessToken: newAccessToken });

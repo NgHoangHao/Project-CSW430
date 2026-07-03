@@ -1,13 +1,14 @@
 // src/services/auth.service.ts
 import { otpStoreUtils } from '../utils/otpStore';
-import { RegisterDTO } from '../dtos/auth/RegisterDTO';   
+import { RegisterDTO } from '../dtos/auth/RegisterDTO';
 import bcrypt from 'bcrypt';
 import { User } from '../entities/User';
 import * as jwt from 'jsonwebtoken';
 import { Role } from '../entities/Role';
 import { AppDataSource } from '../config/database';
-import { mailService } from './mailService';   
+import { mailService } from './mailService';
 import { RoleName, UserStatus } from '../utils/enums';
+
 
 export const registerService = async (data: RegisterDTO) => {
   const { userName, email, password } = data;
@@ -23,7 +24,7 @@ export const registerService = async (data: RegisterDTO) => {
     email,
     password: hashedPassword,
     status: UserStatus.INACTIVE,
-    credit:100,
+    credit: 100,
     roles: [userRole],
   });
   await userRepository.save(newUser);
@@ -46,14 +47,13 @@ export const verifyService = async (email: string, otp: string) => {
     await userRepository.save(user);
   }
   otpStoreUtils.delete(email);
-  return {  message: 'Account activated successfully' };
+  return { message: 'Account activated successfully' };
 };
 
 export const resendOtpService = async (email: string) => {
   const userRepository = AppDataSource.getRepository(User);
   const user = await userRepository.findOneBy({ email });
   if (!user) throw new Error('User not found');
-  if (user.status === UserStatus.ACTIVE) throw new Error('Account already activated');
   const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
   const hashOtp = await bcrypt.hash(newOtp, 10);
   otpStoreUtils.set(email, hashOtp, 300);
@@ -61,24 +61,26 @@ export const resendOtpService = async (email: string) => {
   return { message: "New OTP has been sent to your email" };
 };
 
+
+
 export const generateTokens = (user: User) => {
   const roleNames = user.roles ? user.roles.map(role => role.roleName) : [];
   const accessToken = jwt.sign(
-    { 
-      id: user.userId, 
+    {
+      id: user.userId,
       email: user.email,
-      roles: roleNames 
-    }, 
-    process.env.ACCESS_TOKEN_SECRET!, 
+      roles: roleNames
+    },
+    process.env.ACCESS_TOKEN_SECRET!,
     { expiresIn: '15m' }
   );
-  
+
   const refreshToken = jwt.sign(
-    { id: user.userId }, 
-    process.env.REFRESH_TOKEN_SECRET!, 
+    { id: user.userId },
+    process.env.REFRESH_TOKEN_SECRET!,
     { expiresIn: '7d' }
   );
-  
+
   return { accessToken, refreshToken };
 };
 
@@ -88,17 +90,17 @@ export const loginService = async (userName: string, password: string) => {
     where: { userName },
     relations: {
       roles: true
-    } 
+    }
   });
   if (!user) {
     return null;
   }
-  if(user.status==UserStatus.INACTIVE){
+  if (user.status == UserStatus.INACTIVE) {
     throw new Error('Please active the account by enter OTP');
   }
   const isPasswordMatch = await bcrypt.compare(password, user.password);
   if (!isPasswordMatch) {
-    return null; 
+    return null;
   }
   return generateTokens(user);
 };
@@ -109,15 +111,15 @@ export const refreshAccessTokenService = async (refreshToken: string) => {
     const userRepository = AppDataSource.getRepository(User);
     const user = await userRepository.findOne({
       where: { userId: decoded.id },
-      relations: { roles: true } 
+      relations: { roles: true }
     });
     if (!user) {
       return null;
     }
     const roleNames = user.roles ? user.roles.map(role => role.roleName) : [];
     const newAccessToken = jwt.sign(
-      { id: user.userId, email: user.email, roles: roleNames }, 
-      process.env.ACCESS_TOKEN_SECRET!, 
+      { id: user.userId, email: user.email, roles: roleNames },
+      process.env.ACCESS_TOKEN_SECRET!,
       { expiresIn: '15m' }
     );
     return newAccessToken;
@@ -125,3 +127,4 @@ export const refreshAccessTokenService = async (refreshToken: string) => {
     return null;
   }
 };
+
