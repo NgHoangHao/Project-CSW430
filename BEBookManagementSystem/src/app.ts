@@ -6,6 +6,7 @@ import authRouters from "./routes/authRoute";
 import userRouters from "./routes/userRoute";
 import roleRoute from "./routes/roleRoute";
 import cors from "cors";
+import bookRouters from "./routes/bookRoute";
 
 
 const app = express();
@@ -37,7 +38,8 @@ app.use(
 
 app.use("/api/auth", authRouters)
 app.use("/api/user", userRouters);
+app.use("/api/book",bookRouters)
 app.use("/api/role", roleRoute);
-
+app.use('/images', express.static('images'));
 
 export default app;

@@ -23,6 +23,9 @@ export class Book {
   @Column({nullable:false})
   category: string;
 
+  @Column({nullable:false})
+  url: string;
+
   @Column({ type: 'enum', enum: BookStatus, default: BookStatus.AVAILABLE })
   status: BookStatus;
 
