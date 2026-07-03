@@ -7,7 +7,7 @@ import bcrypt from 'bcrypt';
 import { ResetPasswordDto } from '../dtos/auth/ResetPasswordDTO';
 import { UserProfileDto } from '../dtos/user/userProfileDTO';
 import { addRoleUser, deleteRoleUser, getUserById } from '../repositories/userRepository';
-import { getAllRoles } from './roleService';
+import { roleService } from './roleService';
 import { NotFoundException } from '../common/errors/error';
 
 export const getUserProfile = async (userId: string): Promise<UserProfileDto> => {
@@ -74,7 +74,7 @@ export const assignRoleUser = async (userId: string, roleId: string[]) => {
   if (!user) {
     throw new NotFoundException('User not found');
   }
-  const role = await getAllRoles();
+  const role = await roleService.getAllRolesService();
   const validRole = role.filter((r) => roleId.includes(r.roleId));
   if (validRole.length === 0) {
     throw new NotFoundException('Role not found');
@@ -88,7 +88,7 @@ export const removeRoleUser = async (userId: string, roleIds: string[]) => {
   if (!user) {
     throw new NotFoundException('User not found');
   }
-  const role = await getAllRoles();
+  const role = await roleService.getAllRolesService();
   const validRole = role.filter((r) => roleIds.includes(r.roleId));
   if (validRole.length === 0) {
     throw new NotFoundException('Role not found');

@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
-import { createRolesService, getAllRoles } from "../services/roleService";
 import { CreateRoleDTO } from "../dtos/role/roleDTO";
+import { roleService } from "../services/roleService";
 
 export const createRolesController = async (req: Request<{}, {}, CreateRoleDTO>, res: Response) => {
     try {
-        const result = await createRolesService(req.body);
+        const result = await roleService.createRolesService(req.body);
         return res.status(200).json(result);
     } catch (error: any) {
         if (error.message === 'Role already exists') {
@@ -16,7 +16,7 @@ export const createRolesController = async (req: Request<{}, {}, CreateRoleDTO>,
 
 export const getAllRolesController = async (req: Request, res: Response) => {
     try {
-        const result = await getAllRoles();
+        const result = await roleService.getAllRolesService();
         return res.status(200).json(result);
     } catch (error: any) {
         if (error.message === 'Roles not found') {
