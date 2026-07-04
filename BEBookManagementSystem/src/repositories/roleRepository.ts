@@ -12,3 +12,10 @@ export const createRoles = async () => {
         await roleRepository.save([userRole, librarianRole, adminRole]);
     }
 };
+
+export const getRoles = async () => {
+    const roleRepository = AppDataSource.getRepository(Role);
+    const roles = await roleRepository.find();
+    return roles;
+}
+

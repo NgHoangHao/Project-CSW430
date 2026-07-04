@@ -1,6 +1,7 @@
 // repositories/user.repository.ts
 import { DataSource } from 'typeorm';
-import { User } from '../entities/User'; 
+import { User } from '../entities/User';
+import { AppDataSource } from '../config/database';
 
 export const createUserRepository = (dataSource: DataSource) => {
   return dataSource.getRepository(User).extend({
@@ -18,3 +19,31 @@ export const createUserRepository = (dataSource: DataSource) => {
     },
   });
 };
+
+export const getUserById = async (userId: string) => {
+  const userRepository = AppDataSource.getRepository(User);
+  return userRepository.findOne({
+    where: { userId }
+  });
+}
+
+export const addRoleUser = async (userId: string, roleId: string[]) => {
+  const rows = roleId.map((id: string) => ({
+    userUserId: userId,
+    roleRoleId: id
+  }))
+  return AppDataSource.createQueryBuilder()
+    .insert()
+    .into('user_roles_role')
+    .values(rows)
+    .execute();
+}
+
+export const deleteRoleUser = async (userId: string, roleIds: string[]) => {
+  return AppDataSource.createQueryBuilder()
+    .delete()
+    .from('user_roles_role')
+    .where('userUserId = :userId', { userId })
+    .andWhere('roleRoleId IN (:...roleIds)', { roleIds })
+    .execute();
+}
