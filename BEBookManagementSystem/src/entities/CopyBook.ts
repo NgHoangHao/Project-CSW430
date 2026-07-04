@@ -22,7 +22,7 @@ export class CopyBook {
   createdAt: Date;
 
   // Quan hệ N-1 với Book
-  @ManyToOne(() => Book, (book) => book.copyBooks)
+  @ManyToOne(() => Book, (book) => book.copyBooks, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'bookId' })
   book: Book;
 

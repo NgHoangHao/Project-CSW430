@@ -14,7 +14,7 @@ export enum RoleName {
 
 export enum BookStatus {
   AVAILABLE = 'AVAILABLE',
-  OUT_OF_STOCK = 'OUT OF STOCK',
+  OUT_OF_STOCK = 'BORROWED',
 }
 
 export enum CopyBookStatus {
