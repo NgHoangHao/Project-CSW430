@@ -1,8 +1,8 @@
 import { AppDataSource } from '../config/database';
 import { Book } from '../entities/Book';
 import { CopyBook } from '../entities/CopyBook';
-import { BookStatus } from '../utils/enums'; 
-import { BookDTO } from '../dtos/book/BookDTO'; 
+import { BookStatus } from '../utils/enums';
+import { BookDTO } from '../dtos/book/BookDTO';
 import { BookRepository } from '../repositories/bookRepository';
 import { BookPage } from '../dtos/book/BookPage';
 import { CopyBookDTO } from '../dtos/book/CopyBookDTO';
@@ -14,24 +14,24 @@ import path from 'path';
 import { BookUpdate } from '../dtos/book/BookUpdate';
 
 export class BookService {
-  
+
   static async createBookWithCopies(bookDto: BookDTO) {
     return await AppDataSource.transaction(async (transactionalEntityManager) => {
       const newBook = new Book();
       newBook.title = bookDto.title;
-      newBook.author = bookDto.author; 
-      newBook.publisher = bookDto.publisher; 
-      newBook.publishYear = Number(bookDto.publishYear); 
-      newBook.category = bookDto.category; 
-      newBook.url = bookDto.url.path; 
-      newBook.status = BookStatus.AVAILABLE; 
+      newBook.author = bookDto.author;
+      newBook.publisher = bookDto.publisher;
+      newBook.publishYear = Number(bookDto.publishYear);
+      newBook.category = bookDto.category;
+      newBook.url = bookDto.url.path;
+      newBook.status = BookStatus.AVAILABLE;
       const savedBook = await transactionalEntityManager.save(newBook);
       if (bookDto.copyBooks && bookDto.copyBooks.length > 0) {
         const copyBookEntities = bookDto.copyBooks.map((cbDTO) => {
           const newCopyBook = new CopyBook();
-          newCopyBook.barcode = cbDTO.barcode; 
-          newCopyBook.location = cbDTO.location; 
-          newCopyBook.book = savedBook; 
+          newCopyBook.barcode = cbDTO.barcode;
+          newCopyBook.location = cbDTO.location;
+          newCopyBook.book = savedBook;
           return newCopyBook;
         });
         await transactionalEntityManager.save(copyBookEntities);
@@ -96,9 +96,9 @@ export class BookService {
     if (!book) return null;
     const copyBookDTOs: CopyBookDTO[] = book.copyBooks && book.copyBooks.length > 0
       ? book.copyBooks.map((cb) => ({
-          barcode: cb.barcode,
-          location: cb.location
-        }))
+        barcode: cb.barcode,
+        location: cb.location
+      }))
       : [];
     const bookDetail: BookDetail = {
       bookId: book.bookId,
@@ -110,9 +110,9 @@ export class BookService {
       url: book.url,
       status: book.status,
       createdAt: book.createdAt,
-      totalAvailableCopy:copyBookDTOs.length,
+      totalAvailableCopy: copyBookDTOs.length,
       updatedAt: book.updatedAt,
-      availableBooks: copyBookDTOs 
+      availableBooks: copyBookDTOs
     };
     return bookDetail;
   }
