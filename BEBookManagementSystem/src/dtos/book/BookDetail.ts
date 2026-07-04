@@ -1,7 +1,7 @@
 import { BookStatus } from "../../utils/enums";
 import { CopyBookDTO } from "./CopyBookDTO";
 
-export interface BookDetail{
+export interface BookDetail {
       bookId: string;
       title: string;
       author: string;
@@ -12,7 +12,6 @@ export interface BookDetail{
       status: BookStatus;
       createdAt: Date;
       updatedAt: Date;
-      totalAvailableCopy:number;
+      totalAvailableCopy: number;
       availableBooks: CopyBookDTO[];
-
 }
