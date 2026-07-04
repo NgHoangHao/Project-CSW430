@@ -1,9 +1,9 @@
 
 export enum UserStatus {
   ACTIVE = 'ACTIVE',
-  INACTIVE='INACTIVE',
+  INACTIVE = 'INACTIVE',
   LOCK = 'LOCK',
-  FORGOTPASS='FORGOTPASS'
+  FORGOTPASS = 'FORGOTPASS'
 }
 
 export enum RoleName {
@@ -14,7 +14,7 @@ export enum RoleName {
 
 export enum BookStatus {
   AVAILABLE = 'AVAILABLE',
-  OUT_OF_STOCK = 'BORROWED',
+  OUT_OF_STOCK = 'OUT_OF_STOCK',
 }
 
 export enum CopyBookStatus {
