@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { BookService } from '../services/bookService';
+import fs from 'fs';
 import { BookDTO } from '../dtos/book/BookDTO';
 import { CopyBookDTO } from '../dtos/book/CopyBookDTO';
 
@@ -33,6 +34,15 @@ export const createBook = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Controller Error:", error);
+    if (req.file && req.file.path) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) {
+          console.error("Không thể xóa file ảnh rác sau khi lỗi hệ thống:", err);
+        } else {
+          console.log(`Đã xóa sạch ảnh rác thành công tại đường dẫn: ${req?.file?.path}`);
+        }
+      });
+    }
     return res.status(500).json({ message: "Internal Server Error." });
   }
 };

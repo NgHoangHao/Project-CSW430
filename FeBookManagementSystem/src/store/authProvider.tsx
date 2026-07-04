@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import api from '../lib/axios';
 import { authApi } from '../services/auth.service';
-import { LoginDTO } from '../types/AuthDTO';
+import { LoginDTO } from '../types/auth';
 import { ActivityIndicator, View } from 'react-native';
 
 interface AuthContextType {
