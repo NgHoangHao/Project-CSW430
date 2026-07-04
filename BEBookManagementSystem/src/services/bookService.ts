@@ -9,9 +9,10 @@ import { CopyBookDTO } from '../dtos/book/CopyBookDTO';
 import { BookDetail } from '../dtos/book/BookDetail';
 import { CopyBookRepository } from '../repositories/copyBookRepository';
 import { CopyBookDetail } from '../dtos/book/CopyBookDetail';
-import fs from 'fs/promises'; 
+import fs from 'fs/promises';
 import path from 'path';
 import { BookUpdate } from '../dtos/book/BookUpdate';
+import { CopyBookCreateDTO } from '../dtos/book/CopyBookCreateDTO';
 
 export class BookService {
 
@@ -61,11 +62,11 @@ export class BookService {
           console.warn(`Can not remove old image: ${book.url}. Error:`, error);
         }
       }
-      book.url = bookDto.url.path; 
+      book.url = bookDto.url.path;
     }
     return await bookRepo.save(book);
   }
-  
+
   static async getBooksPaginated(page: number, limit: number, title?: string) {
     const [books, total] = await BookRepository.findAndCountBooks(page, limit, title);
     const bookPages: BookPage[] = books.map((book) => ({
@@ -147,7 +148,7 @@ export class BookService {
       try {
         const fileName = path.basename(book.url);
         const filePath = path.join(process.cwd(), 'images', fileName);
-        
+
         await fs.unlink(filePath);
       } catch (error) {
         console.warn(`Không thể xóa file ảnh vật lý: ${book.url}. Lỗi:`, error);
@@ -156,5 +157,47 @@ export class BookService {
     await bookRepo.remove(book);
     return true;
   }
+
+  static async addCopyBook(data: CopyBookCreateDTO): Promise<CopyBook> {
+    const bookRepo = AppDataSource.getRepository(Book);
+    const copyBookRepo = AppDataSource.getRepository(CopyBook);
+    const book = await bookRepo.findOne({
+      where: { bookId: data.bookId }
+    });
+
+    if (!book) {
+      throw new Error('Không tìm thấy sách với ID đã cung cấp.');
+    }
+
+    const existingBarcode = await copyBookRepo.findOne({
+      where: { barcode: data.barcode }
+    });
+
+    if (existingBarcode) {
+      throw new Error('Barcode này đã tồn tại trong hệ thống.');
+    }
+    const newCopyBook = copyBookRepo.create({
+      barcode: data.barcode,
+      location: data.location,
+      book: book,
+    });
+
+    return await copyBookRepo.save(newCopyBook);
+  }
+
+  static async deleteCopyBook(copyBookId: string): Promise<void> {
+    const copyBookRepo = AppDataSource.getRepository(CopyBook);
+    const copyBook = await copyBookRepo.findOne({
+      where: { copyBookId }
+    });
+
+    if (!copyBook) {
+      throw new Error('Không tìm thấy bản sao sách (CopyBook) này.');
+    }
+
+    await copyBookRepo.remove(copyBook);
+  }
 }
+
+
 

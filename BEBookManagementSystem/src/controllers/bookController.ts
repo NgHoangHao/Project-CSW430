@@ -3,6 +3,7 @@ import { BookService } from '../services/bookService';
 import fs from 'fs';
 import { BookDTO } from '../dtos/book/BookDTO';
 import { CopyBookDTO } from '../dtos/book/CopyBookDTO';
+import { CopyBookCreateDTO } from '../dtos/book/CopyBookCreateDTO';
 
 export const createBook = async (req: Request<{}, {}, BookDTO>, res: Response) => {
   try {
@@ -160,17 +161,48 @@ export const updateBook = async (req: Request<{ bookId: string }, {}, BookDTO>, 
 };
 
 export const deleteBook = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { bookId } = req.query;
-      await BookService.deleteBook(bookId as string);
-      res.status(200).json({
-        success: true,
-        message: 'Book and associated image file deleted successfully',
-      });
-    } catch (error: any) {
-      res.status(400).json({
-        success: false,
-        message: error.message || 'An error occurred while deleting the book',
-      });
+  try {
+    const { bookId } = req.query;
+    await BookService.deleteBook(bookId as string);
+    res.status(200).json({
+      success: true,
+      message: 'Book and associated image file deleted successfully',
+    });
+  } catch (error: any) {
+    res.status(400).json({
+      success: false,
+      message: error.message || 'An error occurred while deleting the book',
+    });
+  }
+};
+
+export const addCopyBook = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const copyBookDto: CopyBookCreateDTO = req.body;
+    // if (!copyBookDto.barcode || !copyBookDto.location || !copyBookDto.bookId) {
+    //   return res.status(400).json({ message: 'Vui lòng cung cấp đủ barcode, location và bookId.' });
+    // }
+    const newCopyBook = await BookService.addCopyBook(copyBookDto);
+    res.status(201).json({
+      message: 'Thêm bản sao sách thành công!',
+      data: newCopyBook
+    });
+  } catch (error: any) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+export const deleteCopyBook = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { copyBookId } = req.query;
+    if (!copyBookId) {
+      return res.status(400).json({ message: 'Vui lòng cung cấp copyBookId cần xóa.' });
     }
+    await BookService.deleteCopyBook(copyBookId as string);
+    return res.status(200).json({
+      message: 'Xóa bản sao sách thành công!'
+    });
+  } catch (error: any) {
+    return res.status(400).json({ message: error.message });
+  }
 };
