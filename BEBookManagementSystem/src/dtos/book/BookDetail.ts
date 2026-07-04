@@ -14,5 +14,4 @@ export interface BookDetail{
       updatedAt: Date;
       totalAvailableCopy:number;
       availableBooks: CopyBookDTO[];
-
 }

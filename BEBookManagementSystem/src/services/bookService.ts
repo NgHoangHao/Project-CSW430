@@ -9,6 +9,9 @@ import { CopyBookDTO } from '../dtos/book/CopyBookDTO';
 import { BookDetail } from '../dtos/book/BookDetail';
 import { CopyBookRepository } from '../repositories/copyBookRepository';
 import { CopyBookDetail } from '../dtos/book/CopyBookDetail';
+import fs from 'fs/promises'; 
+import path from 'path';
+import { BookUpdate } from '../dtos/book/BookUpdate';
 
 export class BookService {
   
@@ -37,6 +40,32 @@ export class BookService {
     });
   }
 
+  static async updateBook(bookId: string, bookDto: Partial<BookUpdate>) {
+    const bookRepo = AppDataSource.getRepository(Book);
+    const book = await bookRepo.findOneBy({ bookId: bookId });
+    if (!book) {
+      throw new Error('Book not found');
+    }
+    if (bookDto.title) book.title = bookDto.title;
+    if (bookDto.author) book.author = bookDto.author;
+    if (bookDto.publisher) book.publisher = bookDto.publisher;
+    if (bookDto.publishYear) book.publishYear = Number(bookDto.publishYear);
+    if (bookDto.category) book.category = bookDto.category;
+    if (bookDto.url && bookDto.url.path) {
+      if (book.url) {
+        try {
+          const oldFileName = path.basename(book.url);
+          const oldFilePath = path.join(process.cwd(), 'images', oldFileName);
+          await fs.unlink(oldFilePath);
+        } catch (error) {
+          console.warn(`Can not remove old image: ${book.url}. Error:`, error);
+        }
+      }
+      book.url = bookDto.url.path; 
+    }
+    return await bookRepo.save(book);
+  }
+  
   static async getBooksPaginated(page: number, limit: number, title?: string) {
     const [books, total] = await BookRepository.findAndCountBooks(page, limit, title);
     const bookPages: BookPage[] = books.map((book) => ({
@@ -106,6 +135,26 @@ export class BookService {
       location: copyBook.location
     };
     return detail;
+  }
+
+  static async deleteBook(bookId: string) {
+    const bookRepo = AppDataSource.getRepository(Book);
+    const book = await bookRepo.findOneBy({ bookId: bookId });
+    if (!book) {
+      throw new Error('Không tìm thấy sách với ID cung cấp');
+    }
+    if (book.url) {
+      try {
+        const fileName = path.basename(book.url);
+        const filePath = path.join(process.cwd(), 'images', fileName);
+        
+        await fs.unlink(filePath);
+      } catch (error) {
+        console.warn(`Không thể xóa file ảnh vật lý: ${book.url}. Lỗi:`, error);
+      }
+    }
+    await bookRepo.remove(book);
+    return true;
   }
 }
 

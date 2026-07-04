@@ -3,7 +3,7 @@ import { BookService } from '../services/bookService';
 import { BookDTO } from '../dtos/book/BookDTO';
 import { CopyBookDTO } from '../dtos/book/CopyBookDTO';
 
-export const createBook = async (req: Request, res: Response) => {
+export const createBook = async (req: Request<{}, {}, BookDTO>, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "Image file is required." });
@@ -126,4 +126,41 @@ export const getDetailByBarcode = async (req: Request, res: Response) => {
       error: error instanceof Error ? error.message : "Unknown error"
     });
   }
+};
+
+export const updateBook = async (req: Request<{ bookId: string }, {}, BookDTO>, res: Response): Promise<void> => {
+  try {
+    const { bookId } = req.query;
+    const bookDto = req.body;
+    if (req.file) {
+      bookDto.url = req.file;
+    }
+    const updatedBook = await BookService.updateBook(bookId as string, bookDto);
+    res.status(200).json({
+      success: true,
+      message: 'Book information updated successfully',
+      data: updatedBook,
+    });
+  } catch (error: any) {
+    res.status(400).json({
+      success: false,
+      message: error.message || 'An error occurred while updating the book',
+    });
+  }
+};
+
+export const deleteBook = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { bookId } = req.query;
+      await BookService.deleteBook(bookId as string);
+      res.status(200).json({
+        success: true,
+        message: 'Book and associated image file deleted successfully',
+      });
+    } catch (error: any) {
+      res.status(400).json({
+        success: false,
+        message: error.message || 'An error occurred while deleting the book',
+      });
+    }
 };

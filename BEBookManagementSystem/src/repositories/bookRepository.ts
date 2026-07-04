@@ -2,6 +2,7 @@ import { AppDataSource } from '../config/database'; // Đường dẫn tới c�
 import { Book } from '../entities/Book';
 import { BookStatus, CopyBookStatus } from '../utils/enums';
 
+
 export const BookRepository = AppDataSource.getRepository(Book).extend({
 
   async findAndCountBooks(page: number, limit: number, title?: string) {
@@ -28,5 +29,5 @@ export const BookRepository = AppDataSource.getRepository(Book).extend({
       )
       .where('book.bookId = :bookId', { bookId })
       .getOne();
-  }
+  },
 });
