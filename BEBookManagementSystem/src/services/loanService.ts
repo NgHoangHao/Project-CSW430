@@ -8,8 +8,9 @@ import { Loan } from "../entities/Loan";
 import { LoanDetail } from "../entities/LoanDetail";
 import { LoanRepository } from "../repositories/loanRepository";
 import { getUserById } from "../repositories/userRepository"
-import { BookStatus, CopyBookStatus, LoanStatus } from "../utils/enums";
+import { BookStatus, CopyBookStatus, LoanStatus, RoleName } from "../utils/enums";
 import { Book } from "../entities/Book";
+import { LoanDetailDTO } from "../dtos/loan/LoanDetailDTO";
 
 export const LoanService = {
 
@@ -197,5 +198,42 @@ export const LoanService = {
         }))
 
         return responseLoan;
+    },
+
+    getLoanDetailByLoanId: async (userId: string, loanId: string): Promise<LoanDetailDTO | null> => {
+        const user = await getUserById(userId);
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+        const loan = await LoanRepository.getLoanDetailsByLoanId(loanId);
+
+        if (!loan) {
+            throw new NotFoundException('Loan not found');
+        }
+
+        // find role name librarian and admin in roles array
+        const roleNames = user.roles.find((r: any) => r.roleName === RoleName.ADMIN || r.roleName === RoleName.LIBRARIAN);
+        if (!roleNames || loan.user.userId !== userId) {
+            throw new BadRequestException('You do not have permission to view this loan');
+        }
+        const responseLoanDetails: LoanDetailDTO = {
+            loanId: loan.loanId,
+            borrowDate: loan.borrowDate.toISOString().slice(0, 10),
+            dueDate: loan.dueDate.toISOString().slice(0, 10),
+            status: loan.status,
+            loanDetails: loan.loanDetails.map((ld) => {
+                return {
+                    loanDetailId: ld.loanDetailId,
+                    copyBookId: ld.copyBook.copyBookId,
+                    url: ld.copyBook.book.url,
+                    bookId: ld.copyBook.book.bookId,
+                    bookName: ld.copyBook.book.title,
+                    barcode: ld.copyBook.barcode,
+                    returnDate: ld.returnDate ? ld.returnDate.toISOString().slice(0, 10) : '',
+                    status: ld.status,
+                }
+            })
+        }
+        return responseLoanDetails;
     }
 }

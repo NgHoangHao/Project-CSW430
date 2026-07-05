@@ -10,4 +10,13 @@ export const LoanRepository = AppDataSource.getRepository(Loan).extend({
             .orderBy('loan.borrowDate', 'DESC')
             .getMany();
     },
+    async getLoanDetailsByLoanId(loanId: string) {
+        return this.createQueryBuilder('loan')
+            .leftJoinAndSelect('loan.loanDetails', 'loanDetail')
+            .leftJoinAndSelect('loanDetail.copyBook', 'copyBook')
+            .leftJoinAndSelect('copyBook.book', 'book')
+            .leftJoinAndSelect('loan.user', 'user')
+            .where('loan.loanId = :loanId', { loanId })
+            .getOne();
+    }
 });

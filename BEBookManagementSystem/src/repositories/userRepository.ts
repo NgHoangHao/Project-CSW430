@@ -23,7 +23,8 @@ export const createUserRepository = (dataSource: DataSource) => {
 export const getUserById = async (userId: string) => {
   const userRepository = AppDataSource.getRepository(User);
   return userRepository.findOne({
-    where: { userId }
+    where: { userId },
+    relations: { roles: true }
   });
 }
 

@@ -47,5 +47,21 @@ export const LoanController = {
             }
             return res.status(500).json({ message: error.message });
         }
+    },
+    getLoanDetailByLoanId: async (req: Request, res: Response) => {
+        try {
+            const userId = (req as any).user.id;
+            const loanId = req.params.loanId as string;
+            const result = await LoanService.getLoanDetailByLoanId(userId, loanId);
+            return res.status(200).json(result);
+        } catch (error: any) {
+            if (error instanceof NotFoundException) {
+                return res.status(404).json({ message: error.message });
+            }
+            if (error instanceof BadRequestException) {
+                return res.status(400).json({ message: error.message });
+            }
+            return res.status(500).json({ message: error.message });
+        }
     }
 }
