@@ -4,3 +4,17 @@ export class NotFoundException extends Error {
         this.name = 'NotFoundException';
     }
 }
+
+export class BadRequestException extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'BadRequestException';
+    }
+}
+
+export class ForbiddenException extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'ForbiddenException';
+    }
+}
