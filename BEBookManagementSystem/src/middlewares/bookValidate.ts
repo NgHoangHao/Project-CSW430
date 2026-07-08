@@ -6,6 +6,7 @@ export const validateAddBook = (req: Request, res: Response, next: NextFunction)
         author: Joi.string().required(),
         publisher: Joi.string().required(),
         publishYear: Joi.number().required(),
+        page: Joi.number().required(),
         category: Joi.string().required(),
     });
     const { error } = schema.validate(req.body);

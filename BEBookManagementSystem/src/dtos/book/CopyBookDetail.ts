@@ -6,6 +6,7 @@ export interface CopyBookDetail {
     author: string;
     publisher: string;
     publishYear: number;
+    page: number;
     category: string;
     url: string;
     copyBookId: string;

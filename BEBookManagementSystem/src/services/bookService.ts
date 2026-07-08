@@ -13,6 +13,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { BookUpdate } from '../dtos/book/BookUpdate';
 import { CopyBookCreateDTO } from '../dtos/book/CopyBookCreateDTO';
+import { NotFoundException } from '../common/errors/error';
 
 export class BookService {
 
@@ -23,6 +24,7 @@ export class BookService {
       newBook.author = bookDto.author;
       newBook.publisher = bookDto.publisher;
       newBook.publishYear = Number(bookDto.publishYear);
+      newBook.page = Number(bookDto.page);
       newBook.category = bookDto.category;
       newBook.url = bookDto.url.path;
       newBook.status = BookStatus.AVAILABLE;
@@ -45,13 +47,8 @@ export class BookService {
     const bookRepo = AppDataSource.getRepository(Book);
     const book = await bookRepo.findOneBy({ bookId: bookId });
     if (!book) {
-      throw new Error('Book not found');
+      throw new NotFoundException('Book not found');
     }
-    if (bookDto.title) book.title = bookDto.title;
-    if (bookDto.author) book.author = bookDto.author;
-    if (bookDto.publisher) book.publisher = bookDto.publisher;
-    if (bookDto.publishYear) book.publishYear = Number(bookDto.publishYear);
-    if (bookDto.category) book.category = bookDto.category;
     if (bookDto.url && bookDto.url.path) {
       if (book.url) {
         try {
@@ -64,6 +61,12 @@ export class BookService {
       }
       book.url = bookDto.url.path;
     }
+
+    if(bookDto.publishYear !== undefined) bookDto.publishYear = Number(bookDto.publishYear);
+    if(bookDto.page !== undefined) bookDto.page = Number(bookDto.page);
+
+    const {url, ...textFields} = bookDto;
+    Object.assign(book, textFields);
     return await bookRepo.save(book);
   }
 
@@ -75,6 +78,7 @@ export class BookService {
       author: book.author,
       publisher: book.publisher,
       publishYear: book.publishYear,
+      page: book.page,
       category: book.category,
       url: book.url,
       status: book.status,
@@ -107,6 +111,7 @@ export class BookService {
       author: book.author,
       publisher: book.publisher,
       publishYear: book.publishYear,
+      page: book.page,
       category: book.category,
       url: book.url,
       status: book.status,
@@ -128,6 +133,7 @@ export class BookService {
       author: copyBook.book.author,
       publisher: copyBook.book.publisher,
       publishYear: copyBook.book.publishYear,
+      page: copyBook.book.page,
       category: copyBook.book.category,
       url: copyBook.book.url,
       copyBookId: copyBook.copyBookId,

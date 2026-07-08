@@ -6,6 +6,7 @@ export interface BookPage{
       author: string;
       publisher: string;
       publishYear: number;
+      page: number;
       category: string;
       url: string;
       status: BookStatus;
