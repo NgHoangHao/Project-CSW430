@@ -9,13 +9,14 @@ export class User {
   @PrimaryGeneratedColumn('uuid')
   userId: string;
 
-  @Column({nullable:false})
+  @Column({ nullable: false })
   userName: string;
 
-  @Column({nullable:false})
+  @Column({ nullable: false })
   email: string;
 
-  @Column({nullable:false})
+
+  @Column({ nullable: false })
   password: string;
 
   @Column({ type: 'enum', enum: UserStatus, default: UserStatus.ACTIVE, })
@@ -23,6 +24,9 @@ export class User {
 
   @Column({ type: 'int', default: 0 })
   credit: number;
+
+  @Column()
+  phone: string;
 
   @CreateDateColumn()
   createdAt: Date;

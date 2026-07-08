@@ -5,9 +5,20 @@ import { authApi } from '../services/auth.service';
 import { LoginDTO } from '../types/auth';
 import { ActivityIndicator, View } from 'react-native';
 
+export interface UserProfile {
+  userId?: string;
+  userName?: string;
+  email?: string;
+  phone?: string;
+  status?: string;
+  credit?: number;
+  [key: string]: any;
+}
+
 interface AuthContextType {
   isLoggedIn: boolean;
   userRole: string[];
+  user: UserProfile | null;
   login: (data: LoginDTO) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -17,6 +28,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [isLoggedIn, setLoggedIn] = useState<boolean>(false);
   const [userRole, setUserRole] = useState<string[]>([]);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -27,6 +39,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         if (accessToken && savedRole) {
           setLoggedIn(true);
           setUserRole(JSON.parse(savedRole));
+          try {
+            const res = await api.get('/user/profile');
+            if (res.data) {
+              setUser(res.data);
+            }
+          } catch (profileError) {
+            console.log('Error fetching profile on bootstrap:', profileError);
+          }
         }
       } catch (error) {
         console.log('Error get token', error);
@@ -42,12 +62,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       await authApi.logout();
       setLoggedIn(false);
       setUserRole([]);
+      setUser(null);
       await EncryptedStorage.removeItem('accessToken');
       await EncryptedStorage.removeItem('refreshToken');
     } catch (error) {
       console.log('Error logout', error);
       setLoggedIn(false);
       setUserRole([]);
+      setUser(null);
       await EncryptedStorage.clear();
       throw error;
     }
@@ -62,10 +84,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       await EncryptedStorage.setItem('accessToken', accessToken);
       await EncryptedStorage.setItem('refreshToken', refreshToken);
       await EncryptedStorage.setItem('userRole', JSON.stringify(roleNames));
+      try {
+        const profileRes = await api.get('/user/profile');
+        if (profileRes.data) {
+          setUser(profileRes.data);
+        }
+      } catch (profileError) {
+        console.log('Error fetching profile after login:', profileError);
+      }
     } catch (error) {
       console.log('Error login', error);
       setLoggedIn(false);
       setUserRole([]);
+      setUser(null);
       await EncryptedStorage.clear();
       throw error;
     }
@@ -79,7 +110,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   }
   return (
-    <AuthContext.Provider value={{ isLoggedIn, userRole, login, logout }}>
+    <AuthContext.Provider value={{ isLoggedIn, userRole, user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

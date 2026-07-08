@@ -42,7 +42,7 @@ interface BookDetail extends Book {
   isbn?: string;
   language?: string;
   description?: string;
-  totalPage?: number;
+  page?: number;
 }
 
 export default function BookDetailScreen() {
@@ -212,7 +212,7 @@ export default function BookDetailScreen() {
           {/* Info Grid */}
           <View style={styles.infoGrid}>
             <InfoTile icon={<FileText size={16} color="#27AE60" />} label="THỂ LOẠI" value={book.category || '—'} />
-            <InfoTile icon={<Package size={16} color="#27AE60" />} label="SỐ TRANG" value={book.totalPage ? `${book.totalPage} trang` : '—'} />
+            <InfoTile icon={<Package size={16} color="#27AE60" />} label="SỐ TRANG" value={book.page ? `${book.page} trang` : '—'} />
             <InfoTile icon={<Calendar size={16} color="#27AE60" />} label="NĂM XB" value={book.publishYear ? String(book.publishYear) : '—'} />
             <InfoTile icon={<Building2 size={16} color="#27AE60" />} label="NXB" value={book.publisher || '—'} />
           </View>
