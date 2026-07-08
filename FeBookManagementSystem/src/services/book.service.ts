@@ -8,11 +8,16 @@ export const bookService = {
         )
         return res
     },
-    // query params {page, size, title}
-    getBookByPage: async (page: number, size: number, title?: string) => {
-        const res = await api.get(`/book/get-book?page=${page}&size=${size}&title=${title}`)
-        return res
-    },
+   getBookByPage: async (page: number, size: number, title?: string) => {
+    const res = await api.get("/book/get-book", {
+        params: {
+            page,
+            size,
+            ...(title?.trim() ? { title } : {}),
+        },
+    });
+    return res;
+},
     getBookDetail: async (bookId: string) => {
         const res = await api.get(`/book/get-detail?bookId=${bookId}`)
         return res

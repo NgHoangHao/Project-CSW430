@@ -9,11 +9,15 @@ export type AuthStackParamList = {
     // ResetPassword: undefined;
 }
 
-export type UserStackParamList = {
+export type UserTabParamList = {
     Home: undefined;
     Books: undefined;
     Borrow: undefined;
     Profile: undefined;
+}
+
+export type UserStackParamList = UserTabParamList & {
+    BookSearch: undefined;
 }
 
 export type AdminStackParamList = {
