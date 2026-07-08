@@ -18,6 +18,7 @@ export const getUserProfile = async (userId: string): Promise<UserProfileDto> =>
       userId: true,
       userName: true,
       email: true,
+      phone:true,
       status: true,
       credit: true,
     },
@@ -31,6 +32,7 @@ export const getUserProfile = async (userId: string): Promise<UserProfileDto> =>
     userName: user.userName,
     email: user.email,
     status: user.status,
+    phone:user.phone,
     credit: user.credit,
   });
 };

@@ -26,7 +26,7 @@ import {
 import { UserStackParamList } from '../../navigation/types';
 import { bookService } from '../../services/book.service';
 import { BACKEND_URL } from '@env';
-import api from '../../lib/axios';
+import { useAuth } from '../../store/authProvider';
 
 const DEFAULT_BOOKS = [
   {
@@ -51,7 +51,7 @@ const DEFAULT_BOOKS = [
 
 export default function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<UserStackParamList>>();
-  const [profile, setProfile] = useState<any>(null);
+  const { user } = useAuth();
   const [books, setBooks] = useState<any[]>(DEFAULT_BOOKS);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -66,17 +66,6 @@ export default function HomeScreen() {
       Animated.timing(fabScale, { toValue: 1, duration: 100, useNativeDriver: true }),
     ]).start();
     navigation.navigate('BookSearch');
-  };
-
-  const fetchProfile = async () => {
-    try {
-      const res = await api.get('/user/profile');
-      if (res.data) {
-        setProfile(res.data);
-      }
-    } catch (err) {
-      console.log('Error fetching profile:', err);
-    }
   };
 
   const fetchBooks = async () => {
@@ -96,13 +85,13 @@ export default function HomeScreen() {
 
   const loadData = async () => {
     setLoading(true);
-    await Promise.all([fetchProfile(), fetchBooks()]);
+    await fetchBooks();
     setLoading(false);
   };
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([fetchProfile(), fetchBooks()]);
+    await fetchBooks();
     setRefreshing(false);
   };
 
@@ -127,7 +116,7 @@ export default function HomeScreen() {
     return url.startsWith('/') ? `${baseUrl}${url}` : `${baseUrl}/${url}`;
   };
 
-  const displayName = profile?.userName || 'Nguyễn Văn A';
+  const displayName = user?.userName || 'Nguyễn Văn A';
   const displayAvatarLetter = displayName.charAt(0).toUpperCase();
 
   return (

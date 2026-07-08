@@ -3,6 +3,7 @@ import { UserStatus } from "../../utils/enums";
 export class UserProfileDto {
   userId: string;
   userName: string;
+  phone:string;
   email: string;
   status: UserStatus;
   credit: number;
