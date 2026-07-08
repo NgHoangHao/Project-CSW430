@@ -4,6 +4,7 @@ import fs from 'fs';
 import { BookDTO } from '../dtos/book/BookDTO';
 import { CopyBookDTO } from '../dtos/book/CopyBookDTO';
 import { CopyBookCreateDTO } from '../dtos/book/CopyBookCreateDTO';
+import { NotFoundException } from '../common/errors/error';
 
 export const createBook = async (req: Request<{}, {}, BookDTO>, res: Response) => {
   try {
@@ -23,6 +24,7 @@ export const createBook = async (req: Request<{}, {}, BookDTO>, res: Response) =
       author: req.body.author,
       publisher: req.body.publisher,
       publishYear: req.body.publishYear,
+      page: req.body.page,
       category: req.body.category,
       url: req.file,
       copyBooks: copyBooks
@@ -140,6 +142,7 @@ export const getDetailByBarcode = async (req: Request, res: Response) => {
 };
 
 export const updateBook = async (req: Request<{ bookId: string }, {}, BookDTO>, res: Response): Promise<void> => {
+  const uploadedFilePath = req.file?.path;
   try {
     const { bookId } = req.query;
     const bookDto = req.body;
@@ -153,9 +156,23 @@ export const updateBook = async (req: Request<{ bookId: string }, {}, BookDTO>, 
       data: updatedBook,
     });
   } catch (error: any) {
-    res.status(400).json({
+    if (uploadedFilePath) {
+      fs.unlink(uploadedFilePath, (err) => {
+        if (err) {
+          console.error("Không thể xóa file ảnh rác sau khi lỗi hệ thống:", err);
+        } else {
+          console.log(`Đã dọn dẹp ảnh rác thành công tại: ${uploadedFilePath}`);
+        }
+      });
+    }
+
+    const isNotFound = error instanceof NotFoundException || error.message.includes('not found');
+    const statusCode = isNotFound ? 404 : 500;
+    const message = isNotFound ? error.message : 'Internal Server Error';
+
+    res.status(statusCode).json({
       success: false,
-      message: error.message || 'An error occurred while updating the book',
+      message: message,
     });
   }
 };

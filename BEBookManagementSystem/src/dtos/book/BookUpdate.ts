@@ -6,6 +6,7 @@ export interface BookUpdate {
     author: string;
     publisher: string;
     publishYear: number;
+    page: number;
     category: string;
     url: Express.Multer.File;
 }
