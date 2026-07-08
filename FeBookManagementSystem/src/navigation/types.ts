@@ -18,6 +18,7 @@ export type UserTabParamList = {
 
 export type UserStackParamList = UserTabParamList & {
     BookSearch: undefined;
+    BookDetail: { bookId: string };
 }
 
 export type AdminStackParamList = {

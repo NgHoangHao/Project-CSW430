@@ -1,7 +1,7 @@
 import HomeScreen from '../screens/user/HomeScreen';
-import BookScreen from '../screens/user/BookScreen';
 import BorrowedBookScreen from '../screens/user/BorrowedBookScreen';
 import BookSearch from '../screens/book/BookSearch';
+import BookDetailScreen from '../screens/book/BookDetailScreen';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import ProfileScreen from '../screens/user/ProfileScreen';
@@ -12,7 +12,7 @@ import { UserStackParamList, UserTabParamList } from './types';
 const Tab = createBottomTabNavigator<UserTabParamList>();
 const Stack = createNativeStackNavigator<UserStackParamList>();
 
-// Bottom Tab Navigator (nested inside Stack)
+// Bottom Tab Navigator
 function UserTabs() {
   return (
     <Tab.Navigator
@@ -31,7 +31,7 @@ function UserTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Books" component={BookScreen} />
+      <Tab.Screen name="Books" component={BookSearch} />
       <Tab.Screen name="Borrow" component={BorrowedBookScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
@@ -42,14 +42,7 @@ export const UserNavigator = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Home" component={UserTabs} />
-      <Stack.Screen
-        name="BookSearch"
-        component={BookSearch}
-        options={{
-          animation: 'slide_from_bottom',
-          presentation: 'modal',
-        }}
-      />
+      <Stack.Screen name="BookDetail" component={BookDetailScreen} />
     </Stack.Navigator>
   );
 };
