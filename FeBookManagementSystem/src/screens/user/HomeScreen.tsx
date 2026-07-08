@@ -1,193 +1,328 @@
-import { Avatar } from '@rneui/themed';
-import { Bell, Book, ClipboardCheck } from 'lucide-react-native';
-import React from 'react';
-import { useNavigation } from '@react-navigation/native';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  Animated,
   Image,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { RECOMMEND_BOOK_DATA } from '../../data/data';
-import { USER_ROUTES } from '../../constants/routes';
+import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import {
+  BookOpen,
+  Flame,
+  BarChart2,
+  Calendar,
+  Bookmark,
+  Star,
+  ArrowRight,
+  ChevronRight,
+} from 'lucide-react-native';
 import { UserStackParamList } from '../../navigation/types';
+import { bookService } from '../../services/book.service';
+import { BACKEND_URL } from '@env';
+import api from '../../lib/axios';
+
+const DEFAULT_BOOKS = [
+  {
+    bookId: '1',
+    title: 'Pride and Prejudice',
+    author: 'Jane Austen',
+    url: 'https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1320399351i/1885.jpg',
+  },
+  {
+    bookId: '2',
+    title: 'Dune',
+    author: 'Frank Herbert',
+    url: 'https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1555447414i/44767458.jpg',
+  },
+  {
+    bookId: '3',
+    title: 'Sapiens: A Brief History of Humankind',
+    author: 'Yuval Noah Harari',
+    url: 'https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1595674533i/23692271.jpg',
+  },
+];
 
 export default function HomeScreen() {
-  const navigation =
-    useNavigation<NativeStackNavigationProp<UserStackParamList>>();
-  return (
-    <>
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.leftHeader}>
-            <Image
-              source={require('../../../assets/auth/logo.png')}
-              style={styles.logo}
-            />
-            <View>
-              <Text style={styles.title}>Book Store</Text>
-            </View>
-          </View>
-          <Bell size={25} color="#000" />
-        </View>
-        <ScrollView
-          style={styles.main}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 20 }}
-        >
-          <View>
-            <View style={styles.contentProfile}>
-              <View>
-                <Text style={styles.textWelcome}>Welcome 👋</Text>
-                <Text style={styles.textName}>Cristiano Ronaldo</Text>
-              </View>
-              <Avatar
-                size={40}
-                rounded
-                title="CR7"
-                containerStyle={{ backgroundColor: 'green' }}
-              />
-            </View>
-            {/* Book Overview */}
-            <View style={styles.stats}>
-              <View style={styles.statsRow}>
-                <View style={styles.statsItem}>
-                  <View
-                    style={[styles.statsIcon, { backgroundColor: '#b9fdd3' }]}
-                  >
-                    <Book size={30} color="#32ee03ff" />
-                  </View>
-                  <View style={styles.statsItemInfo}>
-                    <Text style={styles.statsItemLabel}>Read Books</Text>
-                    <Text style={styles.statsItemValue}>28</Text>
-                  </View>
-                </View>
-                <View style={styles.statsItem}>
-                  <View
-                    style={[styles.statsIcon, { backgroundColor: '#fffeddff' }]}
-                  >
-                    <ClipboardCheck size={30} color="#e2e600ff" />
-                  </View>
-                  <View style={styles.statsItemInfo}>
-                    <Text style={styles.statsItemLabel}>Borrowed Books</Text>
-                    <Text style={styles.statsItemValue}>14</Text>
-                  </View>
-                </View>
-                <View style={styles.statsItem}>
-                  <View
-                    style={[{ backgroundColor: '#c8ccffff' }, styles.statsIcon]}
-                  >
-                    <ClipboardCheck size={30} color="#0011ffff" />
-                  </View>
-                  <View style={styles.statsItemInfo}>
-                    <Text style={styles.statsItemLabel}>Return Books</Text>
-                    <Text style={styles.statsItemValue}>14</Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-            {/* List Reading Books */}
-            <View>
-              <Text style={styles.textReadingBooks}>Reading Books</Text>
-              <View style={styles.listBookCard}>
-                <View style={styles.bookContainer}>
-                  <View style={styles.bookImageContainer}>
-                    <Image
-                      source={{
-                        uri: 'https://skyhorse-us.imgix.net/covers/9781949846386.jpg?auto=format&w=298',
-                      }}
-                      style={styles.bookImage}
-                    />
-                  </View>
-                  <View style={styles.bookInfoContainer}>
-                    <Text style={styles.bookTitle}>The Great Gatsby</Text>
-                    <Text style={styles.bookAuthor}>F. Scott Fitzgerald</Text>
-                    <Text style={styles.bookProgress}>60% read</Text>
-                    <View style={styles.bookProgressContainer}>
-                      <View style={styles.bookProgressBar}></View>
-                    </View>
-                  </View>
-                </View>
-                <View style={styles.bookContainer}>
-                  <View style={styles.bookImageContainer}>
-                    <Image
-                      source={{
-                        uri: 'https://skyhorse-us.imgix.net/covers/9781949846386.jpg?auto=format&w=298',
-                      }}
-                      style={styles.bookImage}
-                    />
-                  </View>
-                  <View style={styles.bookInfoContainer}>
-                    <Text style={styles.bookTitle}>The Great Gatsby</Text>
-                    <Text style={styles.bookAuthor}>F. Scott Fitzgerald</Text>
-                    <Text style={styles.bookProgress}>60% read</Text>
-                    <View style={styles.bookProgressContainer}>
-                      <View style={styles.bookProgressBar}></View>
-                    </View>
-                  </View>
-                </View>
-                <View style={styles.bookContainer}>
-                  <View style={styles.bookImageContainer}>
-                    <Image
-                      source={{
-                        uri: 'https://skyhorse-us.imgix.net/covers/9781949846386.jpg?auto=format&w=298',
-                      }}
-                      style={styles.bookImage}
-                    />
-                  </View>
-                  <View style={styles.bookInfoContainer}>
-                    <Text style={styles.bookTitle}>The Great Gatsby</Text>
-                    <Text style={styles.bookAuthor}>F. Scott Fitzgerald</Text>
-                    <Text style={styles.bookProgress}>60% read</Text>
-                    <View style={styles.bookProgressContainer}>
-                      <View style={styles.bookProgressBar}></View>
-                    </View>
-                  </View>
-                </View>
-              </View>
-            </View>
-            {/* Recommended Books */}
-            <View>
-              <View style={styles.recommendedBookContainer}>
-                <Text style={styles.textReadingBooks}>Recommended Books</Text>
-                <TouchableOpacity
-                  onPress={() => {
-                    navigation.navigate('Books');
-                  }}
-                >
-                  <Text>See all</Text>
-                </TouchableOpacity>
-              </View>
+  const navigation = useNavigation<NativeStackNavigationProp<UserStackParamList>>();
+  const [profile, setProfile] = useState<any>(null);
+  const [books, setBooks] = useState<any[]>(DEFAULT_BOOKS);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
 
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.listRecommendBooksContent}
-              >
-                {RECOMMEND_BOOK_DATA.map(book => (
-                  <View style={styles.recommendBookContainer} key={book.id}>
-                    <Image
-                      source={{
-                        uri: 'https://skyhorse-us.imgix.net/covers/9781949846386.jpg?auto=format&w=298',
-                      }}
-                      style={styles.recommendBookImage}
-                    />
-                    <Text style={styles.recommendBookTitle}>{book.title}</Text>
-                    <Text style={styles.recommendBookAuthor}>
-                      {book.author}
-                    </Text>
-                  </View>
-                ))}
-              </ScrollView>
+  // FAB animation
+  const fabScale = useRef(new Animated.Value(1)).current;
+
+  const handleFabPress = () => {
+    Animated.sequence([
+      Animated.timing(fabScale, { toValue: 0.88, duration: 100, useNativeDriver: true }),
+      Animated.timing(fabScale, { toValue: 1, duration: 100, useNativeDriver: true }),
+    ]).start();
+    navigation.navigate('BookSearch');
+  };
+
+  const fetchProfile = async () => {
+    try {
+      const res = await api.get('/user/profile');
+      if (res.data) {
+        setProfile(res.data);
+      }
+    } catch (err) {
+      console.log('Error fetching profile:', err);
+    }
+  };
+
+  const fetchBooks = async () => {
+    try {
+      const res = await bookService.getBookByPage(1, 10);
+      if (res.data && res.data.success && Array.isArray(res.data.data)) {
+        if (res.data.data.length > 0) {
+          setBooks(res.data.data);
+        }
+      }
+    } catch (error) {
+      console.log('Failed to fetch books:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadData = async () => {
+    setLoading(true);
+    await Promise.all([fetchProfile(), fetchBooks()]);
+    setLoading(false);
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([fetchProfile(), fetchBooks()]);
+    setRefreshing(false);
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const toggleBookmark = (id: string) => {
+    setBookmarkedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const isBookmarked = (id: string) => bookmarkedIds.includes(id);
+
+  const getImageUrl = (url?: string) => {
+    if (!url) return 'https://via.placeholder.com/150';
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    const baseUrl = BACKEND_URL.replace('/api', '');
+    return url.startsWith('/') ? `${baseUrl}${url}` : `${baseUrl}/${url}`;
+  };
+
+  const displayName = profile?.userName || 'Nguyễn Văn A';
+  const displayAvatarLetter = displayName.charAt(0).toUpperCase();
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={{ flex: 1 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#27AE60']} />
+        }
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.welcomeText}>XIN CHÀO 👋</Text>
+            <Text style={styles.nameText}>{displayName}</Text>
+          </View>
+          <View style={styles.avatarContainer}>
+            <Text style={styles.avatarText}>{displayAvatarLetter}</Text>
+          </View>
+        </View>
+
+        {/* Stats Grid */}
+        <View style={styles.statsContainer}>
+          <View style={styles.statsCard}>
+            <View style={[styles.iconWrapper, { backgroundColor: '#EAFBF1' }]}>
+              <BookOpen size={20} color="#27AE60" />
+            </View>
+            <Text style={styles.statsValue}>28</Text>
+            <Text style={styles.statsLabel}>Đã đọc</Text>
+          </View>
+
+          <View style={styles.statsCard}>
+            <View style={[styles.iconWrapper, { backgroundColor: '#FFF3EB' }]}>
+              <Flame size={20} color="#FF6B00" />
+            </View>
+            <Text style={styles.statsValue}>12</Text>
+            <Text style={styles.statsLabel}>Ngày liên tục</Text>
+          </View>
+
+          <View style={styles.statsCard}>
+            <View style={[styles.iconWrapper, { backgroundColor: '#EBF3FE' }]}>
+              <BarChart2 size={20} color="#2F80ED" />
+            </View>
+            <Text style={styles.statsValue}>3</Text>
+            <Text style={styles.statsLabel}>Đang mượn</Text>
+          </View>
+        </View>
+
+        {/* Reading Section */}
+        <View style={styles.sectionHeaderContainer}>
+          <Text style={styles.sectionTitle}>Đang đọc</Text>
+        </View>
+
+        <View style={styles.readingCard}>
+          <Image
+            source={{
+              uri: 'https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1602193746i/52578297.jpg',
+            }}
+            style={styles.readingBookImage}
+          />
+          <View style={styles.readingBookInfo}>
+            <View>
+              <Text style={styles.readingBookTitle} numberOfLines={1}>
+                The Midnight Library
+              </Text>
+              <Text style={styles.readingBookAuthor}>Matt Haig</Text>
+            </View>
+
+            <View style={styles.readingBookDueDateRow}>
+              <View style={styles.dueDateWrapper}>
+                <Calendar size={14} color="#8E8E93" style={{ marginRight: 4 }} />
+                <Text style={styles.dueDateText}>Hạn trả: 15/07/2026</Text>
+              </View>
+              <View style={styles.daysLeftBadge}>
+                <Text style={styles.daysLeftText}>5 ngày</Text>
+              </View>
+            </View>
+
+            <View style={styles.progressContainer}>
+              <View style={styles.progressTextRow}>
+                <Text style={styles.progressLabel}>Tiến độ</Text>
+                <Text style={styles.progressValue}>65%</Text>
+              </View>
+              <View style={styles.progressBarBackground}>
+                <View style={[styles.progressBarFill, { width: '65%' }]} />
+              </View>
             </View>
           </View>
-        </ScrollView>
-      </SafeAreaView>
-    </>
+        </View>
+
+        {/* Recommended Books */}
+        <View style={styles.sectionHeaderContainerWithAction}>
+          <Text style={styles.sectionTitle}>Đề xuất cho bạn</Text>
+          <TouchableOpacity
+            style={styles.seeAllButton}
+            onPress={() => navigation.navigate('Books')}
+          >
+            <Text style={styles.seeAllText}>Xem tất cả</Text>
+            <ChevronRight size={16} color="#27AE60" />
+          </TouchableOpacity>
+        </View>
+
+        {loading ? (
+          <ActivityIndicator size="large" color="#27AE60" style={styles.loader} />
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.recommendedList}
+          >
+            {books.map((book) => (
+              <TouchableOpacity
+                key={book.bookId}
+                style={styles.recommendedCard}
+                activeOpacity={0.8}
+              >
+                <View style={styles.bookImageWrapper}>
+                  <Image source={{ uri: getImageUrl(book.url) }} style={styles.recommendedBookImage} />
+                  <TouchableOpacity
+                    style={styles.bookmarkButton}
+                    onPress={() => toggleBookmark(book.bookId)}
+                    activeOpacity={0.7}
+                  >
+                    <Bookmark
+                      size={16}
+                      color={isBookmarked(book.bookId) ? '#27AE60' : '#4F5E74'}
+                      fill={isBookmarked(book.bookId) ? '#27AE60' : 'none'}
+                    />
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.recommendedBookTitle} numberOfLines={2}>
+                  {book.title}
+                </Text>
+                <Text style={styles.recommendedBookAuthor} numberOfLines={1}>
+                  {book.author}
+                </Text>
+                <View style={styles.ratingRow}>
+                  <Star size={12} color="#FFB000" fill="#FFB000" style={{ marginRight: 4 }} />
+                  <Text style={styles.ratingText}>
+                    {((book.title.charCodeAt(0) % 5) * 0.1 + 4.5).toFixed(1)}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
+
+        {/* Quick Actions */}
+        <View style={styles.sectionHeaderContainer}>
+          <Text style={styles.sectionTitle}>Thao tác nhanh</Text>
+        </View>
+
+        <View style={styles.quickActionsRow}>
+          <TouchableOpacity
+            style={styles.quickActionCard}
+            onPress={() => navigation.navigate('Books')}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.actionIconWrapper, { backgroundColor: '#27AE60' }]}>
+              <BookOpen size={20} color="#fff" />
+            </View>
+            <Text style={styles.actionTitle}>Duyệt danh mục</Text>
+            <Text style={styles.actionSubtext}>12,543 đầu sách</Text>
+            <ArrowRight size={18} color="#27AE60" style={styles.actionArrow} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.quickActionCard}
+            onPress={() => navigation.navigate('Borrow')}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.actionIconWrapper, { backgroundColor: '#EAFBF1' }]}>
+              <BarChart2 size={20} color="#27AE60" />
+            </View>
+            <Text style={styles.actionTitle}>Sách của tôi</Text>
+            <Text style={styles.actionSubtext}>3 đang mượn</Text>
+            <ArrowRight size={18} color="#27AE60" style={styles.actionArrow} />
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+
+      {/* Floating Search Button */}
+      <Animated.View style={[styles.fab, { transform: [{ scale: fabScale }] }]}>
+        <TouchableOpacity
+          style={styles.fabInner}
+          onPress={handleFabPress}
+          activeOpacity={0.9}
+        >
+          <BookOpen size={24} color="#fff" />
+        </TouchableOpacity>
+      </Animated.View>
+      </View>
+    </SafeAreaView>
   );
 }
 
@@ -196,197 +331,325 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
+  scrollContent: {
+    paddingBottom: 24,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    height: 70,
-    width: '100%',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
     paddingHorizontal: 20,
-  },
-  leftHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-  },
-  logo: {
-    width: 40,
-    height: 40,
-  },
-  title: {
-    fontSize: 20,
-    fontFamily: 'OpenSansCondensedExtraBold',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  main: {
-    paddingHorizontal: 20,
-  },
-  contentProfile: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  textWelcome: {
-    fontSize: 17,
-    color: '#666',
-  },
-  textName: {
-    fontWeight: 'bold',
-    fontSize: 25,
-  },
-  stats: {
-    flexDirection: 'column',
-    marginVertical: 20,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    marginHorizontal: -6,
-    gap: 10,
-  },
-  statsItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingHorizontal: 6,
-    paddingVertical: 12,
-    borderWidth: 0.5,
-    borderColor: '#afafaf',
-    borderRadius: 12,
-  },
-  statsItemInfo: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statsIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statsItemLabel: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#8e8e93',
-    marginBottom: 2,
-  },
-  statsItemValue: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#081730',
-  },
-  textReadingBooks: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 12,
-  },
-  listBookCard: {
-    marginVertical: 12,
+    paddingTop: 16,
+    paddingBottom: 20,
     backgroundColor: '#fff',
-    borderRadius: 8,
-    flexDirection: 'column',
-    gap: 10,
   },
-  bookContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 12,
-    backgroundColor: '#e6f7e3ff',
-    borderRadius: 8,
-  },
-  bookImageContainer: {
-    width: 60,
-    height: 90,
-    borderRadius: 4,
-    overflow: 'hidden',
-    backgroundColor: '#f0f0f0',
-  },
-  bookImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  bookInfoContainer: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  bookTitle: {
-    fontSize: 16,
+  welcomeText: {
+    fontSize: 13,
     fontWeight: '600',
+    color: '#8E8E93',
+    letterSpacing: 0.5,
     marginBottom: 4,
   },
-  bookAuthor: {
-    fontSize: 13,
-    color: '#666',
+  nameText: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#0D1B2A',
+  },
+  avatarContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#00B365',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    marginBottom: 24,
+    gap: 12,
+  },
+  statsCard: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#F2F2F2',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 1,
+  },
+  iconWrapper: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 8,
   },
-  bookProgress: {
+  statsValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0D1B2A',
+    marginBottom: 2,
+  },
+  statsLabel: {
     fontSize: 12,
-    color: '#081730',
-    fontWeight: '600',
+    color: '#8E8E93',
+    fontWeight: '500',
   },
-  bookProgressContainer: {
-    width: '100%',
-    height: 6,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 3,
-    overflow: 'hidden',
-    marginTop: 4,
+  sectionHeaderContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 12,
   },
-  bookProgressBar: {
-    width: '60%',
-    height: '100%',
-    backgroundColor: '#081730',
-    borderRadius: 3,
-  },
-  recommendedBookContainer: {
+  sectionHeaderContainerWithAction: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 12,
+    marginTop: 8,
   },
-  listRecommendBooksContent: {
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0D1B2A',
+  },
+  seeAllButton: {
     flexDirection: 'row',
-    gap: 20, // Gap hoạt động chuẩn 100% khi nằm ở đây
-    paddingBottom: 20,
-    paddingHorizontal: 2, // Tạo chút khoảng trống ở 2 đầu nếu cần
-  },
-  recommendBookContainer: {
-    minWidth: 120,
-    maxHeight: 230,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 10,
     alignItems: 'center',
-    gap: 8,
+  },
+  seeAllText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#27AE60',
+    marginRight: 4,
+  },
+  readingCard: {
+    flexDirection: 'row',
+    backgroundColor: '#EAFBF1',
+    borderRadius: 16,
+    padding: 16,
+    marginHorizontal: 20,
+    marginBottom: 24,
+  },
+  readingBookImage: {
+    width: 76,
+    height: 114,
+    borderRadius: 12,
+    resizeMode: 'cover',
+  },
+  readingBookInfo: {
+    flex: 1,
+    marginLeft: 16,
+    justifyContent: 'space-between',
+  },
+  readingBookTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0D1B2A',
+  },
+  readingBookAuthor: {
+    fontSize: 13,
+    color: '#8E8E93',
+    marginTop: 2,
+  },
+  readingBookDueDateRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 6,
+  },
+  dueDateWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dueDateText: {
+    fontSize: 12,
+    color: '#8E8E93',
+    fontWeight: '500',
+  },
+  daysLeftBadge: {
+    backgroundColor: '#27AE60',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  daysLeftText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  progressContainer: {
+    width: '100%',
+  },
+  progressTextRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  progressLabel: {
+    fontSize: 12,
+    color: '#8E8E93',
+    fontWeight: '500',
+  },
+  progressValue: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#27AE60',
+  },
+  progressBarBackground: {
+    width: '100%',
+    height: 6,
+    backgroundColor: '#E2F9EB',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#27AE60',
+    borderRadius: 3,
+  },
+  loader: {
+    marginVertical: 24,
+  },
+  recommendedList: {
+    paddingLeft: 20,
+    paddingRight: 4,
+    paddingBottom: 24,
+  },
+  recommendedCard: {
+    width: 140,
+    marginRight: 16,
+  },
+  bookImageWrapper: {
+    position: 'relative',
+    width: 140,
+    height: 200,
+    borderRadius: 16,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    backgroundColor: '#f9f9f9',
+  },
+  recommendedBookImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 16,
+    resizeMode: 'cover',
+  },
+  bookmarkButton: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
   },
-  recommendBookImage: {
-    width: 100,
-    height: 150,
-    borderRadius: 4,
-    overflow: 'hidden',
-    backgroundColor: '#f0f0f0',
+  recommendedBookTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0D1B2A',
+    marginTop: 10,
+    lineHeight: 18,
   },
-  recommendBookTitle: {
+  recommendedBookAuthor: {
     fontSize: 12,
-    fontWeight: 'bold',
+    color: '#8E8E93',
+    marginTop: 2,
   },
-  recommendBookAuthor: {
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  ratingText: {
     fontSize: 12,
-    color: '#666',
+    fontWeight: '700',
+    color: '#8E8E93',
+  },
+  quickActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    marginBottom: 32,
+    gap: 16,
+  },
+  quickActionCard: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#F2F2F2',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 1,
+  },
+  actionIconWrapper: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  actionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0D1B2A',
+  },
+  actionSubtext: {
+    fontSize: 12,
+    color: '#8E8E93',
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  actionArrow: {
+    marginTop: 16,
+  },
+
+  // Floating Action Button
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    shadowColor: '#27AE60',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
+    zIndex: 100,
+  },
+  fabInner: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: '#27AE60',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
+
