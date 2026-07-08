@@ -20,6 +20,9 @@ export class Book {
   @Column({ type: 'int',nullable:false })
   publishYear: number;
 
+  @Column({ type: 'int',nullable:false })
+  page: number;
+
   @Column({nullable:false})
   category: string;
 
