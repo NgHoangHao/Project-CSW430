@@ -118,7 +118,7 @@ export default function HomeScreen() {
 
   const isBookmarked = (id: string) => bookmarkedIds.includes(id);
 
-  const getImageUrl = (url?: string) => {
+  const getImageUrl = (url: string) => {
     if (!url) return 'https://via.placeholder.com/150';
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return url;
@@ -245,6 +245,7 @@ export default function HomeScreen() {
                 key={book.bookId}
                 style={styles.recommendedCard}
                 activeOpacity={0.8}
+                onPress={() => book.bookId && navigation.navigate('BookDetail', { bookId: book.bookId })}
               >
                 <View style={styles.bookImageWrapper}>
                   <Image source={{ uri: getImageUrl(book.url) }} style={styles.recommendedBookImage} />
@@ -311,7 +312,7 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
-      {/* Floating Search Button */}
+      {/* Floating Search Button
       <Animated.View style={[styles.fab, { transform: [{ scale: fabScale }] }]}>
         <TouchableOpacity
           style={styles.fabInner}
@@ -320,7 +321,7 @@ export default function HomeScreen() {
         >
           <BookOpen size={24} color="#fff" />
         </TouchableOpacity>
-      </Animated.View>
+      </Animated.View> */}
       </View>
     </SafeAreaView>
   );

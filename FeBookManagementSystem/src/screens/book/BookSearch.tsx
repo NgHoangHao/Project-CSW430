@@ -15,13 +15,13 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ArrowLeft, BookOpen, Search, X, ChevronLeft, ChevronRight, Star, Filter } from 'lucide-react-native';
+import { BookOpen, Search, X, ChevronLeft, ChevronRight, Star } from 'lucide-react-native';
 import { bookService } from '../../services/book.service';
 import { Book } from '../../types/Book';
-import { UserStackParamList } from '../../navigation/types';
 import { BACKEND_URL } from '@env';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { UserStackParamList } from '../../navigation/types';
 
 const PAGE_SIZE = 10;
 
@@ -101,7 +101,7 @@ export default function BookSearch() {
     return () => clearTimeout(timer);
   }, []);
 
-  const getImageUrl = (url?: string) => {
+  const getImageUrl = (url: string) => {
     if (!url) return null;
     if (url.startsWith('http://') || url.startsWith('https://')) return url;
     const baseUrl = BACKEND_URL.replace('/api', '');
@@ -134,7 +134,11 @@ export default function BookSearch() {
           },
         ]}
       >
-        <TouchableOpacity activeOpacity={0.85} style={styles.bookCardInner}>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          style={styles.bookCardInner}
+          onPress={() => item.bookId && navigation.navigate('BookDetail', { bookId: item.bookId })}
+        >
           {/* Book Cover */}
           <View style={styles.bookCoverWrapper}>
             {imageUrl ? (
@@ -265,11 +269,7 @@ export default function BookSearch() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.7}>
-            <ArrowLeft size={22} color="#0D1B2A" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Tìm kiếm sách</Text>
-          <View style={styles.backBtn} />
+          <Text style={styles.headerTitle}>Tìm kiếm sách 📚</Text>
         </View>
 
         {/* Search Bar */}
@@ -345,9 +345,8 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#F2F2F7',
@@ -361,8 +360,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 22,
+    fontWeight: '800',
     color: '#0D1B2A',
   },
 
