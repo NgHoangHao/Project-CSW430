@@ -5,9 +5,9 @@ export type RootStackParamList = {
 export type AuthStackParamList = {
     Login: undefined;
     Register: undefined;
-    OtpVerify: { email: string };
-    // ForgotPassword: undefined;
-    // ResetPassword: undefined;
+    OtpVerify: { email: string; isForgetPass?: boolean };
+    ForgotPassword: {email:string};
+    ResetPassword: { email: string };
 }
 
 export type UserTabParamList = {

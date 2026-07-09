@@ -1,6 +1,8 @@
 import { Eye, EyeOff } from 'lucide-react-native';
 import { useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -14,11 +16,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../store/authProvider';
+import { authApi } from '../../services/auth.service';
+import { ROUTES } from '../../constants/routes';
 
 export const LoginScreen = ({ navigation }: { navigation: any }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isVisiblePassword, setIsVisiblePassword] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
   const { login } = useAuth();
 
   const handleLogin = async () => {
@@ -26,6 +31,30 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
       await login({ email, password });
     } catch (error) {
       console.log(error);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      Alert.alert('Vui lòng nhập Email', 'Nhập email của bạn để lấy lại mật khẩu.');
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      Alert.alert('Email không hợp lệ', 'Vui lòng nhập đúng định dạng email.');
+      return;
+    }
+
+    try {
+      setIsSendingOtp(true);
+      await authApi.resendOTP(email.trim());
+      navigation.navigate(ROUTES.OTP_VERIFY, { email: email.trim(), isForgetPass: true });
+    } catch (error: any) {
+      console.log('Forgot password OTP send error:', error);
+      const message = error?.response?.data?.message || 'Không thể gửi mã xác nhận. Vui lòng thử lại.';
+      Alert.alert('Lỗi', message);
+    } finally {
+      setIsSendingOtp(false);
     }
   };
 
@@ -97,6 +126,20 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
                 )}
               </TouchableOpacity>
             </View>
+
+            {/* Forgot Password Link */}
+            <TouchableOpacity
+              onPress={handleForgotPassword}
+              style={styles.forgotPasswordContainer}
+              disabled={isSendingOtp}
+              activeOpacity={0.7}
+            >
+              {isSendingOtp ? (
+                <ActivityIndicator size="small" color="#2c9e56" style={{ marginRight: 10 }} />
+              ) : (
+                <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+              )}
+            </TouchableOpacity>
 
             {/* Button Login */}
             <TouchableHighlight
@@ -187,7 +230,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#daf0df',
     borderRadius: 15,
     alignItems: 'center',
-    marginBottom: 25,
+    marginBottom: 15,
   },
   passwordInput: {
     flex: 1, // Để ô input chiếm hết khoảng trống trừ icon mắt
@@ -202,6 +245,16 @@ const styles = StyleSheet.create({
     right: 15,
     height: '100%',
     justifyContent: 'center', // Căn giữa icon mắt theo chiều dọc chuẩn 100%
+  },
+  forgotPasswordContainer: {
+    alignSelf: 'flex-end',
+    marginBottom: 20,
+    marginTop: -5,
+  },
+  forgotPasswordText: {
+    color: '#2c9e56',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
   button: {
     backgroundColor: '#2c9e56',

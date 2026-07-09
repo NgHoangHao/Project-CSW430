@@ -17,13 +17,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { authApi } from '../../services/auth.service';
+import { userService } from '../../services/user.service';
 import { ROUTES } from '../../constants/routes';
 
 const OTP_LENGTH = 6;
 const COUNTDOWN_SECONDS = 5 * 60; // 5 minutes
 
 export const OtpScreen = ({ navigation, route }: { navigation: any; route: any }) => {
-  const { email } = route.params as { email: string };
+  const { email, isForgetPass } = route.params as { email: string; isForgetPass?: boolean };
 
   // OTP digits stored as an array of strings
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
@@ -130,14 +131,24 @@ export const OtpScreen = ({ navigation, route }: { navigation: any; route: any }
     }
     try {
       setIsVerifying(true);
-      await authApi.verifyOTP(email, otpValue);
-      // Success → navigate to Login
-      Alert.alert('Success', 'Your account has been verified!', [
-        {
-          text: 'Login now',
-          onPress: () => navigation.navigate(ROUTES.LOGIN),
-        },
-      ]);
+      if (isForgetPass) {
+        await userService.verifyForgetPass(email,otpValue);
+        Alert.alert('Xác thực thành công', 'Mã OTP hợp lệ! Vui lòng thiết lập mật khẩu mới.', [
+          {
+            text: 'Tiếp tục',
+            onPress: () => navigation.navigate(ROUTES.FORGOT_PASSWORD, { email }),
+          },
+        ]);
+      } else {
+        await authApi.verifyOTP(email, otpValue);
+        // Success → navigate to Login
+        Alert.alert('Success', 'Your account has been verified!', [
+          {
+            text: 'Login now',
+            onPress: () => navigation.navigate(ROUTES.LOGIN),
+          },
+        ]);
+      }
     } catch (error: any) {
       triggerShake();
       const message =
