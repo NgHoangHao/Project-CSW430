@@ -24,13 +24,41 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
   const [password, setPassword] = useState('');
   const [isVisiblePassword, setIsVisiblePassword] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({
+    email: '',
+    password: '',
+  });
   const { login } = useAuth();
 
   const handleLogin = async () => {
+    const newErrors = {
+      email: '',
+      password: '',
+    };
+    let isValid = true;
+
+    if (!email.trim()) {
+      newErrors.email = 'Vui lòng nhập email';
+      isValid = false;
+    }
+    if (!password.trim()) {
+      newErrors.password = 'Vui lòng nhập mật khẩu';
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    if (!isValid) return;
+
     try {
-      await login({ email, password });
-    } catch (error) {
+      setIsLoading(true);
+      await login({ email: email.trim(), password });
+    } catch (error: any) {
       console.log(error);
+      const message = error?.response?.data?.message || 'Đăng nhập không thành công. Vui lòng kiểm tra lại.';
+      Alert.alert('Đăng nhập thất bại', message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -97,10 +125,18 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
               placeholder="Enter your email"
               placeholderTextColor={'#aaa'}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => {
+                setEmail(text);
+                if (errors.email) {
+                  setErrors(prev => ({ ...prev, email: '' }));
+                }
+              }}
               keyboardType="email-address"
               autoCapitalize="none"
             />
+            {errors.email ? (
+              <Text style={styles.error}>{errors.email}</Text>
+            ) : null}
 
             {/* Input Password */}
             <Text style={styles.label}>Password</Text>
@@ -111,7 +147,12 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
                 placeholderTextColor="#aaa"
                 secureTextEntry={!isVisiblePassword}
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  if (errors.password) {
+                    setErrors(prev => ({ ...prev, password: '' }));
+                  }
+                }}
                 autoCapitalize="none"
               />
               <TouchableOpacity
@@ -126,12 +167,15 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
                 )}
               </TouchableOpacity>
             </View>
+            {errors.password ? (
+              <Text style={styles.error}>{errors.password}</Text>
+            ) : null}
 
             {/* Forgot Password Link */}
             <TouchableOpacity
               onPress={handleForgotPassword}
               style={styles.forgotPasswordContainer}
-              disabled={isSendingOtp}
+              disabled={isSendingOtp || isLoading}
               activeOpacity={0.7}
             >
               {isSendingOtp ? (
@@ -142,13 +186,17 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
             </TouchableOpacity>
 
             {/* Button Login */}
-            <TouchableHighlight
-              style={styles.button}
-              underlayColor="#227a43"
-              onPress={handleLogin}
-            >
-              <Text style={styles.buttonText}>Login</Text>
-            </TouchableHighlight>
+            {isLoading ? (
+              <ActivityIndicator size="large" color="#2c9e56" style={{ marginVertical: 15 }} />
+            ) : (
+              <TouchableHighlight
+                style={styles.button}
+                underlayColor="#227a43"
+                onPress={handleLogin}
+              >
+                <Text style={styles.buttonText}>Login</Text>
+              </TouchableHighlight>
+            )}
 
             {/* Footer Section */}
             <View style={styles.footerSection}>
@@ -206,6 +254,13 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#666',
     marginTop: 5,
+  },
+  error: {
+    color: 'red',
+    fontSize: 13,
+    marginTop: -15,
+    marginBottom: 15,
+    marginLeft: 10,
   },
   form: {
     marginTop: 30,

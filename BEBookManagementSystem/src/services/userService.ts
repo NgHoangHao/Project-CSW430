@@ -37,6 +37,17 @@ export const getUserProfile = async (userId: string): Promise<UserProfileDto> =>
   });
 };
 
+export const updateUserProfile = async(userId:string,userDto:UserProfileDto) =>{
+     const userRepository = AppDataSource.getRepository(User);
+     const user = await userRepository.findOne({ where: { userId } });
+      if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    const { ...textFields} = userDto;
+    Object.assign(user, textFields);
+    await userRepository.save(user);
+}
+
 export const verifyForgotPasswordOtp = async (email: string, clientOtp: string): Promise<void> => {
   const userRepository = AppDataSource.getRepository(User);
   const user = await userRepository.findOne({ where: { email } });

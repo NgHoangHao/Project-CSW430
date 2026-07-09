@@ -1,6 +1,7 @@
 import { Eye, EyeOff } from 'lucide-react-native';
 import { useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Image,
   Keyboard,
@@ -205,19 +206,19 @@ export const RegisterScreen = ({ navigation }: { navigation: any }) => {
                   )}
                 </View>
               </View>
-              <TouchableHighlight
-                style={[
-                  styles.button,
-                  { marginTop: 30, borderRadius: 50 },
-                  isRegistering && { opacity: 0.7 },
-                ]}
-                onPress={handleRegister}
-                disabled={isRegistering}
-              >
-                <Text style={styles.buttonText}>
-                  {isRegistering ? 'Registering...' : 'Register'}
-                </Text>
-              </TouchableHighlight>
+              {isRegistering ? (
+                <ActivityIndicator size="large" color="#2c9e56" style={{ marginVertical: 15 }} />
+              ) : (
+                <TouchableHighlight
+                  style={[
+                    styles.button,
+                    { marginTop: 30, borderRadius: 50 },
+                  ]}
+                  onPress={handleRegister}
+                >
+                  <Text style={styles.buttonText}>Register</Text>
+                </TouchableHighlight>
+              )}
               <View style={styles.footerSection}>
                 <Text>You already have an account? </Text>
                 <TouchableOpacity onPress={() => navigation.navigate('Login')}>

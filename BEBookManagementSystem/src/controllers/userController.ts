@@ -1,6 +1,6 @@
 
 import { Request, Response } from 'express';
-import { assignRoleUser, getUserProfile, removeRoleUser } from '../services/userService';
+import { assignRoleUser, getUserProfile, removeRoleUser,updateUserProfile } from '../services/userService';
 import { changePasswordAfterForgot, verifyForgotPasswordOtp } from '../services/userService';
 import { NotFoundException } from '../common/errors/error';
 import { AssignRoleUserDto, DeleteRoleUserDto } from '../dtos/user/user';
@@ -15,6 +15,22 @@ export const getProfile = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'User not found' });
     }
     return res.status(500).json({ message: 'Server error', error });
+  }
+};
+
+export const updateProfile = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id; // lấy từ JWT
+    const userDto = req.body;
+    const user = await updateUserProfile(userId, userDto);
+    return res.status(200).json({
+      message: "Profile updated successfully",
+      data: user,
+    });
+  } catch (error: any) {
+    return res.status(error.status || 500).json({
+      message: error.message,
+    });
   }
 };
 
