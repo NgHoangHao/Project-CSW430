@@ -25,8 +25,8 @@ export class User {
   @Column({ type: 'int', default: 0 })
   credit: number;
 
-  @Column()
-  phone: string;
+  @Column({nullable: true,})
+  phone?: string;
 
   @CreateDateColumn()
   createdAt: Date;

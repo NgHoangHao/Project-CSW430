@@ -26,7 +26,7 @@ export const registerService = async (data: RegisterDTO) => {
     status: UserStatus.INACTIVE,
     credit: 100,
     roles: [userRole],
-  });
+  } as any);
   await userRepository.save(newUser);
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const hashOtp = await bcrypt.hash(otp, 10);
