@@ -13,5 +13,13 @@ export const authApi = {
     logout: async () => {
         const res = await api.post('/auth/logout')
         return res
+    },
+    verifyOTP: async (email: string, otp: string) => {
+        const res = await api.post('/auth/verify-otp', { email, otp })
+        return res;
+    },
+    resendOTP: async (email: string) => {
+        const res = await api.post('/auth/resend-otp', { email })
+        return res;
     }
-}
+}
