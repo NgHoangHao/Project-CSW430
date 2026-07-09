@@ -13,11 +13,11 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LogOut, Leaf, Pencil } from 'lucide-react-native';
 import { useAuth } from '../../store/authProvider';
-import { AuthStackParamList } from '../../navigation/types';
+import { UserStackParamList } from '../../navigation/types';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
-  const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<UserStackParamList>>();
   const [loggingOut, setLoggingOut] = useState(false);
 
   const displayName = user?.userName || 'Người dùng';
@@ -40,10 +40,9 @@ export default function ProfileScreen() {
           try {
             setLoggingOut(true);
             await logout();
-            navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+            // AppNavigator automatically switches to AuthNavigator when isLoggedIn becomes false
           } catch (err) {
             console.log('Logout error:', err);
-            navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
           } finally {
             setLoggingOut(false);
           }
@@ -63,7 +62,11 @@ export default function ProfileScreen() {
             </View>
             <Text style={styles.headerTitle}>Tài khoản</Text>
           </View>
-          <TouchableOpacity style={styles.editButton} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.editButton}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('UpdateProfile')}
+          >
             <Pencil size={18} color="#27AE60" />
           </TouchableOpacity>
         </View>

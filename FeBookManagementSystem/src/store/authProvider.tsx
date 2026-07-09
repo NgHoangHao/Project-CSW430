@@ -21,6 +21,7 @@ interface AuthContextType {
   user: UserProfile | null;
   login: (data: LoginDTO) => Promise<void>;
   logout: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -102,6 +103,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const refreshProfile = async () => {
+    try {
+      const profileRes = await api.get('/user/profile');
+      if (profileRes.data) {
+        setUser(profileRes.data);
+      }
+    } catch (profileError) {
+      console.log('Error refreshing profile:', profileError);
+    }
+  };
+
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -110,7 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   }
   return (
-    <AuthContext.Provider value={{ isLoggedIn, userRole, user, login, logout }}>
+    <AuthContext.Provider value={{ isLoggedIn, userRole, user, login, logout, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
