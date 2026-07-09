@@ -2,6 +2,7 @@ import HomeScreen from '../screens/user/HomeScreen';
 import BorrowedBookScreen from '../screens/user/BorrowedBookScreen';
 import BookSearch from '../screens/book/BookSearch';
 import BookDetailScreen from '../screens/book/BookDetailScreen';
+import UpdateProfileScreen from '../screens/user/UpdateProfileScreen';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import ProfileScreen from '../screens/user/ProfileScreen';
@@ -43,6 +44,7 @@ export const UserNavigator = () => {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Home" component={UserTabs} />
       <Stack.Screen name="BookDetail" component={BookDetailScreen} />
+      <Stack.Screen name="UpdateProfile" component={UpdateProfileScreen} />
     </Stack.Navigator>
   );
 };
