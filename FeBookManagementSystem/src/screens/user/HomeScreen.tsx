@@ -25,6 +25,7 @@ import {
   Box,
   BoxIcon,
   ArchiveIcon,
+  BookOpenIcon,
 } from 'lucide-react-native';
 import { UserStackParamList } from '../../navigation/types';
 import { bookService } from '../../services/book.service';
@@ -248,8 +249,8 @@ export default function HomeScreen() {
               </TouchableOpacity>
             )) : (
               <View style={styles.emptyContainer}>
-                  <ArchiveIcon size={40} color={'rgba(0, 0, 0, 0.7)'}/>
-                  <Text style={{fontWeight: 'bold'}}>No data books</Text>
+                  <BookOpen size={48} color="#C8D6C8" />
+                  <Text style={{fontWeight: 'bold', color: '#717971'}}>No data books</Text>
               </View>
             )}
           </ScrollView>
