@@ -153,8 +153,11 @@ export const deleteUserById = async (userId: string) => {
             });
 
             return {
+                userId: user.userId,
                 userName: user.userName,
                 email: user.email,
+                phone: user.phone,
+                createdAt: user.createdAt,
                 borrowingBooks,
                 expiredBooks,
                 totalBorrowedBook,
