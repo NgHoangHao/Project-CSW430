@@ -16,12 +16,12 @@ export class LoanDetail {
   status: LoanStatus;
 
   // Quan hệ N-1 với Loan
-  @ManyToOne(() => Loan, (loan) => loan.loanDetails)
+  @ManyToOne(() => Loan, (loan) => loan.loanDetails,{ onDelete: 'CASCADE' })
   @JoinColumn({ name: 'loanId' })
   loan: Loan;
 
   // Quan hệ N-1 với CopyBook
-  @ManyToOne(() => CopyBook, (copyBook) => copyBook.loanDetails)
+  @ManyToOne(() => CopyBook, (copyBook) => copyBook.loanDetails,{ onDelete: 'CASCADE' })
   @JoinColumn({ name: 'copyBookId' })
   copyBook: CopyBook;
 }

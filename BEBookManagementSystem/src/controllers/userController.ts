@@ -1,6 +1,6 @@
 
 import { Request, Response } from 'express';
-import { assignRoleUser, getUserProfile, removeRoleUser,updateUserProfile } from '../services/userService';
+import { assignRoleUser, getAllUsers, getUserProfile, removeRoleUser, updateUserProfile, deleteUserById } from '../services/userService';
 import { changePasswordAfterForgot, verifyForgotPasswordOtp } from '../services/userService';
 import { NotFoundException } from '../common/errors/error';
 import { AssignRoleUserDto, DeleteRoleUserDto } from '../dtos/user/user';
@@ -118,3 +118,59 @@ export const deleteRoleUserController = async (req: Request<{}, {}, DeleteRoleUs
     });
   }
 }
+
+export const deleteUser = async (req: Request, res: Response) => {
+  try {
+    const userId = req.params.userId as string; // Lấy userId từ route
+
+    await deleteUserById(userId);
+
+    return res.status(200).json({
+      message: "Delete user successfully"
+    });
+  } catch (error: any) {
+    if (error.message === "USER_NOT_FOUND") {
+      return res.status(404).json({
+        message: "User not found"
+      });
+    }
+
+    return res.status(500).json({
+      message: "Internal server error"
+    });
+  }
+};
+
+export const getUserPage = async (
+  req: Request<
+    {}, // Params trên URL (/user/:id)
+    {}, // Response Body
+    {}, // Request Body
+    {
+      page?: string;
+      size?: string;
+      userName?: string;
+    }
+  >,
+  res: Response
+) => {
+  try {
+    const { page = "1", size = "10", userName } = req.query;
+    const result = await getAllUsers(
+      Number(page),
+      Number(size),
+      userName
+    );
+    return res.status(200).json({
+      success: true,
+      data: result,
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};

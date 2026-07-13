@@ -22,7 +22,7 @@ export class Loan {
   createdAt: Date;
 
   // Quan hệ N-1 với User
-  @ManyToOne(() => User, (user) => user.loans)
+  @ManyToOne(() => User, (user) => user.loans,{ onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })
   user: User;
 

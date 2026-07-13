@@ -2,13 +2,14 @@
 import { User } from '../entities/User';
 import { AppDataSource } from '../config/database';
 import { otpStoreUtils } from '../utils/otpStore';
-import { UserStatus } from '../utils/enums';
+import { LoanStatus, UserStatus } from '../utils/enums';
 import bcrypt from 'bcrypt';
 import { ResetPasswordDto } from '../dtos/auth/ResetPasswordDTO';
 import { UserProfileDto } from '../dtos/user/userProfileDTO';
-import { addRoleUser, deleteRoleUser, getUserById } from '../repositories/userRepository';
+import { addRoleUser, deleteRoleUser, getUserById,getUserPage,countBlockedUsers,countActiveUsers } from '../repositories/userRepository';
 import { roleService } from './roleService';
 import { NotFoundException } from '../common/errors/error';
+
 
 export const getUserProfile = async (userId: string): Promise<UserProfileDto> => {
   const userRepository = AppDataSource.getRepository(User);
@@ -18,7 +19,7 @@ export const getUserProfile = async (userId: string): Promise<UserProfileDto> =>
       userId: true,
       userName: true,
       email: true,
-      phone:true,
+      phone: true,
       status: true,
       credit: true,
     },
@@ -32,26 +33,28 @@ export const getUserProfile = async (userId: string): Promise<UserProfileDto> =>
     userName: user.userName,
     email: user.email,
     status: user.status,
-    phone:user.phone,
+    phone: user.phone,
     credit: user.credit,
   });
 };
 
-export const updateUserProfile = async(userId:string,userDto:UserProfileDto) =>{
-     const userRepository = AppDataSource.getRepository(User);
-     const user = await userRepository.findOne({ where: { userId } });
-      if (!user) {
-      throw new NotFoundException('User not found');
-    }
-    const { ...textFields} = userDto;
-    Object.assign(user, textFields);
-    await userRepository.save(user);
+export const updateUserProfile = async (userId: string, userDto: UserProfileDto) => {
+  const userRepository = AppDataSource.getRepository(User);
+  const user = await userRepository.findOne({ where: { userId } });
+  if (!user) {
+    throw new Error('USER_NOT_FOUND');
+  }
+  const { ...textFields } = userDto;
+  Object.assign(user, textFields);
+  await userRepository.save(user);
 }
 
 export const verifyForgotPasswordOtp = async (email: string, clientOtp: string): Promise<void> => {
   const userRepository = AppDataSource.getRepository(User);
   const user = await userRepository.findOne({ where: { email } });
-  if (!user) throw new Error('Người dùng không tồn tại.');
+  if (!user) {
+    throw new Error('USER_NOT_FOUND');
+  }
   const savedHashOtp = otpStoreUtils.get(email);
   if (!savedHashOtp) {
     throw new Error('Invalid or expired OTP');
@@ -85,7 +88,7 @@ export const changePasswordAfterForgot = async (dto: ResetPasswordDto): Promise<
 export const assignRoleUser = async (userId: string, roleId: string[]) => {
   const user = await getUserById(userId);
   if (!user) {
-    throw new NotFoundException('User not found');
+    throw new Error('USER_NOT_FOUND');
   }
   const role = await roleService.getAllRolesService();
   const validRole = role.filter((r) => roleId.includes(r.roleId));
@@ -99,7 +102,7 @@ export const assignRoleUser = async (userId: string, roleId: string[]) => {
 export const removeRoleUser = async (userId: string, roleIds: string[]) => {
   const user = await getUserById(userId);
   if (!user) {
-    throw new NotFoundException('User not found');
+    throw new Error('USER_NOT_FOUND');
   }
   const role = await roleService.getAllRolesService();
   const validRole = role.filter((r) => roleIds.includes(r.roleId));
@@ -109,3 +112,62 @@ export const removeRoleUser = async (userId: string, roleIds: string[]) => {
   const validRoleId = validRole.map(role => role.roleId)
   await deleteRoleUser(userId, validRoleId);
 }
+
+export const deleteUserById = async (userId: string) => {
+  const userRepository = AppDataSource.getRepository(User);
+  const user = await userRepository.findOne({ where: { userId } });
+  if (!user) {
+    throw new Error('USER_NOT_FOUND');
+  }
+  await userRepository.remove(user);
+}
+
+ export const getAllUsers = async(
+        page: number,
+        size: number,
+        userName?: string
+    ) =>{
+        const { users, total } = await getUserPage(
+            page,
+            size,
+            userName
+        );
+        const totalActive = await countActiveUsers();
+        const totalBlock = await countBlockedUsers();
+        const now = new Date();
+        const userList = users.map((user) => {
+            let borrowingBooks = 0;
+            let expiredBooks = 0;
+            let totalBorrowedBook = 0;
+            user.loans.forEach((loan) => {
+                totalBorrowedBook += loan.loanDetails.length;
+                loan.loanDetails.forEach((detail) => {
+                    if (detail.status === LoanStatus.BORROWING) {
+                        borrowingBooks++;
+
+                        if (loan.dueDate < now) {
+                            expiredBooks++;
+                        }
+                    }
+                });
+            });
+
+            return {
+                userName: user.userName,
+                email: user.email,
+                borrowingBooks,
+                expiredBooks,
+                totalBorrowedBook,
+                status: user.status,
+            };
+        });
+        return {
+            page,
+            size,
+            total,
+            totalPages: Math.ceil(total / size),
+            totalActive,
+            totalBlock,
+            userList,
+        };
+    }
