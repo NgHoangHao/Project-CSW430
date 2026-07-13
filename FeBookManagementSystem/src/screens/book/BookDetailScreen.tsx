@@ -128,7 +128,7 @@ export default function BookDetailScreen() {
     return (
       <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#27AE60" />
-        <Text style={styles.loadingText}>Đang tải thông tin sách...</Text>
+        <Text style={styles.loadingText}>Loading book informaton...</Text>
       </SafeAreaView>
     );
   }
@@ -137,13 +137,13 @@ export default function BookDetailScreen() {
     return (
       <SafeAreaView style={styles.errorContainer}>
         <BookOpen size={56} color="#C8D6C8" />
-        <Text style={styles.errorTitle}>Không thể tải sách</Text>
-        <Text style={styles.errorSubtitle}>Vui lòng thử lại sau</Text>
+        <Text style={styles.errorTitle}>Unable to download the book.</Text>
+        <Text style={styles.errorSubtitle}>Please try again later.</Text>
         <TouchableOpacity style={styles.retryBtn} onPress={fetchBookDetail}>
-          <Text style={styles.retryBtnText}>Thử lại</Text>
+          <Text style={styles.retryBtnText}>Try again</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.backBtnError} onPress={() => navigation.goBack()}>
-          <Text style={styles.backBtnErrorText}>Quay lại</Text>
+          <Text style={styles.backBtnErrorText}>Return</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -158,7 +158,7 @@ export default function BookDetailScreen() {
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.7}>
           <ChevronLeft size={22} color="#0D1B2A" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Chi tiết sách</Text>
+        <Text style={styles.headerTitle}>Book Detail</Text>
         <Animated.View style={{ transform: [{ scale: bookmarkScale }] }}>
           <TouchableOpacity style={styles.bookmarkBtn} onPress={handleBookmark} activeOpacity={0.7}>
             <Bookmark
@@ -193,7 +193,7 @@ export default function BookDetailScreen() {
             <View style={styles.ratingRow}>
               {renderStars(mockRating)}
               <Text style={styles.ratingValue}>{mockRating}</Text>
-              <Text style={styles.ratingCount}>  ({mockReviews} đánh giá)</Text>
+              <Text style={styles.ratingCount}>  ({mockReviews} Evaluate)</Text>
             </View>
 
             {/* Status Badge */}
@@ -223,7 +223,7 @@ export default function BookDetailScreen() {
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Barcode size={18} color="#0D1B2A" />
-                <Text style={styles.sectionTitle}>Thông tin bản sao</Text>
+                <Text style={styles.sectionTitle}>Copy information</Text>
                 <View style={styles.copyCountBadge}>
                   <Text style={styles.copyCountText}>{book.availableBooks.length}</Text>
                 </View>
@@ -239,11 +239,11 @@ export default function BookDetailScreen() {
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Barcode size={18} color="#0D1B2A" />
-                <Text style={styles.sectionTitle}>Thông tin bản sao</Text>
+                <Text style={styles.sectionTitle}>Copy information</Text>
               </View>
               <View style={styles.emptyCopyBooks}>
                 <Package size={36} color="#C8D6C8" />
-                <Text style={styles.emptyCopyBooksText}>Chưa có bản sao nào</Text>
+                <Text style={styles.emptyCopyBooksText}>No copies yet.</Text>
               </View>
             </View>
           )}

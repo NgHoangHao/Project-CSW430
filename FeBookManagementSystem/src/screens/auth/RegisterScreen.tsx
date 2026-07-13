@@ -44,25 +44,25 @@ export const RegisterScreen = ({ navigation }: { navigation: any }) => {
     };
     let isValid = true;
     if (!userName.trim()) {
-      newErrors.userName = "Vui lòng nhập họ và tên";
+      newErrors.userName = "Please enter your full name.";
       isValid = false;
     }
     if (!email.trim()) {
-      newErrors.email = "Vui lòng nhập email";
+      newErrors.email = "Please enter your full email.";
       isValid = false;
     }
     if (!password.trim()) {
-      newErrors.password = "Vui lòng nhập mật khẩu";
+      newErrors.password = "Please enter a new password.";
       isValid = false;
     } else if (password.length < 8) {
-      newErrors.password = "Mật khẩu phải có ít nhất 8 ký tự";
+      newErrors.password = "The password must be at least 8 characters long.";
       isValid = false;
     }
     if (!confirmPassword.trim()) {
-      newErrors.confirmPassword = "Vui lòng nhập lại mật khẩu";
+      newErrors.confirmPassword = "Please enter a new password.";
       isValid = false;
     } else if (confirmPassword !== password) {
-      newErrors.confirmPassword = "Mật khẩu nhập lại không khớp";
+      newErrors.confirmPassword = "The confirmation password does not match.";
       isValid = false;
     }
     setErrors(newErrors);
@@ -76,8 +76,8 @@ export const RegisterScreen = ({ navigation }: { navigation: any }) => {
       setIsRegistering(false);
       console.log("Đăng ký lỗi:", error);
       const message =
-        error?.response?.data?.message || "Đăng ký không thành công. Vui lòng thử lại.";
-      Alert.alert("Đăng ký thất bại", message);
+        error?.response?.data?.message || "Registration failed. Please try again.";
+      Alert.alert("Registration failed.", message);
     }
   };
   return (

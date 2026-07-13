@@ -40,18 +40,18 @@ export const PassInputScreen = ({ navigation, route }: { navigation: any; route:
     let isValid = true;
 
     if (!newPass.trim()) {
-      newErrors.newPass = 'Vui lòng nhập mật khẩu mới';
+      newErrors.newPass = 'Please enter a new password.';
       isValid = false;
     } else if (newPass.length < 8) {
-      newErrors.newPass = 'Mật khẩu phải có ít nhất 8 ký tự';
+      newErrors.newPass = 'The password must be at least 8 characters long.';
       isValid = false;
     }
 
     if (!confirmPass.trim()) {
-      newErrors.confirmPass = 'Vui lòng xác nhận mật khẩu';
+      newErrors.confirmPass = 'Please enter a new password.';
       isValid = false;
     } else if (confirmPass !== newPass) {
-      newErrors.confirmPass = 'Mật khẩu xác nhận không khớp';
+      newErrors.confirmPass = 'The confirmation password does not match.';
       isValid = false;
     }
 
@@ -61,7 +61,7 @@ export const PassInputScreen = ({ navigation, route }: { navigation: any; route:
     try {
       setIsResetting(true);
       await userService.forgotPass(email, newPass, confirmPass);
-      Alert.alert('Thành công', 'Đặt lại mật khẩu thành công! Vui lòng đăng nhập lại.', [
+      Alert.alert('Success', 'Password reset successful! Please log in again.', [
         {
           text: 'Đăng nhập',
           onPress: () => navigation.navigate(ROUTES.LOGIN),
@@ -69,7 +69,7 @@ export const PassInputScreen = ({ navigation, route }: { navigation: any; route:
       ]);
     } catch (error: any) {
       console.log('Reset password error:', error);
-      const message = error?.response?.data?.message || 'Có lỗi xảy ra trong quá trình đặt lại mật khẩu.';
+      const message = error?.response?.data?.message || 'An error occurred during the password reset process.';
       Alert.alert('Lỗi', message);
     } finally {
       setIsResetting(false);

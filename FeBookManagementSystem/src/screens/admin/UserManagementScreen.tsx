@@ -89,7 +89,7 @@ export default function UserManagementScreen() {
       }
     } catch (error) {
       console.error('Error fetching users:', error);
-      Alert.alert('Lỗi', 'Không thể tải danh sách người dùng');
+      Alert.alert('Error', 'Unable to load user list');
     } finally {
       setLoading(false);
       setRefreshing(false);

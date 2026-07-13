@@ -31,7 +31,7 @@ export default function UpdateProfileScreen() {
     const validate = (): boolean => {
         const newErrors: { userName?: string } = {};
         if (!userName.trim()) {
-            newErrors.userName = 'Tên người dùng không được để trống';
+            newErrors.userName = 'The username cannot be left blank.';
         }
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -43,11 +43,11 @@ export default function UpdateProfileScreen() {
             setLoading(true);
             await userService.updateProfile({ userName, phone });
             await refreshProfile();
-            Alert.alert('Thành công', 'Cập nhật thông tin thành công!', [
+            Alert.alert('Success', 'Information updated successfully!', [
                 { text: 'OK', onPress: () => navigation.goBack() },
             ]);
         } catch (err) {
-            Alert.alert('Lỗi', 'Không thể cập nhật thông tin. Vui lòng thử lại.');
+            Alert.alert('Error', 'Unable to update information. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -77,7 +77,7 @@ export default function UpdateProfileScreen() {
                             <View style={styles.headerIconWrapper}>
                                 <Leaf size={16} color="#fff" />
                             </View>
-                            <Text style={styles.headerTitle}>Cập nhật hồ sơ</Text>
+                            <Text style={styles.headerTitle}>Update profile</Text>
                         </View>
                         <View style={{ width: 40 }} />
                     </View>
@@ -97,7 +97,7 @@ export default function UpdateProfileScreen() {
                                 </Text>
                             </View>
                         </View>
-                        <Text style={styles.avatarHint}>Thông tin sẽ hiển thị trên hồ sơ của bạn</Text>
+                        <Text style={styles.avatarHint}>The information will be displayed on your profile.</Text>
                     </View>
 
                     {/* ── Form Card ── */}
@@ -105,7 +105,7 @@ export default function UpdateProfileScreen() {
                         {/* UserName Field */}
                         <View style={styles.fieldGroup}>
                             <Text style={styles.fieldLabel}>
-                                Tên người dùng <Text style={styles.required}>*</Text>
+                                Username <Text style={styles.required}>*</Text>
                             </Text>
                             <View style={[styles.inputWrapper, errors.userName ? styles.inputError : null]}>
                                 <View style={styles.inputIcon}>
@@ -113,7 +113,7 @@ export default function UpdateProfileScreen() {
                                 </View>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="Nhập tên người dùng"
+                                    placeholder="Enter username"
                                     placeholderTextColor="#AEAEB2"
                                     value={userName}
                                     onChangeText={text => {
@@ -133,7 +133,7 @@ export default function UpdateProfileScreen() {
 
                         {/* Phone Field — no required validation */}
                         <View style={styles.fieldGroup}>
-                            <Text style={styles.fieldLabel}>Số điện thoại</Text>
+                            <Text style={styles.fieldLabel}>Phone number</Text>
                             <View style={styles.inputWrapper}>
                                 <View style={styles.inputIcon}>
                                     <Phone size={18} color="#27AE60" />
@@ -161,7 +161,7 @@ export default function UpdateProfileScreen() {
                                         editable={false}
                                     />
                                     <View style={styles.lockedBadge}>
-                                        <Text style={styles.lockedText}>Không thể sửa</Text>
+                                        <Text style={styles.lockedText}>Cannot be fixed</Text>
                                     </View>
                                 </View>
                             </View>
@@ -180,7 +180,7 @@ export default function UpdateProfileScreen() {
                         ) : (
                             <>
                                 <CheckCircle size={20} color="#fff" style={{ marginRight: 8 }} />
-                                <Text style={styles.saveButtonText}>Lưu thay đổi</Text>
+                                <Text style={styles.saveButtonText}>Save changes</Text>
                             </>
                         )}
                     </TouchableOpacity>
@@ -192,7 +192,7 @@ export default function UpdateProfileScreen() {
                         activeOpacity={0.7}
                         disabled={loading}
                     >
-                        <Text style={styles.cancelText}>Huỷ</Text>
+                        <Text style={styles.cancelText}>Cancel</Text>
                     </TouchableOpacity>
                 </ScrollView>
             </KeyboardAvoidingView>
