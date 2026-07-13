@@ -22,37 +22,21 @@ import {
   Star,
   ArrowRight,
   ChevronRight,
+  Box,
+  BoxIcon,
+  ArchiveIcon,
+  BookOpenIcon,
 } from 'lucide-react-native';
 import { UserStackParamList } from '../../navigation/types';
 import { bookService } from '../../services/book.service';
 import { BACKEND_URL } from '@env';
 import { useAuth } from '../../store/authProvider';
 
-const DEFAULT_BOOKS = [
-  {
-    bookId: '1',
-    title: 'Pride and Prejudice',
-    author: 'Jane Austen',
-    url: 'https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1320399351i/1885.jpg',
-  },
-  {
-    bookId: '2',
-    title: 'Dune',
-    author: 'Frank Herbert',
-    url: 'https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1555447414i/44767458.jpg',
-  },
-  {
-    bookId: '3',
-    title: 'Sapiens: A Brief History of Humankind',
-    author: 'Yuval Noah Harari',
-    url: 'https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1595674533i/23692271.jpg',
-  },
-];
 
 export default function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<UserStackParamList>>();
   const { user } = useAuth();
-  const [books, setBooks] = useState<any[]>(DEFAULT_BOOKS);
+  const [books, setBooks] = useState<any[]>();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
@@ -229,7 +213,7 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.recommendedList}
           >
-            {books.map((book) => (
+            {books ? books.map((book) => (
               <TouchableOpacity
                 key={book.bookId}
                 style={styles.recommendedCard}
@@ -263,7 +247,12 @@ export default function HomeScreen() {
                   </Text>
                 </View>
               </TouchableOpacity>
-            ))}
+            )) : (
+              <View style={styles.emptyContainer}>
+                  <BookOpen size={48} color="#C8D6C8" />
+                  <Text style={{fontWeight: 'bold', color: '#717971'}}>No data books</Text>
+              </View>
+            )}
           </ScrollView>
         )}
 
@@ -514,6 +503,7 @@ const styles = StyleSheet.create({
     marginVertical: 24,
   },
   recommendedList: {
+    flex:1,
     paddingLeft: 20,
     paddingRight: 4,
     paddingBottom: 24,
@@ -641,5 +631,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  }
 });
 

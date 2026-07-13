@@ -1,6 +1,5 @@
 import HomeScreen from '../screens/user/HomeScreen';
 import BorrowedBookScreen from '../screens/user/BorrowedBookScreen';
-import BookSearch from '../screens/book/BookSearch';
 import BookDetailScreen from '../screens/book/BookDetailScreen';
 import UpdateProfileScreen from '../screens/user/UpdateProfileScreen';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -9,6 +8,7 @@ import ProfileScreen from '../screens/user/ProfileScreen';
 import { book, borrowBook, home, profile } from '../constants/icon';
 import { USER_ROUTES } from '../constants/routes';
 import { UserStackParamList, UserTabParamList } from './types';
+import BookScreen from '../screens/user/BookScreen';
 
 const Tab = createBottomTabNavigator<UserTabParamList>();
 const Stack = createNativeStackNavigator<UserStackParamList>();
@@ -32,7 +32,7 @@ function UserTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Books" component={BookSearch} />
+      <Tab.Screen name="Books" component={BookScreen} />
       <Tab.Screen name="Borrow" component={BorrowedBookScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>

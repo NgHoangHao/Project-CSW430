@@ -9,6 +9,7 @@ export const ADMIN_ROUTES = {
     DASHBOARD: "Dashboard",
     BOOKS: "Books",
     USER: "User",
+    PROFILE: "Profile"
 
 }
 
