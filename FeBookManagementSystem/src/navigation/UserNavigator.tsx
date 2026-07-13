@@ -5,7 +5,7 @@ import UpdateProfileScreen from '../screens/user/UpdateProfileScreen';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import ProfileScreen from '../screens/user/ProfileScreen';
-import { book, borrowBook, home, profile } from '../constants/icon';
+import { book, borrowBook, home, user } from '../constants/icon';
 import { USER_ROUTES } from '../constants/routes';
 import { UserStackParamList, UserTabParamList } from './types';
 import BookScreen from '../screens/user/BookScreen';
@@ -26,7 +26,7 @@ function UserTabs() {
           if (route.name === USER_ROUTES.HOME) IconComponent = home;
           else if (route.name == USER_ROUTES.BOOKS) IconComponent = book;
           else if (route.name == USER_ROUTES.BORROW) IconComponent = borrowBook;
-          else if (route.name == USER_ROUTES.PROFILE) IconComponent = profile;
+          else if (route.name == USER_ROUTES.PROFILE) IconComponent = user;
           return <IconComponent color={color} size={24} />;
         },
       })}
