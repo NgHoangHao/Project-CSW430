@@ -39,11 +39,11 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
     let isValid = true;
 
     if (!email.trim()) {
-      newErrors.email = 'Vui lòng nhập email';
+      newErrors.email = 'Please enter the email';
       isValid = false;
     }
     if (!password.trim()) {
-      newErrors.password = 'Vui lòng nhập mật khẩu';
+      newErrors.password = 'Please enter the password';
       isValid = false;
     }
 
@@ -55,8 +55,8 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
       await login({ email: email.trim(), password });
     } catch (error: any) {
       console.log(error);
-      const message = error?.response?.data?.message || 'Đăng nhập không thành công. Vui lòng kiểm tra lại.';
-      Alert.alert('Đăng nhập thất bại', message);
+      const message = error?.response?.data?.message || 'Login failed. Please check again.';
+      Alert.alert('Login failed', message);
     } finally {
       setIsLoading(false);
     }
@@ -64,12 +64,12 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
 
   const handleForgotPassword = async () => {
     if (!email.trim()) {
-      Alert.alert('Vui lòng nhập Email', 'Nhập email của bạn để lấy lại mật khẩu.');
+      Alert.alert('Please enter your email', 'Enter your email to recover your password.');
       return;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
-      Alert.alert('Email không hợp lệ', 'Vui lòng nhập đúng định dạng email.');
+      Alert.alert('Invalid email', 'Please enter a valid email format.');
       return;
     }
 
@@ -79,7 +79,7 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
       navigation.navigate(ROUTES.OTP_VERIFY, { email: email.trim(), isForgetPass: true });
     } catch (error: any) {
       console.log('Forgot password OTP send error:', error);
-      const message = error?.response?.data?.message || 'Không thể gửi mã xác nhận. Vui lòng thử lại.';
+      const message = error?.response?.data?.message || 'Unable to send the verification code. Please try again.';
       Alert.alert('Lỗi', message);
     } finally {
       setIsSendingOtp(false);

@@ -133,7 +133,7 @@ export const OtpScreen = ({ navigation, route }: { navigation: any; route: any }
       setIsVerifying(true);
       if (isForgetPass) {
         await userService.verifyForgetPass(email,otpValue);
-        Alert.alert('Xác thực thành công', 'Mã OTP hợp lệ! Vui lòng thiết lập mật khẩu mới.', [
+        Alert.alert('Authentication successful', 'Valid OTP! Please set a new password.', [
           {
             text: 'Tiếp tục',
             onPress: () => navigation.navigate(ROUTES.FORGOT_PASSWORD, { email }),

@@ -151,7 +151,7 @@ export default function DashBoard() {
               </View>
             </View>
             <Text style={styles.metricValue}>12,543</Text>
-            <Text style={styles.metricLabel}>Tổng đầu sách</Text>
+            <Text style={styles.metricLabel}>Total number of titles</Text>
           </View>
 
           {/* Card 2 */}
@@ -166,7 +166,7 @@ export default function DashBoard() {
               </View>
             </View>
             <Text style={styles.metricValue}>342</Text>
-            <Text style={styles.metricLabel}>Đang mượn</Text>
+            <Text style={styles.metricLabel}>Borrowing</Text>
           </View>
 
           {/* Card 3 */}
@@ -181,7 +181,7 @@ export default function DashBoard() {
               </View>
             </View>
             <Text style={styles.metricValue}>47</Text>
-            <Text style={styles.metricLabel}>Sách quá hạn</Text>
+            <Text style={styles.metricLabel}>Overdue books</Text>
           </View>
 
           {/* Card 4 */}
@@ -196,7 +196,7 @@ export default function DashBoard() {
               </View>
             </View>
             <Text style={styles.metricValue}>5,234</Text>
-            <Text style={styles.metricLabel}>Tổng người dùng</Text>
+            <Text style={styles.metricLabel}>Total users</Text>
           </View>
 
           {/* Card 5 */}
@@ -211,7 +211,7 @@ export default function DashBoard() {
               </View>
             </View>
             <Text style={styles.metricValue}>1,847</Text>
-            <Text style={styles.metricLabel}>Lượt mượn/tháng</Text>
+            <Text style={styles.metricLabel}>Loans per month</Text>
           </View>
 
           {/* Card 6 */}
@@ -226,7 +226,7 @@ export default function DashBoard() {
               </View>
             </View>
             <Text style={styles.metricValue}>9.2</Text>
-            <Text style={styles.metricLabel}>Mượn TB (ngày)</Text>
+            <Text style={styles.metricLabel}>Average borrowing duration (days)</Text>
           </View>
         </View>
 
@@ -234,17 +234,17 @@ export default function DashBoard() {
         <View style={styles.chartCard}>
           <View style={styles.chartHeader}>
             <View>
-              <Text style={styles.chartTitle}>Xu hướng mượn trả</Text>
+              <Text style={styles.chartTitle}>Tendency to borrow and repay</Text>
               <Text style={styles.chartSubtitle}>7 ngày gần nhất</Text>
             </View>
             <View style={styles.chartLegend}>
               <View style={styles.legendItem}>
                 <View style={[styles.legendIndicator, { backgroundColor: '#27AE60' }]} />
-                <Text style={styles.legendLabel}>Mượn</Text>
+                <Text style={styles.legendLabel}>Borrow</Text>
               </View>
               <View style={styles.legendItem}>
                 <View style={[styles.legendIndicator, { backgroundColor: '#2F80ED' }]} />
-                <Text style={styles.legendLabel}>Trả</Text>
+                <Text style={styles.legendLabel}>Return</Text>
               </View>
             </View>
           </View>
@@ -324,19 +324,21 @@ export default function DashBoard() {
           </View>
         </View>
 
-        {/* ── Donut Chart: Tình trạng kho sách ── */}
+        {/* ── Donut Chart: Book Inventory Status ── */}
         <View style={styles.chartCard}>
-          <Text style={styles.chartTitle}>Tình trạng kho sách</Text>
-          <Text style={styles.chartSubtitle}>Tổng: 12,543 cuốn</Text>
+          <Text style={styles.chartTitle}>Book Inventory Status</Text>
+          <Text style={styles.chartSubtitle}>Total: 12,543 books</Text>
 
           <View style={styles.donutContainer}>
             {/* Donut Chart SVG */}
             <View style={styles.donutSvgWrapper}>
               <Svg width={120} height={120} viewBox="0 0 100 100">
                 {donutData.map((item) => {
-                  const strokeLength = donutCircumference * (item.percentage / 100) - 2; // subtract 2 for minor spacing gap
+                  const strokeLength =
+                    donutCircumference * (item.percentage / 100) - 2; // subtract 2 for minor spacing gap
                   const strokeGap = donutCircumference - strokeLength;
-                  const rotationAngle = -90 + (accumulatedPercentage / 100) * 360;
+                  const rotationAngle =
+                    -90 + (accumulatedPercentage / 100) * 360;
                   accumulatedPercentage += item.percentage;
 
                   return (
@@ -357,12 +359,17 @@ export default function DashBoard() {
               </Svg>
             </View>
 
-            {/* Donut Chart Legend list */}
+            {/* Donut Chart Legend */}
             <View style={styles.donutLegendContainer}>
               {donutData.map((item) => (
                 <View key={item.key} style={styles.donutLegendItem}>
                   <View style={styles.donutLegendInfo}>
-                    <View style={[styles.donutLegendColorDot, { backgroundColor: item.color }]} />
+                    <View
+                      style={[
+                        styles.donutLegendColorDot,
+                        { backgroundColor: item.color },
+                      ]}
+                    />
                     <Text style={styles.donutLegendText}>{item.label}</Text>
                   </View>
                   <Text style={styles.donutLegendValue}>{item.count}</Text>
@@ -372,12 +379,12 @@ export default function DashBoard() {
           </View>
         </View>
 
-        {/* ── Top borrowed books list ── */}
+        {/* ── Top Borrowed Books ── */}
         <View style={styles.chartCard}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.chartTitle}>Top sách mượn nhiều</Text>
+            <Text style={styles.chartTitle}>Top Borrowed Books</Text>
             <TouchableOpacity style={styles.viewAllBtn}>
-              <Text style={styles.viewAllText}>Xem tất cả</Text>
+              <Text style={styles.viewAllText}>View All</Text>
               <ChevronRight size={14} color="#27AE60" />
             </TouchableOpacity>
           </View>
@@ -389,29 +396,45 @@ export default function DashBoard() {
                   <View
                     style={[
                       styles.rankCircle,
-                      bookItem.rank === 1 ? styles.rankFirstBg : styles.rankOtherBg,
+                      bookItem.rank === 1
+                        ? styles.rankFirstBg
+                        : styles.rankOtherBg,
                     ]}
                   >
                     <Text
                       style={[
                         styles.rankText,
-                        bookItem.rank === 1 ? styles.rankTextFirst : styles.rankTextOther,
+                        bookItem.rank === 1
+                          ? styles.rankTextFirst
+                          : styles.rankTextOther,
                       ]}
                     >
                       {bookItem.rank}
                     </Text>
                   </View>
+
                   <View style={styles.bookInfo}>
-                    <Text style={styles.bookTitle} numberOfLines={1}>{bookItem.title}</Text>
-                    <Text style={styles.bookAuthor} numberOfLines={1}>{bookItem.author}</Text>
+                    <Text style={styles.bookTitle} numberOfLines={1}>
+                      {bookItem.title}
+                    </Text>
+                    <Text style={styles.bookAuthor} numberOfLines={1}>
+                      {bookItem.author}
+                    </Text>
                   </View>
                 </View>
+
                 <View style={styles.topBookRight}>
-                  <Text style={styles.borrowCount}>{bookItem.count}</Text>
+                  <Text style={styles.borrowCount}>
+                    {bookItem.count}
+                  </Text>
                   <Text
                     style={[
                       styles.bookChange,
-                      { color: bookItem.isPositive ? '#27AE60' : '#EB5757' },
+                      {
+                        color: bookItem.isPositive
+                          ? "#27AE60"
+                          : "#EB5757",
+                      },
                     ]}
                   >
                     {bookItem.change}
@@ -422,28 +445,47 @@ export default function DashBoard() {
           </View>
         </View>
 
-        {/* ── Recent Activities List ── */}
+        {/* ── Recent Activities ── */}
         <View style={[styles.chartCard, { marginBottom: 30 }]}>
-          <Text style={styles.chartTitle}>Hoạt động gần đây</Text>
+          <Text style={styles.chartTitle}>Recent Activities</Text>
 
           <View style={styles.activityContainer}>
             {recentActivities.map((act) => (
               <View key={act.id} style={styles.activityItem}>
                 <View style={styles.activityLeft}>
                   <View style={styles.activityAvatar}>
-                    <Text style={styles.activityAvatarText}>{act.user}</Text>
+                    <Text style={styles.activityAvatarText}>
+                      {act.user}
+                    </Text>
                   </View>
+
                   <View style={styles.activityDetails}>
                     <Text style={styles.activityDesc}>
-                      <Text style={styles.boldText}>{act.user}</Text>{' '}
-                      <Text style={styles.actionText}>{act.action}</Text>{' '}
-                      <Text style={styles.boldText}>"{act.book}"</Text>
+                      <Text style={styles.boldText}>{act.user}</Text>{" "}
+                      <Text style={styles.actionText}>{act.action}</Text>{" "}
+                      <Text style={styles.boldText}>
+                        "{act.book}"
+                      </Text>
                     </Text>
-                    <Text style={styles.activityTime}>{act.time}</Text>
+
+                    <Text style={styles.activityTime}>
+                      {act.time}
+                    </Text>
                   </View>
                 </View>
-                <View style={[styles.statusBadge, { backgroundColor: act.statusBg }]}>
-                  <Text style={[styles.statusBadgeText, { color: act.statusColor }]}>
+
+                <View
+                  style={[
+                    styles.statusBadge,
+                    { backgroundColor: act.statusBg },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.statusBadgeText,
+                      { color: act.statusColor },
+                    ]}
+                  >
                     {act.status}
                   </Text>
                 </View>

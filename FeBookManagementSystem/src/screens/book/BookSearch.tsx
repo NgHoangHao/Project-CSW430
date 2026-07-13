@@ -205,7 +205,7 @@ export default function BookSearch() {
         </View>
         <Text style={styles.emptyTitle}>Không tìm thấy sách</Text>
         <Text style={styles.emptySubtitle}>
-          {searchText ? `Không có kết quả nào cho "${searchText}"` : 'Chưa có sách nào trong hệ thống'}
+          {searchText ?`No results for "${searchText}"` : 'No books in the system yet'}
         </Text>
       </View>
     );

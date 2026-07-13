@@ -116,7 +116,7 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.welcomeText}>XIN CHÀO 👋</Text>
+            <Text style={styles.welcomeText}>WELCOME 👋</Text>
             <Text style={styles.nameText}>{displayName}</Text>
           </View>
           <View style={styles.avatarContainer}>
@@ -131,7 +131,7 @@ export default function HomeScreen() {
               <BookOpen size={20} color="#27AE60" />
             </View>
             <Text style={styles.statsValue}>28</Text>
-            <Text style={styles.statsLabel}>Đã đọc</Text>
+            <Text style={styles.statsLabel}>Read</Text>
           </View>
 
           <View style={styles.statsCard}>
@@ -139,7 +139,7 @@ export default function HomeScreen() {
               <Flame size={20} color="#FF6B00" />
             </View>
             <Text style={styles.statsValue}>12</Text>
-            <Text style={styles.statsLabel}>Ngày liên tục</Text>
+            <Text style={styles.statsLabel}>Consecutive days</Text>
           </View>
 
           <View style={styles.statsCard}>
@@ -147,13 +147,13 @@ export default function HomeScreen() {
               <BarChart2 size={20} color="#2F80ED" />
             </View>
             <Text style={styles.statsValue}>3</Text>
-            <Text style={styles.statsLabel}>Đang mượn</Text>
+            <Text style={styles.statsLabel}>Borrowing</Text>
           </View>
         </View>
 
         {/* Reading Section */}
         <View style={styles.sectionHeaderContainer}>
-          <Text style={styles.sectionTitle}>Đang đọc</Text>
+          <Text style={styles.sectionTitle}>Reading</Text>
         </View>
 
         <View style={styles.readingCard}>
@@ -177,13 +177,13 @@ export default function HomeScreen() {
                 <Text style={styles.dueDateText}>Hạn trả: 15/07/2026</Text>
               </View>
               <View style={styles.daysLeftBadge}>
-                <Text style={styles.daysLeftText}>5 ngày</Text>
+                <Text style={styles.daysLeftText}>5 days</Text>
               </View>
             </View>
 
             <View style={styles.progressContainer}>
               <View style={styles.progressTextRow}>
-                <Text style={styles.progressLabel}>Tiến độ</Text>
+                <Text style={styles.progressLabel}>Progress</Text>
                 <Text style={styles.progressValue}>65%</Text>
               </View>
               <View style={styles.progressBarBackground}>
@@ -195,12 +195,12 @@ export default function HomeScreen() {
 
         {/* Recommended Books */}
         <View style={styles.sectionHeaderContainerWithAction}>
-          <Text style={styles.sectionTitle}>Đề xuất cho bạn</Text>
+          <Text style={styles.sectionTitle}>Recommended for you</Text>
           <TouchableOpacity
             style={styles.seeAllButton}
             onPress={() => navigation.navigate('Books')}
           >
-            <Text style={styles.seeAllText}>Xem tất cả</Text>
+            <Text style={styles.seeAllText}>View all</Text>
             <ChevronRight size={16} color="#27AE60" />
           </TouchableOpacity>
         </View>
@@ -258,7 +258,7 @@ export default function HomeScreen() {
 
         {/* Quick Actions */}
         <View style={styles.sectionHeaderContainer}>
-          <Text style={styles.sectionTitle}>Thao tác nhanh</Text>
+          <Text style={styles.sectionTitle}>Quick actions</Text>
         </View>
 
         <View style={styles.quickActionsRow}>
@@ -270,7 +270,7 @@ export default function HomeScreen() {
             <View style={[styles.actionIconWrapper, { backgroundColor: '#27AE60' }]}>
               <BookOpen size={20} color="#fff" />
             </View>
-            <Text style={styles.actionTitle}>Duyệt danh mục</Text>
+            <Text style={styles.actionTitle}>Browse categories</Text>
             <Text style={styles.actionSubtext}>12,543 đầu sách</Text>
             <ArrowRight size={18} color="#27AE60" style={styles.actionArrow} />
           </TouchableOpacity>
@@ -283,8 +283,8 @@ export default function HomeScreen() {
             <View style={[styles.actionIconWrapper, { backgroundColor: '#EAFBF1' }]}>
               <BarChart2 size={20} color="#27AE60" />
             </View>
-            <Text style={styles.actionTitle}>Sách của tôi</Text>
-            <Text style={styles.actionSubtext}>3 đang mượn</Text>
+            <Text style={styles.actionTitle}>My books</Text>
+            <Text style={styles.actionSubtext}>3 borrowings</Text>
             <ArrowRight size={18} color="#27AE60" style={styles.actionArrow} />
           </TouchableOpacity>
         </View>
