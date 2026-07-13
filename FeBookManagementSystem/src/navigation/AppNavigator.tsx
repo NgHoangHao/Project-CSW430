@@ -6,10 +6,11 @@ import { useAuth } from '../store/authProvider';
 
 export const AppNavigator = () => {
   const { isLoggedIn, userRole } = useAuth();
+  const isAdminOrLibrarian = userRole?.includes('ADMIN') || userRole?.includes('LIBRARIAN');
   return (
     <NavigationContainer>
       {isLoggedIn ? (
-        userRole?.includes('ADMIN') ? (
+        isAdminOrLibrarian ? (
           <AdminNavigator />
         ) : (
           <UserNavigator />

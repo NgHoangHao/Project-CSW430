@@ -7,10 +7,12 @@ import ProfileScreen from '../screens/admin/ProfileScreen';
 import RequestScreen from '../screens/admin/RequestManagementScreen';
 import Dashboard from '../screens/admin/DashBoardAdminScreen';
 import UserManagement from '../screens/admin/UserManagementScreen';
+import { useAuth } from '../store/authProvider';
 
 const Tab = createBottomTabNavigator<AdminStackParamList>();
 
 export const AdminNavigator = () => {
+  const { userRole } = useAuth();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -30,7 +32,9 @@ export const AdminNavigator = () => {
     >
       <Tab.Screen name="Dashboard" component={Dashboard} />
       <Tab.Screen name="Books" component={BookScreen} />
-      <Tab.Screen name="User" component={UserManagement} />
+      {userRole?.includes('ADMIN') && (
+        <Tab.Screen name="User" component={UserManagement} />
+      )}
       <Tab.Screen name="Request" component={RequestScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
