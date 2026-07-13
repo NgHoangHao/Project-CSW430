@@ -15,11 +15,10 @@ export class User {
   @Column({ nullable: false })
   email: string;
 
-
   @Column({ nullable: false })
   password: string;
 
-  @Column({ type: 'enum', enum: UserStatus, default: UserStatus.ACTIVE, })
+  @Column({ type: 'enum', enum: UserStatus, default: UserStatus.ACTIVE,})
   status: UserStatus;
 
   @Column({ type: 'int', default: 0 })

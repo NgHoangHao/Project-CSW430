@@ -2,6 +2,7 @@
 import { DataSource } from 'typeorm';
 import { User } from '../entities/User';
 import { AppDataSource } from '../config/database';
+import { UserStatus } from '../utils/enums';
 
 export const createUserRepository = (dataSource: DataSource) => {
   return dataSource.getRepository(User).extend({
@@ -47,4 +48,39 @@ export const deleteRoleUser = async (userId: string, roleIds: string[]) => {
     .where('userUserId = :userId', { userId })
     .andWhere('roleRoleId IN (:...roleIds)', { roleIds })
     .execute();
+}
+
+export const getUserPage = async (page: number, size: number, userName?: string) => {
+  const userRepository = AppDataSource.getRepository(User);
+  const query = userRepository
+    .createQueryBuilder("user")
+    .leftJoinAndSelect("user.loans", "loan")
+    .leftJoinAndSelect("loan.loanDetails", "loanDetail")
+    .orderBy("user.createdAt", "DESC");
+
+  if (userName) {
+    query.andWhere("user.userName LIKE :userName", {
+      userName: `%${userName}%`,
+    });
+  }
+
+  query.skip((page - 1) * size).take(size);
+
+  const [users, total] = await query.getManyAndCount();
+
+  return { users, total };
+}
+
+export const countActiveUsers = async () => {
+  const userRepository = AppDataSource.getRepository(User);
+  return await userRepository.count({
+    where: { status: UserStatus.ACTIVE },
+  });
+}
+
+export const countBlockedUsers = async () => {
+  const userRepository = AppDataSource.getRepository(User);
+  return await userRepository.count({
+    where: { status: UserStatus.LOCK },
+  });
 }
