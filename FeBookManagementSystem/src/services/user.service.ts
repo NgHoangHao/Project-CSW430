@@ -12,5 +12,19 @@ export const userService = {
     updateProfile: async (data: UpdateUserDTO) => {
         const res = await api.put('/user/profile', data)
         return res;
+    },
+    getUserByPage: async (page: number, size: number, userName?: string) => {
+        const res = await api.get("/user/get-all", {
+            params: {
+                page,
+                size,
+                ...(userName?.trim() ? { userName } : {}),
+            },
+        });
+        return res;
+    },
+    deleteUser: async (userId: string) => {
+        const res = await api.delete(`/user/${userId}`);
+        return res;
     }
 }
