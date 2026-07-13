@@ -6,7 +6,7 @@ export type AuthStackParamList = {
     Login: undefined;
     Register: undefined;
     OtpVerify: { email: string; isForgetPass?: boolean };
-    ForgotPassword: {email:string};
+    ForgotPassword: { email: string };
     ResetPassword: { email: string };
 }
 
@@ -27,5 +27,6 @@ export type AdminStackParamList = {
     Dashboard: undefined;
     Books: undefined;
     User: undefined;
+    Request: undefined;
     Profile: undefined;
 }
