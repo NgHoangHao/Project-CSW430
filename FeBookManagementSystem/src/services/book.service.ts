@@ -6,7 +6,7 @@ export const bookService = {
         const res = await api.post('/book/add-book', book,
             { headers: { 'Content-Type': 'multipart/form-data' } }
         )
-        return res
+        return res;
     },
    getBookByPage: async (page: number, size: number, title?: string) => {
     const res = await api.get("/book/get-book", {
@@ -20,10 +20,10 @@ export const bookService = {
 },
     getBookDetail: async (bookId: string) => {
         const res = await api.get(`/book/get-detail?bookId=${bookId}`)
-        return res
+        return res;
     },
     getCopyBookDetailByBarcode: async (barcode: string) => {
         const res = await api.get(`/book/get-copyBook?barcode=${barcode}`)
-        return res
+        return res;
     }
 }
