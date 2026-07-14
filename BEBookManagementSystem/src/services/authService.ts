@@ -15,7 +15,13 @@ export const registerService = async (data: RegisterDTO) => {
   const userRepository = AppDataSource.getRepository(User);
   const roleRepository = AppDataSource.getRepository(Role);
   const existingUser = await userRepository.findOneBy({ email });
-  if (existingUser) throw new Error('Email already registered');
+  if (existingUser) {
+    if (existingUser.status === UserStatus.INACTIVE) {
+      await userRepository.remove(existingUser);
+    } else {
+      throw new Error('Email already registered');
+    }
+  }
   const userRole = await roleRepository.findOneBy({ roleName: RoleName.USER });
   if (!userRole) throw new Error('Default role not found');
   const hashedPassword = await bcrypt.hash(password, 10);
