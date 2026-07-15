@@ -50,7 +50,7 @@ import { AuthProvider } from './src/store/authProvider';
 
 const App = () => {
   return (
-    <SafeAreaProvider>
+    <SafeAreaProvider style={{ flex: 1 }}>
       <AuthProvider>
         <AppNavigator />
       </AuthProvider>

@@ -26,5 +26,13 @@ export const userService = {
     deleteUser: async (userId: string) => {
         const res = await api.delete(`/user/${userId}`);
         return res;
+    },
+    assignRole: async (userId: string, roleIds: string[]) => {
+        const res = await api.post('/user/assign-role', { userId, roleIds });
+        return res;
+    },
+    deleteRole: async (userId: string, roleIds: string[]) => {
+        const res = await api.post('/user/delete-role', { userId, roleIds });
+        return res;
     }
 }
