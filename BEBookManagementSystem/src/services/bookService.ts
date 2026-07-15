@@ -26,7 +26,7 @@ export class BookService {
       newBook.publishYear = Number(bookDto.publishYear);
       newBook.page = Number(bookDto.page);
       newBook.category = bookDto.category;
-      newBook.url = bookDto.url.path;
+      newBook.url = typeof bookDto.url === 'string' ? bookDto.url : bookDto.url?.path;
       newBook.status = BookStatus.AVAILABLE;
       const savedBook = await transactionalEntityManager.save(newBook);
       if (bookDto.copyBooks && bookDto.copyBooks.length > 0) {
@@ -49,17 +49,21 @@ export class BookService {
     if (!book) {
       throw new NotFoundException('Book not found');
     }
-    if (bookDto.url && bookDto.url.path) {
-      if (book.url) {
-        try {
-          const oldFileName = path.basename(book.url);
-          const oldFilePath = path.join(process.cwd(), 'images', oldFileName);
-          await fs.unlink(oldFilePath);
-        } catch (error) {
-          console.warn(`Can not remove old image: ${book.url}. Error:`, error);
+    if (bookDto.url) {
+      if (typeof bookDto.url === 'string') {
+        bookDto.url = bookDto.url;
+      } else if (bookDto.url.path) {
+        if (book.url) {
+          try {
+            const oldFileName = path.basename(book.url);
+            const oldFilePath = path.join(process.cwd(), 'images', oldFileName);
+            await fs.unlink(oldFilePath);
+          } catch (error) {
+            console.warn(`Can not remove old image: ${book.url}. Error:`, error);
+          }
         }
+        bookDto.url = bookDto.url.path;
       }
-      book.url = bookDto.url.path;
     }
 
     if(bookDto.publishYear !== undefined) bookDto.publishYear = Number(bookDto.publishYear);

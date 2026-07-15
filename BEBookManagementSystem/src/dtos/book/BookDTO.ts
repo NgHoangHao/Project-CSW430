@@ -8,6 +8,6 @@ export interface BookDTO {
     publishYear: number;
     page: number;
     category: string;
-    url: Express.Multer.File;
+    url: Express.Multer.File | string;
     copyBooks: CopyBookDTO[];
 }
