@@ -68,9 +68,14 @@ export class BookService {
 
     if(bookDto.publishYear !== undefined) bookDto.publishYear = Number(bookDto.publishYear);
     if(bookDto.page !== undefined) bookDto.page = Number(bookDto.page);
-
     const {url, ...textFields} = bookDto;
     Object.assign(book, textFields);
+
+    // Kiểm tra xem url có tồn tại và đã được xử lý thành string chưa thì gán vào book
+    if (url && typeof url === 'string') {
+      book.url = url; 
+    }
+
     return await bookRepo.save(book);
   }
 
