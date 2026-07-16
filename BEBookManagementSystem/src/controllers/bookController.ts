@@ -8,8 +8,13 @@ import { NotFoundException } from '../common/errors/error';
 
 export const createBook = async (req: Request<{}, {}, BookDTO>, res: Response) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ message: "Image file is required." });
+    let finalUrl = req.body.url || '';
+    if (req.file) {
+      finalUrl = req.file;
+    }
+
+    if (!finalUrl) {
+      return res.status(400).json({ message: "Image file or URL is required." });
     }
 
     let copyBooks: CopyBookDTO[] = [];
@@ -26,7 +31,7 @@ export const createBook = async (req: Request<{}, {}, BookDTO>, res: Response) =
       publishYear: req.body.publishYear,
       page: req.body.page,
       category: req.body.category,
-      url: req.file,
+      url: finalUrl,
       copyBooks: copyBooks
     };
 
@@ -148,6 +153,8 @@ export const updateBook = async (req: Request<{ bookId: string }, {}, BookDTO>, 
     const bookDto = req.body;
     if (req.file) {
       bookDto.url = req.file;
+    } else if (req.body.url) {
+      bookDto.url = req.body.url;
     }
     const updatedBook = await BookService.updateBook(bookId as string, bookDto);
     res.status(200).json({
