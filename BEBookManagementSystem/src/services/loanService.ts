@@ -10,7 +10,7 @@ import { LoanRepository } from "../repositories/loanRepository";
 import { getUserById } from "../repositories/userRepository"
 import { BookStatus, CopyBookStatus, LoanStatus, RoleName } from "../utils/enums";
 import { Book } from "../entities/Book";
-import { LoanDetailDTO } from "../dtos/loan/LoanDetailDTO";
+import { LoanDetailDTO, LoanDetailsByPage } from "../dtos/loan/LoanDetailDTO";
 
 export const LoanService = {
 
@@ -235,5 +235,33 @@ export const LoanService = {
             })
         }
         return responseLoanDetails;
+    },
+
+    getAllLoanDetailsByPage: async (page: number, limit: number) => {
+        const [loanDetails, total] = await LoanRepository.getAllLoanDetailsByPage(page, limit);
+        const data = loanDetails.map((ld) => ({
+            loanId: ld.loan?.loanId || '',
+            borrowDate: ld.loan?.borrowDate ? new Date(ld.loan.borrowDate).toISOString().slice(0, 10) : '',
+            dueDate: ld.loan?.dueDate ? new Date(ld.loan.dueDate).toISOString().slice(0, 10) : '',
+            loanDetailId: ld.loanDetailId,
+            returnDate: ld.returnDate ? new Date(ld.returnDate).toISOString().slice(0, 10) : '',
+            status: ld.status,
+            bookId: ld.copyBook?.book?.bookId || '',
+            bookName: ld.copyBook?.book?.title || '',
+            copyBookId: ld.copyBook?.copyBookId || '',
+            barcode: ld.copyBook?.barcode || '',
+            url: ld.copyBook?.book?.url || '',
+            userName: ld.loan?.user?.userName || '',
+            userId: ld.loan?.user?.userId || '',
+        }));
+        return {
+            data,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            }
+        };
     }
 }

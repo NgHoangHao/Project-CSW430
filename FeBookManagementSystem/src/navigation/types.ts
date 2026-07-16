@@ -27,6 +27,7 @@ export type AdminStackParamList = {
     Dashboard: undefined;
     Books: undefined;
     User: undefined;
+    Loan: undefined;
     Request: undefined;
     Profile: undefined;
 }

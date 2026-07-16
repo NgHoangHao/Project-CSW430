@@ -63,5 +63,22 @@ export const LoanController = {
             }
             return res.status(500).json({ message: error.message });
         }
+    },
+
+    getAllLoanDetailsByPage: async (req: Request, res: Response) => {
+        try {
+            const page = parseInt(req.query.page as string) || 1;
+            const limit = parseInt(req.query.limit as string) || 10;
+            const result = await LoanService.getAllLoanDetailsByPage(page, limit);
+            return res.status(200).json({
+                success: true,
+                data: result
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
     }
 }
