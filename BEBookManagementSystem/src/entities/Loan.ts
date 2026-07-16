@@ -9,20 +9,20 @@ export class Loan {
   @PrimaryGeneratedColumn('uuid')
   loanId: string;
 
-  @Column({ type: 'timestamp',nullable:false })
+  @Column({ type: 'timestamp', nullable: false })
   borrowDate: Date;
 
-  @Column({ type: 'timestamp',nullable:false })
+  @Column({ type: 'timestamp', nullable: false })
   dueDate: Date;
 
-  @Column({ type: 'enum', enum: LoanStatus, default: LoanStatus.BORROWING })
+  @Column({ type: 'enum', enum: LoanStatus, default: LoanStatus.PENDING })
   status: LoanStatus;
 
   @CreateDateColumn()
   createdAt: Date;
 
   // Quan hệ N-1 với User
-  @ManyToOne(() => User, (user) => user.loans,{ onDelete: 'CASCADE' })
+  @ManyToOne(() => User, (user) => user.loans, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })
   user: User;
 

@@ -51,7 +51,7 @@ export default function BookManagementScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingBookId, setEditingBookId] = useState<string | null>(null);
-  
+
 
   const [formTitle, setFormTitle] = useState('');
   const [formAuthor, setFormAuthor] = useState('');
@@ -249,11 +249,11 @@ export default function BookManagementScreen() {
               </View>
             )}
           </View>
-          
+
           <View style={styles.bookInfo}>
             <Text style={styles.bookTitle} numberOfLines={2}>{item.title}</Text>
             <Text style={styles.bookAuthor} numberOfLines={1}>{item.author}</Text>
-            
+
             <View style={styles.bookMeta}>
               <View style={styles.categoryBadge}>
                 <Text style={styles.categoryText}>{item.category || 'Khác'}</Text>
@@ -296,7 +296,7 @@ export default function BookManagementScreen() {
         >
           <ChevronLeft size={18} color={currentPage === 1 ? '#C4C4C4' : '#27AE60'} />
         </TouchableOpacity>
-        
+
         <Text style={styles.paginationInfo}>{currentPage} / {totalPages}</Text>
 
         <TouchableOpacity
@@ -393,7 +393,7 @@ export default function BookManagementScreen() {
                   </View>
                 )}
               </TouchableOpacity>
-              
+
               <Text style={styles.inputLabel}>Hoặc nhập Link ảnh bìa trực tiếp</Text>
               <TextInput style={styles.input} value={formImageUrl} onChangeText={(text) => { setFormImageUrl(text); setFormImage(null); }} placeholder="VD: https://example.com/image.jpg" />
 
@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
   pageBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#ffffff', justifyContent: 'center', alignItems: 'center', marginHorizontal: 16, borderWidth: 1, borderColor: '#E5E5EA' },
   pageBtnDisabled: { opacity: 0.5 },
   paginationInfo: { fontSize: 14, fontWeight: '600', color: '#4F4F4F' },
-  
+
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: screenHeight * 0.9 },

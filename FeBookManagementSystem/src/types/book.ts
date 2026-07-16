@@ -10,6 +10,7 @@ export interface Book {
     totalAvailableCopy?: number;
     createdAt?: string;
     updatedAt?: string;
+    page: number;
     availableBooks?: CopyBook[];
 }
 

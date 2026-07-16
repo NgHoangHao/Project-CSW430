@@ -6,6 +6,8 @@ export interface LoanDetailDTO {
     dueDate: string;
     status: LoanStatus;
     loanDetails: LoanDetails[];
+    userId?: string;
+    userName?: string;
 }
 
 export interface LoanDetails {

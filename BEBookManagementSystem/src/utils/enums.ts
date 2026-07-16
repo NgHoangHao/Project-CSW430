@@ -23,6 +23,8 @@ export enum CopyBookStatus {
 }
 
 export enum LoanStatus {
+  PENDING = 'PENDING',
+  REJECTED = 'REJECTED',
   BORROWING = 'BORROWING',
   RETURNED = 'RETURNED',
   OVERDUE = 'OVERDUE',

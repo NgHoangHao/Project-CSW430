@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { LoanService } from "../services/loanService";
 import { BadRequestException, NotFoundException } from "../common/errors/error";
 import { LoanRequest } from "../dtos/loan/LoanRequest";
+import { LoanStatus } from "../utils/enums";
 
 export const LoanController = {
     createLoan: async (req: Request, res: Response) => {
@@ -20,6 +21,29 @@ export const LoanController = {
             return res.status(500).json({ message: error.message });
         }
     },
+    confirmLoan: async (req: Request, res: Response) => {
+        try {
+            const { loanId, status } = req.body;
+            let result;
+            if (status === LoanStatus.BORROWING) {
+                result = await LoanService.confirmLoan(loanId);
+            } else if (status === LoanStatus.REJECTED) {
+                result = await LoanService.rejectLoan(loanId);
+            } else {
+                return res.status(400).json({ message: 'Invalid loan status' });
+            }
+            return res.status(200).json({ message: 'Loan confirmed successfully', data: result });
+        } catch (error: any) {
+            if (error instanceof NotFoundException) {
+                return res.status(404).json({ message: error.message });
+            }
+            if (error instanceof BadRequestException) {
+                return res.status(400).json({ message: error.message });
+            }
+            return res.status(500).json({ message: error.message });
+        }
+    },
+
     returnBookByBarcode: async (req: Request, res: Response) => {
         try {
             const userId = (req as any).user.id;
@@ -40,7 +64,7 @@ export const LoanController = {
         try {
             const userId = (req as any).user.id;
             const result = await LoanService.getLoanByUserId(userId);
-            return res.status(200).json(result);
+            return res.status(200).json({ message: 'Get loan by user id successfully', data: result });
         } catch (error: any) {
             if (error instanceof NotFoundException) {
                 return res.status(404).json({ message: error.message });
@@ -53,7 +77,7 @@ export const LoanController = {
             const userId = (req as any).user.id;
             const loanId = req.params.loanId as string;
             const result = await LoanService.getLoanDetailByLoanId(userId, loanId);
-            return res.status(200).json(result);
+            return res.status(200).json({ message: 'Get loan detail by loan id successfully', data: result });
         } catch (error: any) {
             if (error instanceof NotFoundException) {
                 return res.status(404).json({ message: error.message });
@@ -65,19 +89,36 @@ export const LoanController = {
         }
     },
 
-    getAllLoanDetailsByPage: async (req: Request, res: Response) => {
+    getAllLoanDetails: async (req: Request, res: Response) => {
         try {
-            const page = parseInt(req.query.page as string) || 1;
-            const limit = parseInt(req.query.limit as string) || 10;
-            const result = await LoanService.getAllLoanDetailsByPage(page, limit);
+            const result = await LoanService.getAllLoanDetails();
             return res.status(200).json({
+                message: 'Get all loan details successfully',
+                data: result,
+                success: true
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message,
+                data: null
+            });
+        }
+    },
+    getLoanByStatus: async (req: Request, res: Response) => {
+        try {
+            const status = req.params.status as LoanStatus;
+            const result = await LoanService.getLoanByStatus(status);
+            return res.status(200).json({
+                message: 'Get loan by status successfully',
                 success: true,
                 data: result
             });
         } catch (error: any) {
             return res.status(500).json({
+                message: error.message,
                 success: false,
-                message: error.message
+                data: null
             });
         }
     }
