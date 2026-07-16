@@ -18,3 +18,17 @@ export interface LoanDetails {
     bookName: string;
     barcode: string;
 }
+
+export interface LoanDetailsByPage {
+    loanId: string;
+    borrowDate: string;
+    dueDate: string;
+    loanDetailId: string;
+    returnDate: string;
+    status: LoanStatus;
+    bookId: string;
+    bookName: string;
+    copyBookId: string;
+    barcode: string;
+    url: string;
+}

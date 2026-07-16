@@ -10,6 +10,7 @@ export const ADMIN_ROUTES = {
     BOOKS: "Books",
     USER: "User",
     REQUEST: "Request",
+    LOAN: "Loan",
     PROFILE: "Profile"
 
 }
