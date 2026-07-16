@@ -91,7 +91,7 @@ export default function BookDetailScreen() {
   const getImageUrl = (url: string) => {
     if (!url) return null;
     if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    const baseUrl = BACKEND_URL.replace('/api', '');
+    const baseUrl = (BACKEND_URL || 'http://10.0.2.2:3000').replace('/api', '');
     return url.startsWith('/') ? `${baseUrl}${url}` : `${baseUrl}/${url}`;
   };
 

@@ -1,4 +1,4 @@
-import BookScreen from '../screens/user/BookScreen';
+import BookManagementScreen from '../screens/admin/BookManagementScreen';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { book, home, loan, request, user, users } from '../constants/icon';
 import { ADMIN_ROUTES } from '../constants/routes';
@@ -33,7 +33,7 @@ export const AdminNavigator = () => {
       })}
     >
       <Tab.Screen name="Dashboard" component={Dashboard} />
-      <Tab.Screen name="Books" component={BookScreen} />
+      <Tab.Screen name="Books" component={BookManagementScreen} />
       {userRole?.includes('ADMIN') && (
         <Tab.Screen name="User" component={UserManagement} />
       )}

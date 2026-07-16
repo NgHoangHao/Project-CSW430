@@ -8,5 +8,5 @@ export interface BookUpdate {
     publishYear: number;
     page: number;
     category: string;
-    url: Express.Multer.File;
+    url: Express.Multer.File | string;
 }

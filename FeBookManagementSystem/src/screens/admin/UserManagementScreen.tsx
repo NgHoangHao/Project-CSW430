@@ -10,6 +10,7 @@ import {
   Alert,
   RefreshControl,
   Dimensions,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -50,7 +51,6 @@ export default function UserManagementScreen() {
   const [totalPages, setTotalPages] = useState(1);
   const [pageSize] = useState(10);
 
-  // Statistics from API
   const [stats, setStats] = useState({
     total: 0,
     active: 0,
@@ -96,7 +96,6 @@ export default function UserManagementScreen() {
     }
   }, [pageSize]);
 
-  // Debounced search logic
   useEffect(() => {
     const timer = setTimeout(() => {
       setCurrentPage(1);
@@ -106,13 +105,11 @@ export default function UserManagementScreen() {
     return () => clearTimeout(timer);
   }, [searchText, fetchUsers]);
 
-  // Handle pull-to-refresh
   const handleRefresh = () => {
     setCurrentPage(1);
     fetchUsers(1, searchText, true);
   };
 
-  // Handle pagination navigation
   const handlePrevPage = () => {
     if (currentPage > 1) {
       const prev = currentPage - 1;
@@ -129,7 +126,6 @@ export default function UserManagementScreen() {
     }
   };
 
-  // Delete User Action
   const handleDeleteUser = (userId: string, userName: string) => {
     Alert.alert(
       'Xóa người dùng',
@@ -159,17 +155,46 @@ export default function UserManagementScreen() {
     );
   };
 
-  // Mail sending placeholder
   const handleSendMail = (email: string) => {
     Alert.alert('Gửi Mail', `Chức năng gửi mail tới ${email} đang được phát triển.`);
   };
 
-  // Details placeholder
+  const [detailsModalVisible, setDetailsModalVisible] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserListItem | null>(null);
+
   const handleShowDetails = (user: UserListItem) => {
-    Alert.alert('Chi tiết', `Người dùng: ${user.userName}\nEmail: ${user.email}\nSố điện thoại: ${user.phone || 'N/A'}`);
+    setSelectedUser(user);
+    setDetailsModalVisible(true);
   };
 
-  // Get user initials for avatar
+  const handleAssignRole = async (roleId: string) => {
+    if (!selectedUser) return;
+    try {
+      const res = await userService.assignRole(selectedUser.userId, [roleId]);
+      if (res.data?.success) {
+        Alert.alert('Thành công', 'Đã cấp quyền thành công!');
+      } else {
+        Alert.alert('Lỗi', res.data?.message || 'Không thể cấp quyền.');
+      }
+    } catch (err: any) {
+      Alert.alert('Lỗi', 'Lỗi hệ thống khi cấp quyền.');
+    }
+  };
+
+  const handleRevokeRole = async (roleId: string) => {
+    if (!selectedUser) return;
+    try {
+      const res = await userService.deleteRole(selectedUser.userId, [roleId]);
+      if (res.data?.success) {
+        Alert.alert('Thành công', 'Đã thu hồi quyền thành công!');
+      } else {
+        Alert.alert('Lỗi', res.data?.message || 'Không thể thu hồi quyền.');
+      }
+    } catch (err: any) {
+      Alert.alert('Lỗi', 'Lỗi hệ thống khi thu hồi quyền.');
+    }
+  };
+
   const getInitials = (name: string) => {
     if (!name) return 'U';
     const parts = name.trim().split(' ');
@@ -177,7 +202,6 @@ export default function UserManagementScreen() {
     return (parts[parts.length - 2].substring(0, 1) + parts[parts.length - 1].substring(0, 1)).toUpperCase();
   };
 
-  // Relative time formatter in Vietnamese
   const getRelativeTime = (dateString?: string | Date) => {
     if (!dateString) return 'Vừa xong';
     const now = new Date();
@@ -195,14 +219,12 @@ export default function UserManagementScreen() {
     return date.toLocaleDateString('vi-VN');
   };
 
-  // Custom membership ID generator
   const getMembershipId = (user: UserListItem) => {
     const year = user.createdAt ? new Date(user.createdAt).getFullYear() : 2026;
     const prefix = String(user.userId).slice(0, 4).toUpperCase() || '0000';
     return `LIB-${year}-${prefix}`;
   };
 
-  // Filter list based on selected tab
   const filteredUsers = users.filter(user => {
     if (activeTab === 'all') return true;
     if (activeTab === 'active') return user.status === 'ACTIVE' && user.expiredBooks === 0;
@@ -212,7 +234,7 @@ export default function UserManagementScreen() {
   });
 
   const renderUserCard = ({ item }: { item: UserListItem }) => {
-    // Dynamic styles based on status
+
     const isBlocked = item.status === 'LOCK';
     const isOverdue = item.expiredBooks > 0;
 
@@ -239,7 +261,7 @@ export default function UserManagementScreen() {
 
     return (
       <View style={styles.card}>
-        {/* Card Header Info */}
+
         <View style={styles.cardHeader}>
           <View style={[styles.avatar, { backgroundColor: avatarBg }]}>
             <Text style={styles.avatarText}>{initials}</Text>
@@ -254,7 +276,7 @@ export default function UserManagementScreen() {
           </View>
         </View>
 
-        {/* Card Stats Grid */}
+
         <View style={styles.statsContainer}>
           {/* Borrowing stat */}
           <View style={styles.statBox}>
@@ -276,7 +298,7 @@ export default function UserManagementScreen() {
           </View>
         </View>
 
-        {/* Card Footer Info */}
+
         <View style={styles.cardFooterInfo}>
           <View style={styles.codeBadge}>
             <Text style={styles.codeText}>{cardCode}</Text>
@@ -284,10 +306,10 @@ export default function UserManagementScreen() {
           <Text style={styles.timeText}>{timeAgo}</Text>
         </View>
 
-        {/* Divider */}
+
         <View style={styles.divider} />
 
-        {/* Action Buttons */}
+
         <View style={styles.actionRow}>
           <TouchableOpacity style={styles.actionButton} onPress={() => handleShowDetails(item)}>
             <ChevronRight size={16} color="#4F4F4F" />
@@ -341,7 +363,7 @@ export default function UserManagementScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      {/* Header */}
+
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={styles.headerIconWrapper}>
@@ -355,7 +377,7 @@ export default function UserManagementScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Main Container */}
+
       <View style={styles.container}>
         {/* Search Bar */}
         <View style={styles.searchBar}>
@@ -452,6 +474,68 @@ export default function UserManagementScreen() {
           />
         )}
       </View>
+
+
+      {selectedUser && (
+        <Modal visible={detailsModalVisible} animationType="slide" transparent={true}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Chi tiết người dùng</Text>
+                <TouchableOpacity onPress={() => setDetailsModalVisible(false)} style={styles.closeBtn}>
+                  <Text style={{ fontSize: 16, color: '#333' }}>X</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.userInfoSection}>
+                <Text style={styles.infoText}>Tên: {selectedUser.userName}</Text>
+                <Text style={styles.infoText}>Email: {selectedUser.email}</Text>
+                <Text style={styles.infoText}>SĐT: {selectedUser.phone || 'Chưa cập nhật'}</Text>
+                <Text style={styles.infoText}>Trạng thái: {selectedUser.status}</Text>
+              </View>
+
+              <Text style={styles.roleTitle}>Quản lý Quyền (Roles)</Text>
+              
+              <View style={styles.roleActionRow}>
+                <Text style={styles.roleName}>ADMIN</Text>
+                <View style={styles.roleBtnGroup}>
+                  <TouchableOpacity style={styles.assignBtn} onPress={() => handleAssignRole('role-admin-1234')}>
+                    <Text style={styles.assignBtnText}>Cấp</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.revokeBtn} onPress={() => handleRevokeRole('role-admin-1234')}>
+                    <Text style={styles.revokeBtnText}>Thu hồi</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={styles.roleActionRow}>
+                <Text style={styles.roleName}>LIBRARIAN</Text>
+                <View style={styles.roleBtnGroup}>
+                  <TouchableOpacity style={styles.assignBtn} onPress={() => handleAssignRole('role-librarian-1234')}>
+                    <Text style={styles.assignBtnText}>Cấp</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.revokeBtn} onPress={() => handleRevokeRole('role-librarian-1234')}>
+                    <Text style={styles.revokeBtnText}>Thu hồi</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={styles.roleActionRow}>
+                <Text style={styles.roleName}>USER</Text>
+                <View style={styles.roleBtnGroup}>
+                  <TouchableOpacity style={styles.assignBtn} onPress={() => handleAssignRole('role-user-1234')}>
+                    <Text style={styles.assignBtnText}>Cấp</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.revokeBtn} onPress={() => handleRevokeRole('role-user-1234')}>
+                    <Text style={styles.revokeBtnText}>Thu hồi</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+            </View>
+          </View>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 }
@@ -767,5 +851,89 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#4F4F4F',
+  },
+  
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '90%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+  },
+  closeBtn: {
+    padding: 8,
+  },
+  userInfoSection: {
+    marginBottom: 20,
+    backgroundColor: '#F8F9FA',
+    padding: 12,
+    borderRadius: 8,
+  },
+  infoText: {
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 6,
+  },
+  roleTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 12,
+  },
+  roleActionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  roleName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#333',
+  },
+  roleBtnGroup: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  assignBtn: {
+    backgroundColor: '#EAFBF1',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  assignBtnText: {
+    color: '#27AE60',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  revokeBtn: {
+    backgroundColor: '#FEE8E7',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  revokeBtnText: {
+    color: '#EB5757',
+    fontWeight: '600',
+    fontSize: 13,
   },
 });

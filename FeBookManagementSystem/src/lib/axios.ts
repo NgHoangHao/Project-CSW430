@@ -3,7 +3,7 @@ import axios from "axios";
 import EncryptedStorage from "react-native-encrypted-storage";
 
 const api = axios.create({
-    baseURL: BACKEND_URL,
+    baseURL: BACKEND_URL || 'http://10.0.2.2:3000/api',
     timeout: 5000,
 })
 
@@ -32,7 +32,7 @@ api.interceptors.response.use(async (response) =>
                     return Promise.reject(error);
                 }
 
-                const res = await axios.post(`${BACKEND_URL}/auth/refresh`, { refreshToken: refreshToken })
+                const res = await axios.post(`${BACKEND_URL || 'http://10.0.2.2:3000/api'}/auth/refresh`, { refreshToken: refreshToken })
 
                 await EncryptedStorage.setItem('accessToken', res.data.accessToken)
 
