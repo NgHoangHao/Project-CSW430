@@ -9,8 +9,10 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl,
-  Dimensions,
   Image,
+  Modal,
+  ScrollView,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -24,103 +26,256 @@ import {
   ChevronRight,
   ChevronLeft,
   Calendar,
-  User,
   Barcode,
-  RotateCcw,
   Book,
+  X,
+  Inbox,
+  ShieldCheck,
+  XCircle,
+  ClipboardList,
+  ScanBarcode,
+  SendHorizonal,
+  ArrowDownToLine,
 } from 'lucide-react-native';
 import { loanService } from '../../services/loan.service';
-import { LoanDetailsByPage } from '../../types/loan';
+import { LoanDetailDTO, LoanDetails } from '../../types/loan';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-type TabType = 'ALL' | 'BORROWING' | 'OVERDUE' | 'RETURNED';
+type TabType = 'ALL' | 'PENDING' | 'BORROWING' | 'OVERDUE' | 'RETURNED' | 'REJECTED';
+
+const STATUS_LABEL: Record<string, string> = {
+  PENDING: 'Chờ duyệt',
+  BORROWING: 'Đang mượn',
+  RETURNED: 'Đã trả',
+  REJECTED: 'Đã từ chối',
+  OVERDUE: 'Quá hạn',
+};
+
+// --------------------------------------------------------------------------
+// Sub-components
+// --------------------------------------------------------------------------
+
+const StatusBadge = ({ status }: { status: string }) => {
+  let bg = '#FEF3C7';
+  let color = '#B45309';
+  let IconComp: any = Clock;
+
+  switch (status) {
+    case 'PENDING':
+      bg = '#FEF3C7'; color = '#B45309'; IconComp = Clock;
+      break;
+    case 'BORROWING':
+      bg = '#DBEAFE'; color = '#1D4ED8'; IconComp = BookOpen;
+      break;
+    case 'RETURNED':
+      bg = '#D1FAE5'; color = '#065F46'; IconComp = CheckCircle2;
+      break;
+    case 'OVERDUE':
+      bg = '#FEE2E2'; color = '#991B1B'; IconComp = AlertTriangle;
+      break;
+    case 'REJECTED':
+      bg = '#F3F4F6'; color = '#e62323ff'; IconComp = XCircle;
+      break;
+    default:
+      bg = '#F3F4F6'; color = '#6B7280'; IconComp = Clock;
+  }
+
+  return (
+    <View style={[styles.badge, { backgroundColor: bg }]}>
+      <IconComp size={11} color={color} />
+      <Text style={[styles.badgeText, { color }]}>{STATUS_LABEL[status] ?? status}</Text>
+    </View>
+  );
+};
+
+interface BookItemRowProps {
+  item: LoanDetails;
+}
+const BookItemRow = ({ item }: BookItemRowProps) => (
+  <View style={styles.bookRow}>
+    {item.url ? (
+      <Image source={{ uri: item.url }} style={styles.bookThumb} resizeMode="cover" />
+    ) : (
+      <View style={[styles.bookThumb, styles.bookThumbPlaceholder]}>
+        <Book size={16} color="#9CA3AF" />
+      </View>
+    )}
+    <View style={styles.bookRowInfo}>
+      <Text style={styles.bookRowTitle} numberOfLines={2}>{item.bookName}</Text>
+      <View style={styles.bookRowMeta}>
+        <Barcode size={11} color="#9CA3AF" />
+        <Text style={styles.bookRowMetaText}>{item.barcode}</Text>
+      </View>
+    </View>
+    <StatusBadge status={item.status} />
+  </View>
+);
+
+// --------------------------------------------------------------------------
+// Main Screen
+// --------------------------------------------------------------------------
 
 export default function LoanManagementScreen() {
-  const [loans, setLoans] = useState<LoanDetailsByPage[]>([]);
+  const [loans, setLoans] = useState<LoanDetailDTO[]>([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>('ALL');
-  
+
   // Pagination
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [pageSize] = useState(10);
+  const PAGE_SIZE = 10;
 
-  // Statistics
+  // Detail modal
+  const [selectedLoan, setSelectedLoan] = useState<LoanDetailDTO | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [barcodeInput, setBarcodeInput] = useState('');
+
+  // Stats
   const [stats, setStats] = useState({
-    total: 0,
+    pending: 0,
     borrowing: 0,
-    overdue: 0,
+    rejected: 0,
     returned: 0,
+    overdue: 0
   });
 
+  // -----------------------------------------------------------------------
+  // Data fetching
+  // -----------------------------------------------------------------------
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const [
+        pendingRes,
+        borrowingRes,
+        rejectedRes,
+        returnedRes,
+        overdueRes
+      ] = await Promise.allSettled([
+        loanService.getLoanByStatus('PENDING'),
+        loanService.getLoanByStatus('BORROWING'),
+        loanService.getLoanByStatus('REJECTED'),
+        loanService.getLoanByStatus('RETURNED'),
+        loanService.getLoanByStatus('OVERDUE'),
+      ]);
+      setStats({
+        pending: pendingRes.status === 'fulfilled' ? (pendingRes.value?.data?.length ?? 0) : 0,
+        borrowing: borrowingRes.status === 'fulfilled' ? (borrowingRes.value?.data?.length ?? 0) : 0,
+        rejected: rejectedRes.status === 'fulfilled' ? (rejectedRes.value?.data?.length ?? 0) : 0,
+        returned: returnedRes.status === 'fulfilled' ? (returnedRes.value?.data?.length ?? 0) : 0,
+        overdue: overdueRes.status === 'fulfilled' ? (overdueRes.value?.data?.length ?? 0) : 0,
+      });
+    } catch (_) { }
+  }, []);
+
   const fetchLoans = useCallback(async (targetPage: number, isRefresh = false) => {
-    if (isRefresh) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
 
     try {
-      const response = await loanService.getLoanDetailsByPage(targetPage, pageSize);
-      if (response && response.data) {
-        setLoans(response.data);
-        const meta = response.meta || {};
-        setTotalPages(meta.totalPages || 1);
-        
-        // Calculate statistics based on fetched batch & counts
-        const total = meta.total || response.data.length;
-        const borrowingCount = response.data.filter(l => l.status === 'BORROWING').length;
-        const overdueCount = response.data.filter(l => l.status === 'OVERDUE').length;
-        const returnedCount = response.data.filter(l => l.status === 'RETURNED').length;
-
-        setStats({
-          total,
-          borrowing: borrowingCount,
-          overdue: overdueCount,
-          returned: returnedCount,
-        });
+      if (activeTab === 'ALL') {
+        const response = await loanService.getLoanDetails();
+        const flatData = response.data || [];
+        const grouped = new Map<string, LoanDetailDTO>();
+        for (const row of flatData) {
+          if (!grouped.has(row.loanId)) {
+            grouped.set(row.loanId, {
+              loanId: row.loanId,
+              borrowDate: row.borrowDate,
+              dueDate: row.dueDate,
+              status: row.status as any,
+              userName: row.userName,
+              userId: row.userId,
+              loanDetails: [],
+            });
+          }
+          grouped.get(row.loanId)!.loanDetails.push({
+            loanDetailId: row.loanDetailId,
+            returnDate: row.returnDate,
+            status: row.status as any,
+            copyBookId: row.copyBookId,
+            url: row.url,
+            bookId: row.bookId,
+            bookName: row.bookName,
+            barcode: row.barcode,
+          });
+        }
+        setLoans(Array.from(grouped.values()));
+      } else {
+        const response = await loanService.getLoanByStatus(activeTab);
+        const data: LoanDetailDTO[] = response?.data ?? [];
+        setLoans(data);
       }
     } catch (error) {
-      console.error('Error fetching loans:', error);
-      Alert.alert('Error', 'Unable to load loan details list.');
+      console.error('Error fetching loan requests:', error);
+      Alert.alert('Lỗi', 'Không thể tải danh sách yêu cầu mượn.');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [pageSize]);
+  }, [activeTab]);
+
+  useEffect(() => {
+    setPage(1);
+    fetchLoans(1);
+    fetchStats();
+  }, [activeTab]);
 
   useEffect(() => {
     fetchLoans(page);
-  }, [page, fetchLoans]);
+  }, [page]);
 
   const handleRefresh = () => {
     setPage(1);
     fetchLoans(1, true);
+    fetchStats();
   };
 
-  const handleReturnBook = (barcode: string, bookName: string) => {
+  // -----------------------------------------------------------------------
+  // Actions
+  // -----------------------------------------------------------------------
+
+  const handleOpenDetail = async (loan: LoanDetailDTO) => {
+    setSelectedLoan(loan);
+    setBarcodeInput('');
+    if (!loan.loanDetails || loan.loanDetails.length === 0) {
+      setDetailLoading(true);
+      try {
+        const res = await loanService.getLoanDetail(loan.loanId);
+        if (res?.data) setSelectedLoan(res.data);
+      } catch (_) { }
+      finally { setDetailLoading(false); }
+    }
+  };
+
+  const handleConfirmAction = (loanId: string, status: 'BORROWING' | 'REJECTED') => {
+    const isApprove = status === 'BORROWING';
     Alert.alert(
-      'Confirm Return',
-      `Are you sure you want to mark the book "${bookName}" (Barcode: ${barcode}) as returned?`,
+      isApprove ? 'Duyệt yêu cầu' : 'Từ chối yêu cầu',
+      isApprove
+        ? 'Bạn có chắc chắn muốn duyệt yêu cầu mượn sách này không?'
+        : 'Bạn có chắc chắn muốn từ chối yêu cầu mượn sách này không?',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'Hủy', style: 'cancel' },
         {
-          text: 'Return Book',
-          style: 'default',
+          text: isApprove ? 'Duyệt' : 'Từ chối',
+          style: isApprove ? 'default' : 'destructive',
           onPress: async () => {
+            setActionLoading(true);
             try {
-              setLoading(true);
-              await loanService.returnBookByBarcode([barcode]);
-              Alert.alert('Success', 'Book has been returned successfully!');
+              await loanService.confirmLoan({ loanId, status });
+              Alert.alert('Thành công', isApprove ? 'Đã duyệt yêu cầu thành công.' : 'Đã từ chối yêu cầu.');
+              setSelectedLoan(null);
               fetchLoans(page);
-            } catch (error: any) {
-              console.error('Error returning book:', error);
-              Alert.alert('Error', error.response?.data?.message || 'Could not return book. Please try again.');
+              fetchStats();
+            } catch (err: any) {
+              Alert.alert('Lỗi', err?.response?.data?.message || 'Có lỗi xảy ra. Vui lòng thử lại.');
             } finally {
-              setLoading(false);
+              setActionLoading(false);
             }
           },
         },
@@ -128,128 +283,358 @@ export default function LoanManagementScreen() {
     );
   };
 
-  // Filtered Loans based on search query and status tabs
-  const filteredLoans = useMemo(() => {
-    return loans.filter((loan) => {
-      // Status Filter
-      if (activeTab !== 'ALL' && loan.status !== activeTab) {
-        return false;
-      }
-      
-      // Search Filter (Book name, userName, barcode)
-      const q = searchQuery.toLowerCase().trim();
-      if (!q) return true;
-
-      return (
-        loan.bookName?.toLowerCase().includes(q) ||
-        loan.userName?.toLowerCase().includes(q) ||
-        loan.barcode?.toLowerCase().includes(q)
-      );
-    });
-  }, [loans, activeTab, searchQuery]);
-
-  const renderStatusBadge = (status: string) => {
-    let badgeStyle = styles.borrowingBadge;
-    let badgeText = styles.borrowingText;
-    let Icon = Clock;
-    let label = 'Borrowing';
-
-    if (status === 'RETURNED') {
-      badgeStyle = styles.returnedBadge;
-      badgeText = styles.returnedText;
-      Icon = CheckCircle2;
-      label = 'Returned';
-    } else if (status === 'OVERDUE') {
-      badgeStyle = styles.overdueBadge;
-      badgeText = styles.overdueText;
-      Icon = AlertTriangle;
-      label = 'Overdue';
-    }
-
-    return (
-      <View style={[styles.badge, badgeStyle]}>
-        <Icon size={12} color={badgeText.color} style={styles.badgeIcon} />
-        <Text style={[styles.badgeTextBase, badgeText]}>{label}</Text>
-      </View>
+  const handleReturnLoan = (loanId: string) => {
+    Alert.alert(
+      'Xác nhận trả sách',
+      'Bạn có chắc chắn muốn xác nhận trả tất cả sách của yêu cầu này không?',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Trả sách',
+          style: 'default',
+          onPress: async () => {
+            if (!selectedLoan) return;
+            const barcodes = selectedLoan.loanDetails
+              ?.filter((d) => d.status === 'BORROWING' || d.status === 'OVERDUE')
+              .map((d) => d.barcode)
+              .filter(Boolean);
+            if (!barcodes || barcodes.length === 0) {
+              Alert.alert('Thông báo', 'Không có sách nào đang được mượn trong yêu cầu này.');
+              return;
+            }
+            setActionLoading(true);
+            try {
+              await loanService.returnBookByBarcode(barcodes);
+              Alert.alert('Thành công', 'Đã xác nhận trả sách thành công.');
+              setSelectedLoan(null);
+              fetchLoans(page);
+              fetchStats();
+            } catch (err: any) {
+              Alert.alert('Lỗi', err?.response?.data?.message || 'Không thể xử lý trả sách.');
+            } finally {
+              setActionLoading(false);
+            }
+          },
+        },
+      ]
     );
   };
 
-  const renderLoanItem = ({ item }: { item: LoanDetailsByPage }) => {
-    const isBorrowing = item.status === 'BORROWING' || item.status === 'OVERDUE';
+  const handleBarcodeReturn = async () => {
+    const trimmed = barcodeInput.trim();
+    if (!trimmed) {
+      Alert.alert('Thông báo', 'Vui lòng nhập hoặc quét mã barcode.');
+      return;
+    }
+    setActionLoading(true);
+    try {
+      await loanService.returnBookByBarcode([trimmed]);
+      Alert.alert('Thành công', `Đã xử lý trả sách cho barcode: ${trimmed}`);
+      setBarcodeInput('');
+      fetchLoans(page);
+      fetchStats();
+    } catch (err: any) {
+      Alert.alert('Lỗi', err?.response?.data?.message || 'Không thể xử lý trả sách.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // -----------------------------------------------------------------------
+  // Filtering & Pagination
+  // -----------------------------------------------------------------------
+
+  const filteredLoans = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return loans;
+    return loans.filter(
+      (l) =>
+        l.userName?.toLowerCase().includes(q) ||
+        l.userId?.toLowerCase().includes(q) ||
+        l.loanDetails?.some(
+          (d) =>
+            d.bookName?.toLowerCase().includes(q) ||
+            d.barcode?.toLowerCase().includes(q)
+        )
+    );
+  }, [loans, searchQuery]);
+
+  // Handle totalPages and page reset when filters change
+  useEffect(() => {
+    const newTotalPages = Math.ceil(filteredLoans.length / PAGE_SIZE) || 1;
+    setTotalPages(newTotalPages);
+    if (page > newTotalPages) {
+      setPage(1);
+    }
+  }, [filteredLoans, PAGE_SIZE, page]);
+
+  // Slice data for current page
+  const paginatedLoans = useMemo(() => {
+    const startIndex = (page - 1) * PAGE_SIZE;
+    return filteredLoans.slice(startIndex, startIndex + PAGE_SIZE);
+  }, [filteredLoans, page, PAGE_SIZE]);
+
+  // -----------------------------------------------------------------------
+  // Render helpers
+  // -----------------------------------------------------------------------
+
+  const TABS: { key: TabType; label: string }[] = [
+    { key: 'ALL', label: 'Tất cả' },
+    { key: 'PENDING', label: 'Chờ duyệt' },
+    { key: 'BORROWING', label: 'Đang mượn' },
+    { key: 'OVERDUE', label: 'Quá hạn' },
+    { key: 'RETURNED', label: 'Đã trả' },
+    { key: 'REJECTED', label: 'Đã từ chối' },
+  ];
+
+  const renderLoanCard = ({ item }: { item: LoanDetailDTO }) => {
+    const isPending = item.status === 'PENDING';
+    const initials = item.userName
+      ? item.userName.split(' ').map((w) => w[0]).slice(-2).join('').toUpperCase()
+      : '?';
+
     return (
-      <View style={styles.card}>
+      <TouchableOpacity style={styles.card} onPress={() => handleOpenDetail(item)} activeOpacity={0.85}>
         <View style={styles.cardHeader}>
-          <View style={styles.bookInfoContainer}>
-            {item.url ? (
-              <Image source={{ uri: item.url }} style={styles.bookImage} resizeMode="cover" />
-            ) : (
-              <View style={styles.bookImagePlaceholder}>
-                <Book size={20} color="#828282" />
-              </View>
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarInitials}>{initials}</Text>
+          </View>
+          <View style={styles.cardHeaderInfo}>
+            <Text style={styles.cardBorrowerName} numberOfLines={1}>
+              {item.userName || 'Người dùng không rõ'}
+            </Text>
+            <Text style={styles.cardLoanId}>#{item.loanId?.slice(0, 8).toUpperCase()}</Text>
+          </View>
+          <StatusBadge status={item.status} />
+        </View>
+
+        <View style={styles.cardDates}>
+          <View style={styles.dateChip}>
+            <Calendar size={12} color="#6B7280" />
+            <Text style={styles.dateChipText}>Mượn: {item.borrowDate}</Text>
+          </View>
+          <View style={styles.dateChip}>
+            <Calendar size={12} color={item.status === 'OVERDUE' ? '#EF4444' : '#6B7280'} />
+            <Text style={[styles.dateChipText, item.status === 'OVERDUE' && { color: '#EF4444' }]}>
+              Hạn: {item.dueDate}
+            </Text>
+          </View>
+        </View>
+
+        {item.loanDetails && item.loanDetails.length > 0 && (
+          <View style={styles.bookListPreview}>
+            <Text style={styles.bookListLabel}>
+              Sách đăng ký ({item.loanDetails.length} cuốn)
+            </Text>
+            {item.loanDetails.slice(0, 2).map((detail) => (
+              <BookItemRow key={detail.loanDetailId} item={detail} />
+            ))}
+            {item.loanDetails.length > 2 && (
+              <Text style={styles.moreBooks}>+{item.loanDetails.length - 2} cuốn khác...</Text>
             )}
-            <View style={styles.bookTextContainer}>
-              <Text style={styles.bookTitle} numberOfLines={2}>{item.bookName}</Text>
-              <View style={styles.barcodeRow}>
-                <Barcode size={12} color="#8E8E93" />
-                <Text style={styles.barcodeText}>{item.barcode}</Text>
-              </View>
-            </View>
           </View>
-          {renderStatusBadge(item.status)}
-        </View>
+        )}
 
-        <View style={styles.divider} />
-
-        <View style={styles.cardBody}>
-          <View style={styles.infoRow}>
-            <User size={14} color="#8E8E93" style={styles.infoIcon} />
-            <Text style={styles.infoLabel}>Borrower:</Text>
-            <Text style={styles.infoValue}>{item.userName || 'Anonymous User'}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Calendar size={14} color="#8E8E93" style={styles.infoIcon} />
-            <Text style={styles.infoLabel}>Borrowed On:</Text>
-            <Text style={styles.infoValue}>{item.borrowDate}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Calendar size={14} color={item.status === 'OVERDUE' ? '#EB5757' : '#8E8E93'} style={styles.infoIcon} />
-            <Text style={[styles.infoLabel, item.status === 'OVERDUE' && styles.alertText]}>Due Date:</Text>
-            <Text style={[styles.infoValue, item.status === 'OVERDUE' && styles.alertTextBold]}>{item.dueDate}</Text>
-          </View>
-
-          {item.status === 'RETURNED' && item.returnDate && (
-            <View style={styles.infoRow}>
-              <CheckCircle2 size={14} color="#27AE60" style={styles.infoIcon} />
-              <Text style={styles.infoLabel}>Returned On:</Text>
-              <Text style={[styles.infoValue, styles.successTextBold]}>{item.returnDate}</Text>
-            </View>
-          )}
-        </View>
-
-        {isBorrowing && (
+        {isPending && (
           <View style={styles.cardActions}>
-            <TouchableOpacity 
-              style={styles.returnButton} 
-              onPress={() => handleReturnBook(item.barcode, item.bookName)}
+            <TouchableOpacity
+              style={styles.rejectBtn}
+              onPress={() => handleConfirmAction(item.loanId, 'REJECTED')}
+              disabled={actionLoading}
             >
-              <RotateCcw size={14} color="#ffffff" style={styles.actionIcon} />
-              <Text style={styles.returnButtonText}>Mark as Returned</Text>
+              <XCircle size={14} color="#EF4444" />
+              <Text style={styles.rejectBtnText}>Từ chối</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.approveBtn}
+              onPress={() => handleConfirmAction(item.loanId, 'BORROWING')}
+              disabled={actionLoading}
+            >
+              {actionLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <ShieldCheck size={14} color="#ffffff" />
+                  <Text style={styles.approveBtnText}>Duyệt yêu cầu</Text>
+                </>
+              )}
             </TouchableOpacity>
           </View>
         )}
-      </View>
+
+        {(item.status === 'BORROWING' || item.status === 'OVERDUE') && (
+          <View style={styles.cardActions}>
+            <TouchableOpacity
+              style={styles.returnBtn}
+              onPress={() => handleOpenDetail(item)}
+              disabled={actionLoading}
+            >
+              <ArrowDownToLine size={14} color="#ffffff" />
+              <Text style={styles.returnBtnText}>Xác nhận trả sách</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </TouchableOpacity>
     );
   };
 
+  // -----------------------------------------------------------------------
+  // Detail Modal
+  // -----------------------------------------------------------------------
+
+  const renderDetailModal = () => {
+    if (!selectedLoan) return null;
+    const isPending = selectedLoan.status === 'PENDING';
+
+    return (
+      <Modal
+        visible={!!selectedLoan}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setSelectedLoan(null)}
+      >
+        <SafeAreaView style={styles.modalSafe}>
+          <View style={styles.modalHeader}>
+            <View>
+              <Text style={styles.modalTitle}>Chi tiết phiếu mượn</Text>
+              <Text style={styles.modalSubtitle}>#{selectedLoan.loanId?.slice(0, 8).toUpperCase()}</Text>
+            </View>
+            <TouchableOpacity onPress={() => setSelectedLoan(null)} style={styles.closeBtn}>
+              <X size={20} color="#374151" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView contentContainerStyle={styles.modalScroll} showsVerticalScrollIndicator={false}>
+            <View style={styles.modalSection}>
+              <View style={styles.modalBorrowerRow}>
+                <View style={[styles.avatarCircle, styles.avatarCircleLg]}>
+                  <Text style={[styles.avatarInitials, styles.avatarInitialsLg]}>
+                    {(selectedLoan.userName ?? '?').split(' ').map((w) => w[0]).slice(-2).join('').toUpperCase()}
+                  </Text>
+                </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={styles.modalBorrowerName}>{selectedLoan.userName || 'Không rõ'}</Text>
+                  <Text style={styles.modalBorrowerId}>ID: {selectedLoan.userId?.slice(0, 12) || '—'}</Text>
+                </View>
+                <StatusBadge status={selectedLoan.status} />
+              </View>
+            </View>
+
+            <View style={styles.modalSection}>
+              <Text style={styles.sectionLabel}>Thông tin thời gian</Text>
+              <View style={styles.infoRow}>
+                <Calendar size={14} color="#6B7280" />
+                <Text style={styles.infoKey}>Ngày mượn</Text>
+                <Text style={styles.infoValue}>{selectedLoan.borrowDate}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Calendar size={14} color={selectedLoan.status === 'OVERDUE' ? '#EF4444' : '#6B7280'} />
+                <Text style={[styles.infoKey, selectedLoan.status === 'OVERDUE' && { color: '#EF4444' }]}>Hạn trả</Text>
+                <Text style={[styles.infoValue, selectedLoan.status === 'OVERDUE' && { color: '#EF4444', fontWeight: '700' }]}>
+                  {selectedLoan.dueDate}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.modalSection}>
+              <Text style={styles.sectionLabel}>
+                Sách đăng ký ({selectedLoan.loanDetails?.length ?? 0} cuốn)
+              </Text>
+              {detailLoading ? (
+                <ActivityIndicator color="#10B981" style={{ marginTop: 12 }} />
+              ) : selectedLoan.loanDetails?.length > 0 ? (
+                selectedLoan.loanDetails.map((detail) => (
+                  <BookItemRow key={detail.loanDetailId} item={detail} />
+                ))
+              ) : (
+                <Text style={styles.emptySubText}>Không có sách nào.</Text>
+              )}
+            </View>
+
+            <View style={styles.modalSection}>
+              <Text style={styles.sectionLabel}>Quét / Nhập barcode trả sách nhanh</Text>
+              <View style={styles.barcodeInputRow}>
+                <ScanBarcode size={18} color="#6B7280" style={{ marginRight: 8 }} />
+                <TextInput
+                  style={styles.barcodeInput}
+                  placeholder="Nhập hoặc quét barcode..."
+                  placeholderTextColor="#9CA3AF"
+                  value={barcodeInput}
+                  onChangeText={setBarcodeInput}
+                  returnKeyType="send"
+                  onSubmitEditing={handleBarcodeReturn}
+                />
+                <TouchableOpacity
+                  style={styles.barcodeSendBtn}
+                  onPress={handleBarcodeReturn}
+                  disabled={actionLoading}
+                >
+                  <SendHorizonal size={16} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+
+          {isPending && (
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.modalRejectBtn}
+                onPress={() => handleConfirmAction(selectedLoan.loanId, 'REJECTED')}
+                disabled={actionLoading}
+              >
+                <XCircle size={16} color="#EF4444" />
+                <Text style={styles.modalRejectBtnText}>Từ chối</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalApproveBtn}
+                onPress={() => handleConfirmAction(selectedLoan.loanId, 'BORROWING')}
+                disabled={actionLoading}
+              >
+                {actionLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <ShieldCheck size={16} color="#fff" />
+                    <Text style={styles.modalApproveBtnText}>Duyệt yêu cầu</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {(selectedLoan.status === 'BORROWING' || selectedLoan.status === 'OVERDUE') && (
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.modalReturnBtn}
+                onPress={() => handleReturnLoan(selectedLoan.loanId)}
+                disabled={actionLoading}
+              >
+                {actionLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <ArrowDownToLine size={16} color="#fff" />
+                    <Text style={styles.modalReturnBtnText}>Xác nhận trả sách</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+        </SafeAreaView>
+      </Modal>
+    );
+  };
+
+  // -----------------------------------------------------------------------
+  // Root render
+  // -----------------------------------------------------------------------
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      {/* Header */}
       <View style={styles.header}>
         <View style={styles.logoContainer}>
           <View style={styles.logoIcon}>
-            <Leaf size={16} color="#ffffff" />
+            <Leaf size={15} color="#ffffff" />
           </View>
           <View>
             <Text style={styles.logoTitle}>BookConnect</Text>
@@ -258,90 +643,111 @@ export default function LoanManagementScreen() {
         </View>
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.headerIconButton}>
-            <Bell size={20} color="#333333" />
+            <Bell size={20} color="#374151" />
           </TouchableOpacity>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>AD</Text>
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarInitials}>AD</Text>
           </View>
         </View>
       </View>
 
       <FlatList
-        data={filteredLoans}
-        renderItem={renderLoanItem}
-        keyExtractor={(item) => item.loanDetailId}
+        data={paginatedLoans}
+        renderItem={renderLoanCard}
+        keyExtractor={(item) => item.loanId}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#27AE60']} />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#10B981']} />
         }
         ListHeaderComponent={
           <>
-            {/* Title */}
             <View style={styles.titleContainer}>
-              <Text style={styles.titleText}>Loan & Borrows Management</Text>
-              <Text style={styles.subtitleText}>Track, search, and manage book loans.</Text>
+              <View style={styles.titleRow}>
+                <ClipboardList size={22} color="#10B981" style={{ marginRight: 8 }} />
+                <Text style={styles.titleText}>Quản lý mượn sách</Text>
+              </View>
+              <Text style={styles.subtitleText}>Theo dõi và quản lý mượn/trả sách toàn diện.</Text>
             </View>
 
-            {/* Statistics */}
-            <View style={styles.statsContainer}>
-              <View style={[styles.statCard, { borderLeftColor: '#2F80ED', borderLeftWidth: 4 }]}>
-                <Text style={styles.statNumber}>{stats.total}</Text>
-                <Text style={styles.statLabel}>Total Page</Text>
+            <View style={styles.statsGrid}>
+              <View style={[styles.statCard, { borderLeftColor: '#F59E0B' }]}>
+                <Clock size={16} color="#F59E0B" />
+                <Text style={[styles.statNum, { color: '#B45309' }]}>{stats.pending}</Text>
+                <Text style={styles.statLabel}>Chờ duyệt</Text>
               </View>
-              <View style={[styles.statCard, { borderLeftColor: '#F2994A', borderLeftWidth: 4 }]}>
-                <Text style={styles.statNumber}>{stats.borrowing}</Text>
-                <Text style={styles.statLabel}>Borrowing</Text>
+              <View style={[styles.statCard, { borderLeftColor: '#3B82F6' }]}>
+                <BookOpen size={16} color="#3B82F6" />
+                <Text style={[styles.statNum, { color: '#1D4ED8' }]}>{stats.borrowing}</Text>
+                <Text style={styles.statLabel}>Đang mượn</Text>
               </View>
-              <View style={[styles.statCard, { borderLeftColor: '#EB5757', borderLeftWidth: 4 }]}>
-                <Text style={styles.statNumber}>{stats.overdue}</Text>
-                <Text style={styles.statLabel}>Overdue</Text>
+              <View style={[styles.statCard, { borderLeftColor: '#10B981' }]}>
+                <CheckCircle2 size={16} color="#10B981" />
+                <Text style={[styles.statNum, { color: '#065F46' }]}>{stats.returned}</Text>
+                <Text style={styles.statLabel}>Đã trả</Text>
               </View>
-              <View style={[styles.statCard, { borderLeftColor: '#27AE60', borderLeftWidth: 4 }]}>
-                <Text style={styles.statNumber}>{stats.returned}</Text>
-                <Text style={styles.statLabel}>Returned</Text>
+              <View style={[styles.statCard, { borderLeftColor: '#EF4444' }]}>
+                <AlertTriangle size={16} color="#EF4444" />
+                <Text style={[styles.statNum, { color: '#991B1B' }]}>{stats.overdue}</Text>
+                <Text style={styles.statLabel}>Quá hạn</Text>
+              </View>
+              <View style={[styles.statCard, { borderLeftColor: '#8B5CF6', width: '98%' }]}>
+                <XCircle size={16} color="#8B5CF6" />
+                <Text style={[styles.statNum, { color: '#6D28D9' }]}>{stats.rejected}</Text>
+                <Text style={styles.statLabel}>Từ chối</Text>
               </View>
             </View>
 
-            {/* Search Bar */}
             <View style={styles.searchContainer}>
-              <Search size={18} color="#8E8E93" style={styles.searchIcon} />
+              <Search size={17} color="#9CA3AF" style={{ marginRight: 8 }} />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Search by Title, Borrower, or Barcode..."
-                placeholderTextColor="#AEAEB2"
+                placeholder="Tìm sách, người mượn, barcode..."
+                placeholderTextColor="#D1D5DB"
                 value={searchQuery}
                 onChangeText={setSearchQuery}
               />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <X size={16} color="#9CA3AF" />
+                </TouchableOpacity>
+              )}
             </View>
 
-            {/* Tabs */}
-            <View style={styles.tabsContainer}>
-              {(['ALL', 'BORROWING', 'OVERDUE', 'RETURNED'] as TabType[]).map((tab) => {
-                const isActive = activeTab === tab;
-                return (
-                  <TouchableOpacity
-                    key={tab}
-                    style={[styles.tabButton, isActive && styles.activeTabButton]}
-                    onPress={() => setActiveTab(tab)}
-                  >
-                    <Text style={[styles.tabButtonText, isActive && styles.activeTabButtonText]}>
-                      {tab.charAt(0) + tab.slice(1).toLowerCase()}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll}>
+              <View style={styles.tabsContainer}>
+                {TABS.map((tab) => {
+                  const isActive = activeTab === tab.key;
+                  let badgeCount = 0;
+                  if (tab.key === 'PENDING') badgeCount = stats.pending;
+                  if (tab.key === 'BORROWING') badgeCount = stats.borrowing;
+                  if (tab.key === 'OVERDUE') badgeCount = stats.overdue;
+
+                  return (
+                    <TouchableOpacity
+                      key={tab.key}
+                      style={[styles.tabButton, isActive && styles.tabButtonActive]}
+                      onPress={() => setActiveTab(tab.key)}
+                    >
+                      <Text style={[styles.tabButtonText, isActive && styles.tabButtonTextActive]}>
+                        {tab.label}
+                        {badgeCount > 0 && ` (${badgeCount})`}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </ScrollView>
           </>
         }
         ListEmptyComponent={
           loading ? (
-            <ActivityIndicator size="large" color="#27AE60" style={styles.spinner} />
+            <ActivityIndicator size="large" color="#10B981" style={styles.spinner} />
           ) : (
             <View style={styles.emptyContainer}>
-              <BookOpen size={48} color="#C7C7CC" />
-              <Text style={styles.emptyText}>No loan records found.</Text>
-              <Text style={styles.emptySubText}>Try adjusting your search or filters.</Text>
+              <Inbox size={52} color="#D1D5DB" />
+              <Text style={styles.emptyText}>Không có dữ liệu.</Text>
+              <Text style={styles.emptySubText}>Thử đổi bộ lọc hoặc làm mới danh sách.</Text>
             </View>
           )
         }
@@ -350,384 +756,121 @@ export default function LoanManagementScreen() {
             <View style={styles.paginationContainer}>
               <TouchableOpacity
                 style={[styles.pageBtn, page === 1 && styles.pageBtnDisabled]}
-                onPress={() => setPage((prev) => Math.max(prev - 1, 1))}
+                onPress={() => setPage((p) => Math.max(p - 1, 1))}
                 disabled={page === 1}
               >
-                <ChevronLeft size={20} color={page === 1 ? '#AEAEB2' : '#4F4F4F'} />
+                <ChevronLeft size={20} color={page === 1 ? '#D1D5DB' : '#374151'} />
               </TouchableOpacity>
-              <Text style={styles.paginationInfo}>
-                Page {page} of {totalPages}
-              </Text>
+              <Text style={styles.paginationInfo}>Trang {page} / {totalPages}</Text>
               <TouchableOpacity
                 style={[styles.pageBtn, page === totalPages && styles.pageBtnDisabled]}
-                onPress={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+                onPress={() => setPage((p) => Math.min(p + 1, totalPages))}
                 disabled={page === totalPages}
               >
-                <ChevronRight size={20} color={page === totalPages ? '#AEAEB2' : '#4F4F4F'} />
+                <ChevronRight size={20} color={page === totalPages ? '#D1D5DB' : '#374151'} />
               </TouchableOpacity>
             </View>
           ) : null
         }
       />
+
+      {renderDetailModal()}
     </SafeAreaView>
   );
 }
 
+// --------------------------------------------------------------------------
+// Styles
+// --------------------------------------------------------------------------
+
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
-  header: {
-    height: 56,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
-  },
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  logoIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 6,
-    backgroundColor: '#27AE60',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  logoTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#333333',
-  },
-  logoSubtitle: {
-    fontSize: 9,
-    fontWeight: '600',
-    color: '#8E8E93',
-    letterSpacing: 0.5,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerIconButton: {
-    padding: 6,
-    marginRight: 8,
-  },
-  avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#EAFBF1',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#27AE60',
-  },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 32,
-  },
-  titleContainer: {
-    marginBottom: 16,
-  },
-  titleText: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#333333',
-  },
-  subtitleText: {
-    fontSize: 13,
-    color: '#8E8E93',
-    marginTop: 2,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  statCard: {
-    width: (screenWidth - 32 - 24) / 4,
-    backgroundColor: '#ffffff',
-    padding: 10,
-    borderRadius: 8,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#333333',
-  },
-  statLabel: {
-    fontSize: 9,
-    color: '#8E8E93',
-    marginTop: 2,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    height: 44,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-    marginBottom: 16,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    color: '#333333',
-  },
-  tabsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  tabButton: {
-    flex: 1,
-    paddingVertical: 8,
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    marginHorizontal: 3,
-    borderWidth: 1,
-    borderColor: '#E5E5EA',
-  },
-  activeTabButton: {
-    backgroundColor: '#27AE60',
-    borderColor: '#27AE60',
-  },
-  tabButtonText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#4F4F4F',
-  },
-  activeTabButtonText: {
-    color: '#ffffff',
-  },
-  spinner: {
-    marginTop: 40,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-  },
-  emptyText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#4F4F4F',
-    marginTop: 12,
-  },
-  emptySubText: {
-    fontSize: 13,
-    color: '#8E8E93',
-    marginTop: 4,
-  },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  bookInfoContainer: {
-    flexDirection: 'row',
-    flex: 1,
-    marginRight: 8,
-  },
-  bookImage: {
-    width: 46,
-    height: 64,
-    borderRadius: 6,
-    backgroundColor: '#F0F0F0',
-  },
-  bookImagePlaceholder: {
-    width: 46,
-    height: 64,
-    borderRadius: 6,
-    backgroundColor: '#F2F2F7',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  bookTextContainer: {
-    marginLeft: 12,
-    flex: 1,
-    justifyContent: 'center',
-  },
-  bookTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#333333',
-    lineHeight: 18,
-    marginBottom: 4,
-  },
-  barcodeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  barcodeText: {
-    fontSize: 11,
-    color: '#8E8E93',
-    marginLeft: 4,
-    fontWeight: '500',
-  },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  badgeIcon: {
-    marginRight: 4,
-  },
-  badgeTextBase: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  borrowingBadge: {
-    backgroundColor: '#FFF5E6',
-  },
-  borrowingText: {
-    color: '#F2994A',
-  },
-  returnedBadge: {
-    backgroundColor: '#EAFBF1',
-  },
-  returnedText: {
-    color: '#27AE60',
-  },
-  overdueBadge: {
-    backgroundColor: '#FEE8E7',
-  },
-  overdueText: {
-    color: '#EB5757',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#F2F2F7',
-    marginVertical: 10,
-  },
-  cardBody: {
-    marginBottom: 8,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  infoIcon: {
-    marginRight: 6,
-  },
-  infoLabel: {
-    fontSize: 12,
-    color: '#8E8E93',
-    width: 90,
-  },
-  infoValue: {
-    fontSize: 12,
-    color: '#333333',
-    fontWeight: '500',
-    flex: 1,
-  },
-  alertText: {
-    color: '#EB5757',
-  },
-  alertTextBold: {
-    color: '#EB5757',
-    fontWeight: '700',
-  },
-  successTextBold: {
-    color: '#27AE60',
-    fontWeight: '700',
-  },
-  cardActions: {
-    marginTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F2F2F7',
-    paddingTop: 12,
-  },
-  returnButton: {
-    backgroundColor: '#27AE60',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  actionIcon: {
-    marginRight: 6,
-  },
-  returnButtonText: {
-    color: '#ffffff',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  paginationContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 16,
-    paddingVertical: 10,
-  },
-  pageBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#ffffff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginHorizontal: 16,
-    borderWidth: 1,
-    borderColor: '#E5E5EA',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  pageBtnDisabled: {
-    opacity: 0.5,
-    backgroundColor: '#F8F9FA',
-  },
-  paginationInfo: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#4F4F4F',
-  },
+  safeArea: { flex: 1, backgroundColor: '#F8FAFC' },
+  header: { height: 56, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, backgroundColor: '#ffffff', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+  logoContainer: { flexDirection: 'row', alignItems: 'center' },
+  logoIcon: { width: 28, height: 28, borderRadius: 7, backgroundColor: '#10B981', justifyContent: 'center', alignItems: 'center', marginRight: 8 },
+  logoTitle: { fontSize: 14, fontWeight: '700', color: '#111827' },
+  logoSubtitle: { fontSize: 9, fontWeight: '600', color: '#9CA3AF', letterSpacing: 0.6 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headerIconButton: { padding: 6 },
+  avatarCircle: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#D1FAE5', justifyContent: 'center', alignItems: 'center' },
+  avatarInitials: { fontSize: 12, fontWeight: '700', color: '#065F46' },
+  avatarCircleLg: { width: 48, height: 48, borderRadius: 24 },
+  avatarInitialsLg: { fontSize: 16 },
+  scrollContent: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 36 },
+  titleContainer: { marginBottom: 16 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },
+  titleText: { fontSize: 20, fontWeight: '800', color: '#111827' },
+  subtitleText: { fontSize: 13, color: '#6B7280', marginTop: 2 },
+  statsRow: { flexDirection: 'row', gap: 8, paddingRight: 16 },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  statCard: { width: '48%', backgroundColor: '#ffffff', borderRadius: 10, padding: 12, alignItems: 'center', borderLeftWidth: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 2, gap: 4 },
+  statNum: { fontSize: 17, fontWeight: '800' },
+  statLabel: { fontSize: 9, color: '#6B7280', fontWeight: '500', textAlign: 'center' },
+  searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff', borderRadius: 10, paddingHorizontal: 12, height: 44, borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 2, elevation: 1 },
+  searchInput: { flex: 1, fontSize: 14, color: '#111827' },
+  tabsScroll: { marginBottom: 16 },
+  tabsContainer: { flexDirection: 'row', gap: 8, paddingRight: 4 },
+  tabButton: { paddingHorizontal: 14, paddingVertical: 8, backgroundColor: '#ffffff', borderRadius: 20, borderWidth: 1, borderColor: '#E5E7EB' },
+  tabButtonActive: { backgroundColor: '#10B981', borderColor: '#10B981' },
+  tabButtonText: { fontSize: 13, fontWeight: '600', color: '#6B7280' },
+  tabButtonTextActive: { color: '#ffffff' },
+  card: { backgroundColor: '#ffffff', borderRadius: 14, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 3 },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  cardHeaderInfo: { flex: 1, marginLeft: 10 },
+  cardBorrowerName: { fontSize: 14, fontWeight: '700', color: '#111827' },
+  cardLoanId: { fontSize: 11, color: '#9CA3AF', marginTop: 2 },
+  cardDates: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  dateChip: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F9FAFB', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: '#E5E7EB' },
+  dateChipText: { fontSize: 11, color: '#6B7280', fontWeight: '500' },
+  bookListPreview: { borderTopWidth: 1, borderTopColor: '#F3F4F6', paddingTop: 10, marginBottom: 4 },
+  bookListLabel: { fontSize: 11, fontWeight: '600', color: '#9CA3AF', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  moreBooks: { fontSize: 11, color: '#10B981', marginTop: 6, fontWeight: '600' },
+  bookRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  bookThumb: { width: 40, height: 54, borderRadius: 6, marginRight: 10, backgroundColor: '#F0F0F0' },
+  bookThumbPlaceholder: { justifyContent: 'center', alignItems: 'center', backgroundColor: '#F3F4F6' },
+  bookRowInfo: { flex: 1, marginRight: 8 },
+  bookRowTitle: { fontSize: 13, fontWeight: '600', color: '#111827', lineHeight: 17 },
+  bookRowMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
+  bookRowMetaText: { fontSize: 11, color: '#9CA3AF' },
+  badge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 20, gap: 3 },
+  badgeText: { fontSize: 10, fontWeight: '700' },
+  cardActions: { flexDirection: 'row', gap: 10, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+  rejectBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 9, borderRadius: 10, borderWidth: 1.5, borderColor: '#EF4444', backgroundColor: '#FEF2F2' },
+  rejectBtnText: { fontSize: 13, fontWeight: '700', color: '#EF4444' },
+  approveBtn: { flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 9, borderRadius: 10, backgroundColor: '#10B981' },
+  approveBtnText: { fontSize: 13, fontWeight: '700', color: '#ffffff' },
+  spinner: { marginTop: 48 },
+  emptyContainer: { alignItems: 'center', paddingVertical: 64 },
+  emptyText: { fontSize: 16, fontWeight: '600', color: '#4B5563', marginTop: 14 },
+  emptySubText: { fontSize: 13, color: '#9CA3AF', marginTop: 4 },
+  paginationContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 16, paddingVertical: 10 },
+  pageBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#ffffff', justifyContent: 'center', alignItems: 'center', marginHorizontal: 14, borderWidth: 1, borderColor: '#E5E7EB', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 },
+  pageBtnDisabled: { opacity: 0.4, backgroundColor: '#F9FAFB' },
+  paginationInfo: { fontSize: 13, fontWeight: '600', color: '#374151' },
+  modalSafe: { flex: 1, backgroundColor: '#F8FAFC' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, backgroundColor: '#ffffff', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+  modalTitle: { fontSize: 18, fontWeight: '800', color: '#111827' },
+  modalSubtitle: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
+  closeBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center' },
+  modalScroll: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 24 },
+  modalSection: { backgroundColor: '#ffffff', borderRadius: 14, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+  sectionLabel: { fontSize: 11, fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 12 },
+  modalBorrowerRow: { flexDirection: 'row', alignItems: 'center' },
+  modalBorrowerName: { fontSize: 16, fontWeight: '700', color: '#111827' },
+  modalBorrowerId: { fontSize: 12, color: '#6B7280', marginTop: 2 },
+  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  infoKey: { width: 80, fontSize: 13, color: '#6B7280' },
+  infoValue: { flex: 1, fontSize: 13, color: '#111827', fontWeight: '600' },
+  barcodeInputRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', borderRadius: 10, borderWidth: 1, borderColor: '#E5E7EB', paddingHorizontal: 12, height: 46 },
+  barcodeInput: { flex: 1, fontSize: 14, color: '#111827' },
+  barcodeSendBtn: { width: 32, height: 32, borderRadius: 8, backgroundColor: '#10B981', justifyContent: 'center', alignItems: 'center' },
+  modalFooter: { flexDirection: 'row', gap: 12, paddingHorizontal: 20, paddingVertical: 14, backgroundColor: '#ffffff', borderTopWidth: 1, borderTopColor: '#E5E7EB' },
+  modalRejectBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 13, borderRadius: 12, borderWidth: 1.5, borderColor: '#EF4444', backgroundColor: '#FEF2F2' },
+  modalRejectBtnText: { fontSize: 14, fontWeight: '700', color: '#EF4444' },
+  modalApproveBtn: { flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 13, borderRadius: 12, backgroundColor: '#10B981' },
+  modalApproveBtnText: { fontSize: 14, fontWeight: '700', color: '#ffffff' },
+  returnBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 9, borderRadius: 10, backgroundColor: '#3B82F6' },
+  returnBtnText: { fontSize: 13, fontWeight: '700', color: '#ffffff' },
+  modalReturnBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 13, borderRadius: 12, backgroundColor: '#3B82F6' },
+  modalReturnBtnText: { fontSize: 14, fontWeight: '700', color: '#ffffff' },
 });

@@ -1,27 +1,27 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-
     "module": "CommonJS",
-
     "rootDir": "./src",
     "outDir": "./dist",
-
     "strict": true,
-
     "esModuleInterop": true,
     "resolveJsonModule": true,
-
-    "types": ["node"],
-
+    "types": [
+      "node"
+    ],
     "sourceMap": true,
-
     "skipLibCheck": true,
-     "experimentalDecorators": true,    
-    "emitDecoratorMetadata": true,     
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "strictPropertyInitialization": false
   },
-
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src/**/*",
+    "../FeBookManagementSystem/src/types/response"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }
