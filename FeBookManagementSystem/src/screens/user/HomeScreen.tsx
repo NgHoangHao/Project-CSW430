@@ -503,7 +503,6 @@ const styles = StyleSheet.create({
     marginVertical: 24,
   },
   recommendedList: {
-    flex:1,
     paddingLeft: 20,
     paddingRight: 4,
     paddingBottom: 24,
