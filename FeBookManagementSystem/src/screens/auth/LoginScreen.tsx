@@ -18,6 +18,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../store/authProvider';
 import { authApi } from '../../services/auth.service';
 import { ROUTES } from '../../constants/routes';
+import auth from '@react-native-firebase/auth';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 export const LoginScreen = ({ navigation }: { navigation: any }) => {
   const [email, setEmail] = useState('');
@@ -29,7 +31,7 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
     email: '',
     password: '',
   });
-  const { login } = useAuth();
+  const { login, loginGG } = useAuth();
 
   const handleLogin = async () => {
     const newErrors = {
@@ -86,6 +88,53 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
     }
   };
 
+  const signInGoogle = async () => {
+  try {
+    setIsLoading(true);
+    await GoogleSignin.hasPlayServices();
+    
+    // 1. Thực hiện đăng nhập
+    const signInResponse = await GoogleSignin.signIn();
+
+    // 2. Lấy idToken từ response (tương thích v11+ và bản cũ)
+    let idToken = 
+      (signInResponse as any)?.data?.idToken || 
+      (signInResponse as any)?.idToken;
+
+    // 3. Lấy đầy đủ tokens từ GoogleSignin.getTokens()
+    const tokens = await GoogleSignin.getTokens();
+    idToken = idToken || tokens.idToken;
+    const accessToken = tokens.accessToken;
+
+    if (!idToken) {
+      throw new Error('Google sign-in did not return an idToken');
+    }
+
+    // 4. Truyền accessToken (hoặc null nếu undefined) vào credential
+    const googleCredential = auth.GoogleAuthProvider.credential(idToken, accessToken);
+    
+    // 5. Đăng nhập vào Firebase
+    await auth().signInWithCredential(googleCredential);
+
+    const currentUser = auth().currentUser;
+    if (!currentUser) {
+      throw new Error('No authenticated user found');
+    }
+
+    const firebaseToken = await currentUser.getIdToken();
+    await loginGG(firebaseToken);
+
+  } catch (error: any) {
+    console.log('Google login error:', error);
+    const message =
+      error?.response?.data?.message ||
+      error.message ||
+      'Google login failed. Please try again.';
+    Alert.alert('Login failed', message);
+  } finally {
+    setIsLoading(false);
+  }
+};
   return (
     <SafeAreaView style={styles.container}>
       {/* Đưa KeyboardAvoidingView ra ngoài cùng để đẩy toàn màn hình mượt mà hơn */}
@@ -189,13 +238,23 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
             {isLoading ? (
               <ActivityIndicator size="large" color="#2c9e56" style={{ marginVertical: 15 }} />
             ) : (
-              <TouchableHighlight
-                style={styles.button}
-                underlayColor="#227a43"
-                onPress={handleLogin}
-              >
-                <Text style={styles.buttonText}>Login</Text>
-              </TouchableHighlight>
+              <>
+                <TouchableHighlight
+                  style={styles.button}
+                  underlayColor="#227a43"
+                  onPress={handleLogin}
+                >
+                  <Text style={styles.buttonText}>Login</Text>
+                </TouchableHighlight>
+
+                <TouchableHighlight
+                  style={styles.googleButton}
+                  underlayColor="#f5f5f5"
+                  onPress={signInGoogle}
+                >
+                  <Text style={styles.googleButtonText}>Login with Google</Text>
+                </TouchableHighlight>
+              </>
             )}
 
             {/* Footer Section */}
@@ -324,6 +383,25 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  googleButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    paddingVertical: 15,
+    borderRadius: 30,
+    alignItems: 'center',
+    marginTop: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  googleButtonText: {
+    color: '#444',
     fontSize: 16,
     fontWeight: 'bold',
   },
