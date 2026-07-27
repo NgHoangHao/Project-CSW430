@@ -135,3 +135,35 @@ export const refreshAccessTokenService = async (refreshToken: string) => {
   }
 };
 
+export const googleLogin = async (decoded: any) => {
+    const userRepository = AppDataSource.getRepository(User);
+    let user = await userRepository.findOne({
+        where: {
+            email: decoded.email
+        },
+        relations: {
+            roles: true
+        }
+    });
+    if (!user) {
+        const roleRepository =
+            AppDataSource.getRepository(Role);
+        const userRole = await roleRepository.findOneBy({
+            roleName: RoleName.USER
+        });
+        user = userRepository.create({
+            email: decoded.email,
+            userName: decoded.name,
+            password: "",
+            status: UserStatus.ACTIVE,
+            roles: [userRole!]
+        });
+        await userRepository.save(user);
+    }
+
+    return {
+        ...generateTokens(user),
+        roleNames: user.roles.map(r => r.roleName)
+    };
+
+}

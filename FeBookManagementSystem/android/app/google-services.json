@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "701473766143",
+    "project_id": "bookmangement-ed3d3",
+    "storage_bucket": "bookmangement-ed3d3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:701473766143:android:a961bb45347996ee51eaca",
+        "android_client_info": {
+          "package_name": "com.febookmanagementsystem"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "701473766143-p11qjluq9ul2ucc4vqhbooeendaj0d2g.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAAw2H4u8-b_x76ggkB5b337Dp3CPo_jSY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "701473766143-p11qjluq9ul2ucc4vqhbooeendaj0d2g.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -20,6 +20,7 @@ interface AuthContextType {
   userRole: string[];
   user: UserProfile | null;
   login: (data: LoginDTO) => Promise<void>;
+  loginGG: (token: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -103,6 +104,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const loginGG = async (token: string) => {
+    try {
+      const res = await authApi.loginGG(token);
+      const { accessToken, refreshToken, roleNames } = res.data;
+      setLoggedIn(true);
+      setUserRole(roleNames);
+      await EncryptedStorage.setItem('accessToken', accessToken);
+      await EncryptedStorage.setItem('refreshToken', refreshToken);
+      await EncryptedStorage.setItem('userRole', JSON.stringify(roleNames));
+      try {
+        const profileRes = await api.get('/user/profile');
+        if (profileRes.data) {
+          setUser(profileRes.data);
+        }
+      } catch (profileError) {
+        console.log('Error fetching profile after loginGG:', profileError);
+      }
+    } catch (error) {
+      console.log('Error loginGG', error);
+      setLoggedIn(false);
+      setUserRole([]);
+      setUser(null);
+      await EncryptedStorage.clear();
+      throw error;
+    }
+  };
+
   const refreshProfile = async () => {
     try {
       const profileRes = await api.get('/user/profile');
@@ -122,7 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   }
   return (
-    <AuthContext.Provider value={{ isLoggedIn, userRole, user, login, logout, refreshProfile }}>
+    <AuthContext.Provider value={{ isLoggedIn, userRole, user, login, loginGG, logout, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

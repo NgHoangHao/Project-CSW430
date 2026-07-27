@@ -22,5 +22,8 @@ export const authApi = {
         const res = await api.post('/auth/resend-otp', { email })
         return res;
     },
-    
+    loginGG: async (token: string) => {
+        const res = await api.post('/auth/loginGG', { token });
+        return res;
+    },
 }

@@ -8,6 +8,8 @@
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { AuthProvider } from './src/store/authProvider';
+import { useEffect } from 'react';
+import { configureGoogleSignIn } from './src/config/firebase';
 
 // import { NewAppScreen } from '@react-native/new-app-screen';
 // import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
@@ -49,6 +51,9 @@ import { AuthProvider } from './src/store/authProvider';
 // export default App;
 
 const App = () => {
+  useEffect(() => {
+    configureGoogleSignIn();
+  }, []);
   return (
     <SafeAreaProvider style={{ flex: 1 }}>
       <AuthProvider>
