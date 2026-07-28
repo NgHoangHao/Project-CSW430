@@ -92,6 +92,11 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
   try {
     setIsLoading(true);
     await GoogleSignin.hasPlayServices();
+    try {
+      await GoogleSignin.signOut();
+    } catch (e) {
+      // Bỏ qua lỗi nếu trước đó chưa từng đăng nhập
+    }
     
     // 1. Thực hiện đăng nhập
     const signInResponse = await GoogleSignin.signIn();

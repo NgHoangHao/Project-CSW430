@@ -92,7 +92,14 @@ export class BookService {
       url: book.url,
       status: book.status,
       createdAt: book.createdAt,
-      updatedAt: book.updatedAt
+      updatedAt: book.updatedAt,
+      availableBooks: book.copyBooks && book.copyBooks.length > 0
+        ? book.copyBooks.map((cb) => ({
+          barcode: cb.barcode,
+          location: cb.location,
+          copyBookId: cb.copyBookId
+        }))
+        : []
     }));
     return {
       data: bookPages,
@@ -111,7 +118,8 @@ export class BookService {
     const copyBookDTOs: CopyBookDTO[] = book.copyBooks && book.copyBooks.length > 0
       ? book.copyBooks.map((cb) => ({
         barcode: cb.barcode,
-        location: cb.location
+        location: cb.location,
+        copyBookId: cb.copyBookId
       }))
       : [];
     const bookDetail: BookDetail = {

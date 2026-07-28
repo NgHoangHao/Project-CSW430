@@ -6,7 +6,13 @@ import { BookStatus, CopyBookStatus } from '../utils/enums';
 export const BookRepository = AppDataSource.getRepository(Book).extend({
 
   async findAndCountBooks(page: number, limit: number, title?: string) {
-    const queryBuilder = this.createQueryBuilder('book');
+    const queryBuilder = this.createQueryBuilder('book')
+      .leftJoinAndSelect(
+        'book.copyBooks',
+        'copyBook',
+        'copyBook.status = :status',
+        { status: CopyBookStatus.AVAILABLE }
+      );
     if (title) {
       queryBuilder.where('LOWER(book.title) LIKE LOWER(:title)', { 
         title: `%${title.trim()}%` 
