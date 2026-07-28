@@ -1,4 +1,5 @@
 import { BookStatus } from "../../utils/enums";
+import { CopyBookDTO } from "./CopyBookDTO";
 
 export interface BookPage{
       bookId: string;
@@ -12,4 +13,5 @@ export interface BookPage{
       status: BookStatus;
       createdAt: Date;
       updatedAt: Date;
+      availableBooks?: CopyBookDTO[];
 }

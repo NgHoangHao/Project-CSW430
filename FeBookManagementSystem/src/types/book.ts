@@ -17,4 +17,5 @@ export interface Book {
 export interface CopyBook {
     barcode: string;
     location: string;
+    copyBookId?: string;
 }

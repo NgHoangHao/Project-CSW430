@@ -13,10 +13,12 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BookOpen, Search, X, ChevronLeft, ChevronRight, Star } from 'lucide-react-native';
+import { BookOpen, Search, X, ChevronLeft, ChevronRight, Star, Plus, Minus } from 'lucide-react-native';
 import { bookService } from '../../services/book.service';
+import { loanService } from '../../services/loan.service';
 import { Book } from '../../types/Book';
 import { BACKEND_URL } from '@env';
 import { useNavigation } from '@react-navigation/native';
@@ -36,6 +38,81 @@ export default function BookSearch() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalElements, setTotalElements] = useState(0);
   const [hasSearched, setHasSearched] = useState(false);
+
+  const [selectedCopies, setSelectedCopies] = useState<Record<string, string[]>>({});
+  const [borrowing, setBorrowing] = useState(false);
+  const borrowBarAnim = useRef(new Animated.Value(100)).current;
+
+  const totalSelected = Object.values(selectedCopies).flat().length;
+
+  useEffect(() => {
+    Animated.spring(borrowBarAnim, {
+      toValue: totalSelected > 0 ? 0 : 100,
+      tension: 50,
+      friction: 8,
+      useNativeDriver: true,
+    }).start();
+  }, [totalSelected]);
+
+  const handleIncrement = (book: Book) => {
+    if (!book.bookId) return;
+    const availableCopies = book.availableBooks || [];
+    const copiesList = availableCopies.map(cb => cb.copyBookId).filter(Boolean) as string[];
+
+    if (copiesList.length === 0) return;
+
+    setSelectedCopies(prev => {
+      const list = prev[book.bookId!] || [];
+      if (list.length < copiesList.length) {
+        const nextId = copiesList.find(id => !list.includes(id));
+        if (nextId) {
+          return { ...prev, [book.bookId!]: [...list, nextId] };
+        }
+      }
+      return prev;
+    });
+  };
+
+  const handleDecrement = (bookId: string) => {
+    setSelectedCopies(prev => {
+      const list = prev[bookId] || [];
+      if (list.length <= 1) {
+        const next = { ...prev };
+        delete next[bookId];
+        return next;
+      }
+      return { ...prev, [bookId]: list.slice(0, list.length - 1) };
+    });
+  };
+
+  const handleBorrow = async () => {
+    const allSelectedCopyIds = Object.values(selectedCopies).flat();
+    if (allSelectedCopyIds.length === 0) {
+      Alert.alert('Thông báo', 'Vui lòng chọn ít nhất 1 cuốn sách để mượn.');
+      return;
+    }
+
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 14);
+
+    setBorrowing(true);
+    try {
+      await loanService.createLoan({
+        bookIds: allSelectedCopyIds,
+        dueDate: dueDate.toISOString(),
+      });
+
+      Alert.alert('Thành công 🎉', 'Yêu cầu mượn sách đã được gửi thành công và đang chờ phê duyệt.');
+      setSelectedCopies({});
+      fetchBooks(currentPage, debouncedSearch);
+    } catch (error: any) {
+      console.log('Lỗi khi mượn sách:', error);
+      const errorMsg = error?.response?.data?.message || error?.message || 'Có lỗi xảy ra khi thực hiện mượn sách.';
+      Alert.alert('Thất bại', errorMsg);
+    } finally {
+      setBorrowing(false);
+    }
+  };
 
   const inputRef = useRef<TextInput>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -122,7 +199,11 @@ export default function BookSearch() {
 
   const renderBook = ({ item, index }: { item: Book; index: number }) => {
     const imageUrl = getImageUrl(item.url);
-    const isAvailable = item.status === 'AVAILABLE' || item.totalAvailableCopy !== undefined && item.totalAvailableCopy > 0;
+    const availableCopies = item.availableBooks || [];
+    const availableCount = availableCopies.length;
+    const isAvailable = availableCount > 0;
+    const selectedList = item.bookId ? (selectedCopies[item.bookId] || []) : [];
+    const selectedQty = selectedList.length;
 
     return (
       <Animated.View
@@ -168,27 +249,68 @@ export default function BookSearch() {
               <Text style={styles.publishYear}>{item.publishYear}</Text>
             </View>
 
-            {/* Rating row */}
-            <View style={styles.ratingRow}>
-              {[1, 2, 3, 4, 5].map((s) => (
-                <Star
-                  key={s}
-                  size={11}
-                  color="#FFB000"
-                  fill={s <= Math.round(((item.title.charCodeAt(0) % 5) * 0.1 + 4.5)) ? '#FFB000' : 'none'}
-                />
-              ))}
-              <Text style={styles.ratingNum}>
-                {((item.title.charCodeAt(0) % 5) * 0.1 + 4.5).toFixed(1)}
-              </Text>
-            </View>
-          </View>
+            {/* Rating and Action Row */}
+            <View style={styles.ratingAndActionRow}>
+              <View style={styles.ratingRow}>
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <Star
+                    key={s}
+                    size={11}
+                    color="#FFB000"
+                    fill={s <= Math.round(((item.title.charCodeAt(0) % 5) * 0.1 + 4.5)) ? '#FFB000' : 'none'}
+                  />
+                ))}
+                <Text style={styles.ratingNum}>
+                  {((item.title.charCodeAt(0) % 5) * 0.1 + 4.5).toFixed(1)}
+                </Text>
+              </View>
 
-          {/* Status badge */}
-          <View style={[styles.statusBadge, isAvailable ? styles.statusAvailable : styles.statusUnavailable]}>
-            <Text style={[styles.statusText, isAvailable ? styles.statusTextAvailable : styles.statusTextUnavailable]}>
-              {isAvailable ? 'Có sẵn' : 'Hết'}
-            </Text>
+              {/* Quantity selector/Button */}
+              {isAvailable ? (
+                selectedQty === 0 ? (
+                  <View style={styles.actionColumn}>
+                    <Text style={styles.availableCountText}> Available: {availableCount} books</Text>
+                    <TouchableOpacity
+                      style={styles.selectBtn}
+                      onPress={() => handleIncrement(item)}
+                      activeOpacity={0.7}
+                    >
+                      <Plus size={12} color="#27AE60" style={{ marginRight: 2 }} />
+                      <Text style={styles.selectBtnText}>Choose</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View style={styles.actionColumn}>
+                    <Text style={styles.availableCountText}> Available: {availableCount} books</Text>
+                    <View style={styles.stepperContainer}>
+                      <TouchableOpacity
+                        style={styles.stepperBtn}
+                        onPress={() => item.bookId && handleDecrement(item.bookId)}
+                        activeOpacity={0.7}
+                      >
+                        <Minus size={12} color="#27AE60" />
+                      </TouchableOpacity>
+                      <Text style={styles.stepperValue}>{selectedQty}</Text>
+                      <TouchableOpacity
+                        style={[
+                          styles.stepperBtn,
+                          selectedQty >= availableCount && styles.stepperBtnDisabled,
+                        ]}
+                        onPress={() => handleIncrement(item)}
+                        activeOpacity={0.7}
+                        disabled={selectedQty >= availableCount}
+                      >
+                        <Plus size={12} color={selectedQty >= availableCount ? '#C7C7CC' : '#27AE60'} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )
+              ) : (
+                <View style={styles.statusBadgeUnavailable}>
+                  <Text style={styles.statusTextUnavailable}>Hết sách</Text>
+                </View>
+              )}
+            </View>
           </View>
         </TouchableOpacity>
       </Animated.View>
@@ -205,7 +327,7 @@ export default function BookSearch() {
         </View>
         <Text style={styles.emptyTitle}>Không tìm thấy sách</Text>
         <Text style={styles.emptySubtitle}>
-          {searchText ?`No results for "${searchText}"` : 'No books in the system yet'}
+          {searchText ? `No results for "${searchText}"` : 'No books in the system yet'}
         </Text>
       </View>
     );
@@ -332,6 +454,39 @@ export default function BookSearch() {
             />
           </TouchableWithoutFeedback>
         )}
+
+        {/* Floating Borrow Bar */}
+        <Animated.View style={[
+          styles.borrowBar,
+          {
+            transform: [{ translateY: borrowBarAnim }],
+            opacity: borrowBarAnim.interpolate({
+              inputRange: [0, 100],
+              outputRange: [1, 0]
+            })
+          }
+        ]}>
+          <View style={styles.borrowBarInner}>
+            <View style={styles.borrowInfo}>
+              <View style={styles.selectedCountBadge}>
+                <Text style={styles.selectedCountBadgeText}>{totalSelected}</Text>
+              </View>
+              <Text style={styles.selectedCountLabel}>sách đã chọn</Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.borrowBtn, borrowing && styles.borrowBtnDisabled]}
+              onPress={handleBorrow}
+              activeOpacity={0.8}
+              disabled={borrowing}
+            >
+              {borrowing ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.borrowBtnText}>Mượn ngay 📚</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -438,7 +593,7 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 16,
     paddingTop: 8,
-    paddingBottom: 24,
+    paddingBottom: 110,
   },
   listContentEmpty: {
     flex: 1,
@@ -635,5 +790,139 @@ const styles = StyleSheet.create({
   },
   pageBtnTextActive: {
     color: '#fff',
+  },
+  ratingAndActionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 6,
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  actionColumn: {
+    alignItems: 'flex-end',
+    minWidth: 90,
+  },
+  availableCountText: {
+    fontSize: 10,
+    color: '#8E8E93',
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  selectBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderColor: '#27AE60',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    backgroundColor: '#fff',
+  },
+  selectBtnText: {
+    color: '#27AE60',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  stepperContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderColor: '#E5E5EA',
+    borderWidth: 1,
+    borderRadius: 8,
+    backgroundColor: '#F4F4F6',
+    padding: 2,
+  },
+  stepperBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 1,
+    elevation: 1,
+  },
+  stepperBtnDisabled: {
+    opacity: 0.5,
+    backgroundColor: '#F4F4F6',
+  },
+  stepperValue: {
+    marginHorizontal: 8,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0D1B2A',
+    minWidth: 16,
+    textAlign: 'center',
+  },
+  statusBadgeUnavailable: {
+    backgroundColor: '#FFF3F0',
+    borderRadius: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    alignSelf: 'flex-start',
+  },
+  borrowBar: {
+    position: 'absolute',
+    bottom: 20,
+    left: 16,
+    right: 16,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
+    borderWidth: 1,
+    borderColor: '#EAFBF1',
+    padding: 16,
+  },
+  borrowBarInner: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  borrowInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  selectedCountBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#27AE60',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  selectedCountBadgeText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+  selectedCountLabel: {
+    fontSize: 14,
+    color: '#0D1B2A',
+    fontWeight: '700',
+  },
+  borrowBtn: {
+    backgroundColor: '#27AE60',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  borrowBtnDisabled: {
+    opacity: 0.5,
+  },
+  borrowBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
 });

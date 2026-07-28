@@ -42,7 +42,6 @@ interface BookDetail extends Book {
   isbn?: string;
   language?: string;
   description?: string;
-  page?: number;
 }
 
 export default function BookDetailScreen() {

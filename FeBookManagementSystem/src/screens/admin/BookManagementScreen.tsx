@@ -103,12 +103,12 @@ export default function BookManagementScreen() {
 
   const handleDelete = (bookId: string, title: string) => {
     Alert.alert(
-      'Xóa Sách',
-      `Bạn có chắc chắn muốn xóa sách "${title}" không?`,
+      'Delete book',
+      `Are you sure you want to delete "${title}"?`,
       [
-        { text: 'Hủy', style: 'cancel' },
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Xóa',
+          text: 'Delete',
           style: 'destructive',
           onPress: async () => {
             try {

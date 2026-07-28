@@ -1,6 +1,6 @@
 import api from "../lib/axios"
 import { LoanDetailsByPageAdmin } from "../types/admin/loan";
-import { ConfirmLoanRequest, CreateLoanRequest, LoanDetailDTO, LoanUser } from "../types/loan"
+import { ConfirmLoanRequest, CreateLoanRequest, LoanDetailDTO, LoanResponse, LoanUser } from "../types/loan"
 import { ApiResponse } from "../types/response/ApiResponse";
 
 export const loanService = {
@@ -31,5 +31,15 @@ export const loanService = {
     getLoanByStatus: async (status: string): Promise<ApiResponse<LoanDetailDTO[]>> => {
         const res = await api.get(`/loan/get-loan-by-status/${status}`);
         return res.data;
+    },
+    getLoanByUser: async (page: number, size: number, status?: string) => {
+        const res = await api.get("/loan/loan-detail", {
+            params: {
+                page,
+                size,
+                ...(status?.trim() ? { status } : {}),
+            },
+        });
+        return res;
     }
 }

@@ -11,6 +11,8 @@ import { getUserById } from "../repositories/userRepository"
 import { BookStatus, CopyBookStatus, LoanStatus, RoleName } from "../utils/enums";
 import { Book } from "../entities/Book";
 import { LoanDetailDTO } from "../dtos/loan/LoanDetailDTO";
+import { loanDetailRepository } from "../repositories/loanDetailRepository";
+import { LoanDetailResponse, LoanResponse } from "../dtos/loan/LoanResponse";
 
 export const LoanService = {
 
@@ -20,30 +22,24 @@ export const LoanService = {
             if (!user) {
                 throw new NotFoundException('User not found');
             }
-
             const newLoan = new Loan();
             newLoan.user = user;
             newLoan.borrowDate = new Date();
             newLoan.dueDate = new Date(loanRequest.dueDate);
             newLoan.status = LoanStatus.PENDING;
-
             const savedLoan = await transactionalEntityManager.save(newLoan);
-
             for (const copyBookId of loanRequest.bookIds) {
                 const copyBook = await transactionalEntityManager.findOne(CopyBook, {
                     where: { copyBookId },
                     lock: { mode: 'pessimistic_write' },
                     relations: { book: true }
                 });
-
                 if (!copyBook) {
                     throw new NotFoundException('Copy book not found: ' + copyBookId);
                 }
-
                 if (copyBook.status === CopyBookStatus.BORROWED) {
                     throw new BadRequestException('Copy book is already borrowed: ' + copyBook.barcode);
                 }
-
                 const newLoanDetail = new LoanDetail();
                 newLoanDetail.copyBook = copyBook;
                 newLoanDetail.loan = savedLoan;
@@ -51,8 +47,6 @@ export const LoanService = {
                 await transactionalEntityManager.save(newLoanDetail);
                 copyBook.status = CopyBookStatus.BORROWED;
                 await transactionalEntityManager.save(copyBook);
-
-                // update book status
                 if (!copyBook.book) {
                     throw new NotFoundException('Associated book not found for this copy book');
                 }
@@ -61,7 +55,6 @@ export const LoanService = {
                 const countAvailableCopy = await transactionalEntityManager.count(CopyBook, {
                     where: { book: { bookId: bookId }, status: CopyBookStatus.AVAILABLE }
                 });
-
                 if (countAvailableCopy === 0) {
                     const book = await transactionalEntityManager.findOne(Book, {
                         where: { bookId: bookId },
@@ -73,12 +66,10 @@ export const LoanService = {
                     }
                 }
             }
-
             const fullLoanData = await transactionalEntityManager.findOne(Loan, {
                 where: { loanId: savedLoan.loanId },
                 relations: { user: false, loanDetails: { copyBook: { book: false } } }
             });
-
             return fullLoanData;
         })
     },
@@ -96,7 +87,6 @@ export const LoanService = {
                 throw new BadRequestException('Loan is not in pending status');
             }
             loan.status = LoanStatus.BORROWING;
-            // Also update each loan detail to BORROWING
             if (loan.loanDetails && loan.loanDetails.length > 0) {
                 for (const detail of loan.loanDetails) {
                     detail.status = LoanStatus.BORROWING;
@@ -114,7 +104,7 @@ export const LoanService = {
                 relations: {
                     loanDetails: {
                         copyBook: {
-                            book: true // Cần load cả thực thể book để cập nhật lại trạng thái của đầu sách
+                            book: true 
                         }
                     }
                 }
@@ -127,8 +117,6 @@ export const LoanService = {
             if (loan.status !== LoanStatus.PENDING) {
                 throw new BadRequestException('Loan is not in pending status');
             }
-
-            // 2. Duyệt qua từng sách copy trong đơn để giải phóng trạng thái
             if (loan.loanDetails && loan.loanDetails.length > 0) {
                 for (const detail of loan.loanDetails) {
                     const copyBook = detail.copyBook;
@@ -141,7 +129,6 @@ export const LoanService = {
                             await transactionalEntityManager.save(book);
                         }
                     }
-                    // Mark each detail as REJECTED
                     detail.status = LoanStatus.REJECTED;
                     await transactionalEntityManager.save(detail);
                 }
@@ -167,15 +154,12 @@ export const LoanService = {
                 where: { barcode: In(barcodes) },
                 relations: { book: true }
             })
-
             if (copyBooks.length !== barcodes.length) {
                 const foundBarcodes = copyBooks.map(cb => cb.barcode);
                 const missingBarcodes = barcodes.filter(b => !foundBarcodes.includes(b));
                 throw new NotFoundException(`Copy books not found: ${missingBarcodes.join(', ')}`)
             }
-
             const copyBookIds = copyBooks.map(cb => cb.copyBookId);
-
             const loanDetails = await transactionalEntityManager.find(LoanDetail, {
                 where: {
                     copyBook: { copyBookId: In(copyBookIds) },
@@ -184,45 +168,34 @@ export const LoanService = {
                 },
                 relations: { loan: true, copyBook: true }
             });
-
             if (loanDetails.length !== copyBooks.length) {
                 const foundBookIds = loanDetails.map(ld => ld.copyBook.copyBookId);
                 const missingBarcodes = copyBooks.filter(cb => !foundBookIds.includes(cb.copyBookId)).map(cb => cb.barcode);
                 throw new NotFoundException(`One or more books were not borrowed by this user or are not in borrowing status: ${missingBarcodes.join(', ')}`);
             }
-
             const today = new Date();
             const affectedLoanIds = new Set<string>();
             const affectedBookIds = new Set<string>();
-
             for (const detail of loanDetails) {
                 const dueDate = new Date(detail.loan.dueDate);
-
                 if (today.getTime() > dueDate.getTime()) {
                     detail.status = LoanStatus.OVERDUE;
                 } else {
                     detail.status = LoanStatus.RETURNED;
                 }
-
                 detail.returnDate = today;
                 affectedLoanIds.add(detail.loan.loanId);
-
                 const linkedCopyBook = copyBooks.find(cb => cb.copyBookId === detail.copyBook.copyBookId)
-
                 if (linkedCopyBook) {
                     linkedCopyBook.status = CopyBookStatus.AVAILABLE;
                     await transactionalEntityManager.save(linkedCopyBook)
-
                     const bookId = linkedCopyBook.book.bookId || (linkedCopyBook as any).bookId;
-
                     if (bookId) {
                         affectedBookIds.add(bookId);
                     }
                 }
             }
-
             await transactionalEntityManager.save(loanDetails)
-
             for (const loanId of affectedLoanIds) {
                 const remainingBorrowingBooks = await transactionalEntityManager.count(LoanDetail, {
                     where: {
@@ -268,7 +241,6 @@ export const LoanService = {
             userId: loan.user.userId,
             userName: loan.user.userName
         }))
-
         return responseLoan;
     },
 
@@ -354,5 +326,40 @@ export const LoanService = {
             })
         }))
         return responseLoan;
+    },
+
+    getLoanDetails: async (userId: string,page = 1,size = 10,status?: LoanStatus): Promise<LoanResponse> => {
+        const { items: loanDetails, total } =
+            await loanDetailRepository.getLoanDetailsByUserId(
+                userId,
+                page,
+                size,
+                status
+            );
+        const now = new Date();
+        
+        const list: LoanDetailResponse[] = loanDetails.map(item => {
+            const borrowedRemain = Math.ceil(
+                (item.loan.dueDate.getTime() - now.getTime()) /
+                (1000 * 60 * 60 * 24)
+            );
+            return {
+                borrowDate: item.loan.borrowDate,
+                dueDate: item.loan.dueDate,
+                author: item.copyBook.book.author,
+                url: item.copyBook.book.url,
+                title:item.copyBook.book.title,
+                status: item.status,
+                borrowedRemain
+            };
+        });
+        const response: LoanResponse = {
+            page,
+            size,
+            total,
+            totalPages: Math.ceil(total / size),
+            list
+        };
+        return response;
     }
 }

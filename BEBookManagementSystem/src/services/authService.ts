@@ -156,7 +156,8 @@ export const googleLogin = async (decoded: any) => {
             userName: decoded.name,
             password: "",
             status: UserStatus.ACTIVE,
-            roles: [userRole!]
+            roles: [userRole!],
+            credit:100
         });
         await userRepository.save(user);
     }
