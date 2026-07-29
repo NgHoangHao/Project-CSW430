@@ -32,7 +32,7 @@ export default function ProfileScreen() {
 
   const handleLogout = () => {
     Alert.alert('Log out', 'Are you sure you want to log out?', [
-      { text: 'Hủy', style: 'cancel' },
+      { text: 'Cancel', style: 'cancel' },
       {
         text: 'Log out',
         style: 'destructive',
@@ -40,7 +40,6 @@ export default function ProfileScreen() {
           try {
             setLoggingOut(true);
             await logout();
-            // AppNavigator automatically switches to AuthNavigator when isLoggedIn becomes false
           } catch (err) {
             console.log('Logout error:', err);
           } finally {
@@ -54,7 +53,6 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* ── Header ── */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <View style={styles.headerIconWrapper}>
@@ -71,9 +69,9 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* ── User Info Card ── */}
+     
         <View style={styles.card}>
-          {/* Avatar */}
+      
           <View style={styles.avatarWrapper}>
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>{initials}</Text>
@@ -81,7 +79,7 @@ export default function ProfileScreen() {
             <View style={styles.onlineDot} />
           </View>
 
-          {/* Info */}
+   
           <View style={styles.userInfo}>
             <Text style={styles.userName}>{displayName}</Text>
             {!!email && <Text style={styles.userEmail}>{email}</Text>}
@@ -93,7 +91,7 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* ── Membership Card ── */}
+  
         <View style={styles.memberCard}>
           {/* Decorative circles */}
           <View style={styles.decCircle1} />
@@ -116,14 +114,11 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.memberCard}>
-          {/* Decorative circles */}
           <View style={styles.decCircle1} />
           <View style={styles.decCircle2} />
-
           <Text style={styles.memberName}>Credits remains:{credit}</Text>
         </View>
 
-        {/* ── Logout Button ── */}
         <TouchableOpacity
           style={styles.logoutButton}
           onPress={handleLogout}
@@ -135,7 +130,7 @@ export default function ProfileScreen() {
           ) : (
             <>
               <LogOut size={20} color="#E53935" style={{ marginRight: 8 }} />
-              <Text style={styles.logoutText}>Đăng xuất</Text>
+              <Text style={styles.logoutText}>Logout</Text>
             </>
           )}
         </TouchableOpacity>

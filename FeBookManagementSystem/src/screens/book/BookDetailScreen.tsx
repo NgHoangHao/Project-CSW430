@@ -203,17 +203,17 @@ export default function BookDetailScreen() {
                 <XCircle size={14} color="#FF6B6B" style={{ marginRight: 6 }} />
               )}
               <Text style={[styles.statusText, isAvailable ? styles.statusTextAvail : styles.statusTextUnavail]}>
-                {isAvailable ? 'Đang có sẵn' : 'Đang được mượn'}
+                {isAvailable ? 'Available' : 'Borrowed'}
               </Text>
             </View>
           </View>
 
           {/* Info Grid */}
           <View style={styles.infoGrid}>
-            <InfoTile icon={<FileText size={16} color="#27AE60" />} label="THỂ LOẠI" value={book.category || '—'} />
-            <InfoTile icon={<Package size={16} color="#27AE60" />} label="SỐ TRANG" value={book.page ? `${book.page} trang` : '—'} />
-            <InfoTile icon={<Calendar size={16} color="#27AE60" />} label="NĂM XB" value={book.publishYear ? String(book.publishYear) : '—'} />
-            <InfoTile icon={<Building2 size={16} color="#27AE60" />} label="NXB" value={book.publisher || '—'} />
+            <InfoTile icon={<FileText size={16} color="#27AE60" />} label="CATEGORY" value={book.category || '—'} />
+            <InfoTile icon={<Package size={16} color="#27AE60" />} label="PAGES" value={book.page ? `${book.page} pages` : '—'} />
+            <InfoTile icon={<Calendar size={16} color="#27AE60" />} label="PUBLISH YEAR" value={book.publishYear ? String(book.publishYear) : '—'} />
+            <InfoTile icon={<Building2 size={16} color="#27AE60" />} label="PUBLISHER" value={book.publisher || '—'} />
           </View>
 
 
@@ -297,7 +297,7 @@ function CopyBookItem({
         <View style={styles.copyBookDivider} />
         <View style={styles.copyBookRow}>
           <MapPin size={14} color="#2F80ED" style={{ marginRight: 6 }} />
-          <Text style={styles.copyBookFieldLabel}>Vị trí</Text>
+          <Text style={styles.copyBookFieldLabel}>Location</Text>
           <Text style={styles.copyBookFieldValue}>{copy.location}</Text>
         </View>
       </View>

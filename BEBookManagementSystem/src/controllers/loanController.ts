@@ -46,8 +46,8 @@ export const LoanController = {
 
     returnBookByBarcode: async (req: Request, res: Response) => {
         try {
-            const userId = (req as any).user.id;
-            const { barcodes } = req.body;
+            
+            const { userId, barcodes } = req.body;
             const result = await LoanService.returnBookByBarcode(userId, barcodes);
             return res.status(200).json({ message: 'Return book successfully', data: result });
         } catch (error: any) {
