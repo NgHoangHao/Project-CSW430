@@ -25,7 +25,7 @@ export interface LoanDetailDTO {
     dueDate: string;
     status: 'PENDING' | 'REJECTED' | 'BORROWING' | 'RETURNED' | 'OVERDUE';
     loanDetails: LoanDetails[];
-    userId?: string;
+    userId: string;
     userName?: string;
 }
 

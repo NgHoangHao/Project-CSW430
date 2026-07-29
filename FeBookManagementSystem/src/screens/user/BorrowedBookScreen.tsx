@@ -36,11 +36,11 @@ interface Tab {
 }
 
 const TABS: Tab[] = [
-  { key: 'ALL', label: 'Tất cả', apiStatus: null },
-  { key: 'BORROWING', label: 'Đang mượn', apiStatus: 'BORROWING' },
-  { key: 'PENDING', label: 'Chờ duyệt', apiStatus: 'PENDING' },
-  { key: 'RETURNED', label: 'Đã trả', apiStatus: 'RETURNED' },
-  { key: 'OVERDUE', label: 'Quá hạn', apiStatus: 'OVERDUE' },
+  { key: 'ALL', label: 'ALL', apiStatus: null },
+  { key: 'BORROWING', label: 'BORROWING', apiStatus: 'BORROWING' },
+  { key: 'PENDING', label: 'PENDING', apiStatus: 'PENDING' },
+  { key: 'RETURNED', label: 'RETURNED', apiStatus: 'RETURNED' },
+  { key: 'OVERDUE', label: 'OVERDUE', apiStatus: 'OVERDUE' },
 ];
 
 interface TabCounts {
@@ -85,7 +85,7 @@ function StatusBadge({
       <View style={[styles.badge, styles.badgeGreen]}>
         <CheckCircle size={12} color="#27AE60" style={{ marginRight: 4 }} />
         <Text style={[styles.badgeText, { color: '#27AE60' }]}>
-          Đã trả {returnDate ? formatDate(returnDate) : ''}
+          Returned {returnDate ? formatDate(returnDate) : ''}
         </Text>
       </View>
     );
@@ -94,7 +94,7 @@ function StatusBadge({
     return (
       <View style={[styles.badge, styles.badgeBlue]}>
         <Clock size={12} color="#3B82F6" style={{ marginRight: 4 }} />
-        <Text style={[styles.badgeText, { color: '#3B82F6' }]}>Chờ xác nhận</Text>
+        <Text style={[styles.badgeText, { color: '#3B82F6' }]}>Pending</Text>
       </View>
     );
   }
@@ -103,7 +103,7 @@ function StatusBadge({
       <View style={[styles.badge, styles.badgeRed]}>
         <AlertCircle size={12} color="#E53935" style={{ marginRight: 4 }} />
         <Text style={[styles.badgeText, { color: '#E53935' }]}>
-          QUÁ HẠN {Math.abs(remain)} NGÀY
+          Overdue {Math.abs(remain)} DAYS
         </Text>
       </View>
     );
@@ -111,13 +111,13 @@ function StatusBadge({
   if (remain === 0) {
     return (
       <View style={[styles.badge, styles.badgeYellow]}>
-        <Text style={[styles.badgeText, { color: '#F59E0B' }]}>Hết hạn hôm nay</Text>
+        <Text style={[styles.badgeText, { color: '#F59E0B' }]}>Overdue Today</Text>
       </View>
     );
   }
   return (
     <View style={[styles.badge, styles.badgeGreen]}>
-      <Text style={[styles.badgeText, { color: '#27AE60' }]}>Còn {remain} ngày</Text>
+      <Text style={[styles.badgeText, { color: '#27AE60' }]}>Remain {remain} days</Text>
     </View>
   );
 }
@@ -156,11 +156,11 @@ function BookCard({ item }: { item: LoanDetailResponse }) {
 
         <View style={styles.cardDateRow}>
           <Calendar size={12} color="#8E8E93" />
-          <Text style={styles.cardDateText}>Mượn: {formatDate(item.borrowDate)}</Text>
+          <Text style={styles.cardDateText}>Borrowed: {formatDate(item.borrowDate)}</Text>
         </View>
         <View style={styles.cardDateRow}>
           <Clock size={12} color="#8E8E93" />
-          <Text style={styles.cardDateText}>Hạn trả: {formatDate(item.dueDate)}</Text>
+          <Text style={styles.cardDateText}>Due Date: {formatDate(item.dueDate)}</Text>
         </View>
 
         <StatusBadge
@@ -217,14 +217,14 @@ export default function BorrowedBookScreen() {
       const returned = safeCount(resReturned);
       const overdue = safeCount(resOverdue);
 
-      // Lấy total từ API không truyền status
+     
       let allTotal = borrowing + pending + returned + overdue;
       try {
         const resAll = await loanService.getLoanByUser(1, 1);
         const dataAll: LoanResponse = resAll?.data?.data;
         if (dataAll?.total != null) allTotal = dataAll.total;
       } catch {
-        // fallback = sum
+       
       }
 
       setCounts({ ALL: allTotal, BORROWING: borrowing, PENDING: pending, RETURNED: returned, OVERDUE: overdue });
@@ -233,7 +233,7 @@ export default function BorrowedBookScreen() {
     }
   }, []);
 
-  // ── Fetch list cho tab đang active ────────────────────────────────────────
+
   const fetchLoans = useCallback(
     async (p: number, reset: boolean) => {
       try {
@@ -250,7 +250,7 @@ export default function BorrowedBookScreen() {
           } else {
             setBooks(prev => [...prev, ...(data.list ?? [])]);
           }
-          // Khi tab ALL cập nhật total chính xác từ API
+       
           if (activeTab === 'ALL') {
             setCounts(prev => ({ ...prev, ALL: data.total ?? prev.ALL }));
           }
@@ -267,12 +267,12 @@ export default function BorrowedBookScreen() {
     [activeTab, currentTab.apiStatus],
   );
 
-  // ── Mount: fetch counts 1 lần ─────────────────────────────────────────────
+  
   useEffect(() => {
     fetchCounts();
   }, []);
 
-  // ── Tab change ────────────────────────────────────────────────────────────
+
   useEffect(() => {
     setPage(1);
     setHasMore(true);
@@ -294,7 +294,7 @@ export default function BorrowedBookScreen() {
     }
   };
 
-  // ── Tab icon ──────────────────────────────────────────────────────────────
+ 
   const tabIcon = (key: TabKey, active: boolean) => {
     const color = active ? '#fff' : '#6B7280';
     const size = 15;
@@ -331,8 +331,8 @@ export default function BorrowedBookScreen() {
       {/* Header green banner */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerSub}>THƯ VIỆN</Text>
-          <Text style={styles.headerTitle}>Sách của tôi</Text>
+          <Text style={styles.headerSub}>LIBRARY</Text>
+          <Text style={styles.headerTitle}>My Books</Text>
         </View>
         <View style={styles.headerIcons}>
           <View style={styles.bellWrap}>
@@ -369,19 +369,13 @@ export default function BorrowedBookScreen() {
                 onPress={() => setActiveTab(tab.key)}
                 activeOpacity={0.8}
               >
-                {/* <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>
-                  
-                </Text> */}
                 <View
                   style={[
                     styles.tabCountBadge,
-                    // active
-                    //   ? { backgroundColor: 'rgba(255,255,255,0.25)' }
-                    //   : { backgroundColor: '#F3F4F6' },
                   ]}
                 >
                   <Text style={[styles.tabCountText, active && { color: '#fff' }]}>
-                    {tab.label} {count}
+                    {tab.label} ({count})
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -390,7 +384,7 @@ export default function BorrowedBookScreen() {
         </ScrollView>
       </View>
 
-      {/* List */}
+  
       {loading ? (
         <View style={styles.centerLoader}>
           <ActivityIndicator size="large" color="#27AE60" />
@@ -432,7 +426,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F4F6F8',
   },
 
-  // ── Header ──
+  
   header: {
     backgroundColor: '#27AE60',
     paddingHorizontal: 20,
@@ -495,20 +489,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  // ── Tab bar ──
+
   tabBar: {
-    // backgroundColor: '#fff',
     marginHorizontal: 16,
     marginTop: 14,
     marginBottom: 10,
     borderRadius: 16,
     paddingVertical: 6,
     paddingHorizontal: 4,
-    // shadowColor: '#000',
-    // shadowOffset: { width: 0, height: 2 },
-    // shadowOpacity: 0.06,
-    // shadowRadius: 8,
-    // elevation: 3,
+    
   },
   tabScroll: {
     paddingHorizontal: 2,
@@ -556,7 +545,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
 
-  // ── List ──
+  
   listContent: {
     paddingHorizontal: 16,
     paddingBottom: 32,
@@ -573,7 +562,6 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
 
-  // ── Card ──
   card: {
     flexDirection: 'row',
     backgroundColor: '#fff',
@@ -629,8 +617,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6B7280',
   },
-
-  // ── Badge ──
   badge: {
     flexDirection: 'row',
     alignSelf: 'flex-start',
@@ -649,7 +635,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  // ── Renew button ──
   renewBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -669,7 +654,6 @@ const styles = StyleSheet.create({
     color: '#27AE60',
   },
 
-  // ── Misc ──
   centerLoader: {
     flex: 1,
     justifyContent: 'center',

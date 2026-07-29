@@ -41,7 +41,7 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
 
-  // FAB animation
+  
   const fabScale = useRef(new Animated.Value(1)).current;
 
   const handleFabPress = () => {
@@ -151,7 +151,6 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Reading Section */}
         <View style={styles.sectionHeaderContainer}>
           <Text style={styles.sectionTitle}>Reading</Text>
         </View>
@@ -174,7 +173,7 @@ export default function HomeScreen() {
             <View style={styles.readingBookDueDateRow}>
               <View style={styles.dueDateWrapper}>
                 <Calendar size={14} color="#8E8E93" style={{ marginRight: 4 }} />
-                <Text style={styles.dueDateText}>Hạn trả: 15/07/2026</Text>
+                <Text style={styles.dueDateText}>Due Date: 15/07/2026</Text>
               </View>
               <View style={styles.daysLeftBadge}>
                 <Text style={styles.daysLeftText}>5 days</Text>
@@ -256,7 +255,6 @@ export default function HomeScreen() {
           </ScrollView>
         )}
 
-        {/* Quick Actions */}
         <View style={styles.sectionHeaderContainer}>
           <Text style={styles.sectionTitle}>Quick actions</Text>
         </View>
@@ -289,17 +287,6 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-
-      {/* Floating Search Button
-      <Animated.View style={[styles.fab, { transform: [{ scale: fabScale }] }]}>
-        <TouchableOpacity
-          style={styles.fabInner}
-          onPress={handleFabPress}
-          activeOpacity={0.9}
-        >
-          <BookOpen size={24} color="#fff" />
-        </TouchableOpacity>
-      </Animated.View> */}
       </View>
     </SafeAreaView>
   );

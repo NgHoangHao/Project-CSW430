@@ -88,7 +88,7 @@ export default function BookSearch() {
   const handleBorrow = async () => {
     const allSelectedCopyIds = Object.values(selectedCopies).flat();
     if (allSelectedCopyIds.length === 0) {
-      Alert.alert('Thông báo', 'Vui lòng chọn ít nhất 1 cuốn sách để mượn.');
+      Alert.alert('Notice', 'Please select at least one book to borrow.');
       return;
     }
 
@@ -102,12 +102,12 @@ export default function BookSearch() {
         dueDate: dueDate.toISOString(),
       });
 
-      Alert.alert('Thành công 🎉', 'Yêu cầu mượn sách đã được gửi thành công và đang chờ phê duyệt.');
+      Alert.alert('Sucessful 🎉', 'The book loan request has been successfully submitted and is awaiting approval.');
       setSelectedCopies({});
       fetchBooks(currentPage, debouncedSearch);
     } catch (error: any) {
-      console.log('Lỗi khi mượn sách:', error);
-      const errorMsg = error?.response?.data?.message || error?.message || 'Có lỗi xảy ra khi thực hiện mượn sách.';
+      console.log('Error while borrowing books:', error);
+      const errorMsg = error?.response?.data?.message || error?.message || 'An error occurred while borrowing the book.';
       Alert.alert('Thất bại', errorMsg);
     } finally {
       setBorrowing(false);
@@ -307,7 +307,7 @@ export default function BookSearch() {
                 )
               ) : (
                 <View style={styles.statusBadgeUnavailable}>
-                  <Text style={styles.statusTextUnavailable}>Hết sách</Text>
+                  <Text style={styles.statusTextUnavailable}>No book</Text>
                 </View>
               )}
             </View>
@@ -325,7 +325,7 @@ export default function BookSearch() {
         <View style={styles.emptyIconWrapper}>
           <BookOpen size={48} color="#C8D6C8" />
         </View>
-        <Text style={styles.emptyTitle}>Không tìm thấy sách</Text>
+        <Text style={styles.emptyTitle}>Not found book</Text>
         <Text style={styles.emptySubtitle}>
           {searchText ? `No results for "${searchText}"` : 'No books in the system yet'}
         </Text>
@@ -347,7 +347,7 @@ export default function BookSearch() {
     return (
       <View style={styles.paginationContainer}>
         <Text style={styles.paginationInfo}>
-          {totalElements} sách • Trang {currentPage}/{totalPages}
+          {totalElements} book • Page {currentPage}/{totalPages}
         </Text>
         <View style={styles.paginationRow}>
           <TouchableOpacity
@@ -391,7 +391,7 @@ export default function BookSearch() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Tìm kiếm sách 📚</Text>
+          <Text style={styles.headerTitle}>Book Search 📚</Text>
         </View>
 
         {/* Search Bar */}
@@ -401,7 +401,7 @@ export default function BookSearch() {
             <TextInput
               ref={inputRef}
               style={styles.searchInput}
-              placeholder="Nhập tên sách cần tìm..."
+              placeholder="Enter the title of book...."
               placeholderTextColor="#AEAEB2"
               value={searchText}
               onChangeText={setSearchText}
@@ -422,9 +422,9 @@ export default function BookSearch() {
         {hasSearched && !loading && books.length > 0 && (
           <View style={styles.resultInfo}>
             <Text style={styles.resultInfoText}>
-              {searchText ? `Kết quả cho "${searchText}"` : 'Tất cả sách'}
+              {searchText ? `Kết quả cho "${searchText}"` : 'All books'}
             </Text>
-            <Text style={styles.resultCount}>{totalElements} sách</Text>
+            <Text style={styles.resultCount}>{totalElements} books</Text>
           </View>
         )}
 
@@ -432,7 +432,7 @@ export default function BookSearch() {
         {loading && (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#27AE60" />
-            <Text style={styles.loadingText}>Đang tìm kiếm...</Text>
+            <Text style={styles.loadingText}>Searching...</Text>
           </View>
         )}
 
@@ -471,7 +471,7 @@ export default function BookSearch() {
               <View style={styles.selectedCountBadge}>
                 <Text style={styles.selectedCountBadgeText}>{totalSelected}</Text>
               </View>
-              <Text style={styles.selectedCountLabel}>sách đã chọn</Text>
+              <Text style={styles.selectedCountLabel}>Selected books</Text>
             </View>
             <TouchableOpacity
               style={[styles.borrowBtn, borrowing && styles.borrowBtnDisabled]}
