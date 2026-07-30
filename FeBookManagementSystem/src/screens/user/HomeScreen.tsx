@@ -139,7 +139,7 @@ export default function HomeScreen() {
               <Flame size={20} color="#FF6B00" />
             </View>
             <Text style={styles.statsValue}>12</Text>
-            <Text style={styles.statsLabel}>Consecutive days</Text>
+            <Text style={styles.statsLabel}>Overdue</Text>
           </View>
 
           <View style={styles.statsCard}>

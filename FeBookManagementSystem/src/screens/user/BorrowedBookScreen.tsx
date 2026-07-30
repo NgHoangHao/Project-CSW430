@@ -21,13 +21,14 @@ import {
   Calendar,
   RefreshCw,
   Layers,
+  XCircle,
 } from 'lucide-react-native';
 import { loanService } from '../../services/loan.service';
 import { LoanDetailResponse, LoanResponse } from '../../types/loan';
 import { BACKEND_URL } from '@env';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
-type TabKey = 'ALL' | 'BORROWING' | 'PENDING' | 'RETURNED' | 'OVERDUE';
+type TabKey = 'ALL' | 'BORROWING' | 'PENDING' | 'RETURNED' | 'OVERDUE' | 'REJECTED';
 
 interface Tab {
   key: TabKey;
@@ -41,6 +42,7 @@ const TABS: Tab[] = [
   { key: 'PENDING', label: 'PENDING', apiStatus: 'PENDING' },
   { key: 'RETURNED', label: 'RETURNED', apiStatus: 'RETURNED' },
   { key: 'OVERDUE', label: 'OVERDUE', apiStatus: 'OVERDUE' },
+  { key: 'REJECTED', label: 'REJECTED', apiStatus: 'REJECTED' },
 ];
 
 interface TabCounts {
@@ -49,6 +51,7 @@ interface TabCounts {
   PENDING: number;
   RETURNED: number;
   OVERDUE: number;
+  REJECTED: number;
 }
 
 const PAGE_SIZE = 10;
@@ -90,34 +93,56 @@ function StatusBadge({
       </View>
     );
   }
-  if (status === 'PENDING' || status === 'PENDING') {
+  if (status === 'REJECTED') {
     return (
-      <View style={[styles.badge, styles.badgeBlue]}>
-        <Clock size={12} color="#3B82F6" style={{ marginRight: 4 }} />
-        <Text style={[styles.badgeText, { color: '#3B82F6' }]}>Pending</Text>
-      </View>
-    );
-  }
-  if (status === 'OVERDUE' || remain < 0) {
-    return (
-      <View style={[styles.badge, styles.badgeRed]}>
-        <AlertCircle size={12} color="#E53935" style={{ marginRight: 4 }} />
-        <Text style={[styles.badgeText, { color: '#E53935' }]}>
-          Overdue {Math.abs(remain)} DAYS
+      <View style={[styles.badge, styles.badgeGray]}>
+        <XCircle size={12} color="#6B7280" style={{ marginRight: 4 }} />
+        <Text style={[styles.badgeText, { color: '#6B7280' }]}>
+          Rejected
         </Text>
       </View>
     );
   }
-  if (remain === 0) {
+
+  if (status === 'PENDING') {
     return (
-      <View style={[styles.badge, styles.badgeYellow]}>
-        <Text style={[styles.badgeText, { color: '#F59E0B' }]}>Overdue Today</Text>
+      <View style={[styles.badge, styles.badgeOrange]}>
+        <Clock size={12} color="#F59E0B" style={{ marginRight: 4 }} />
+        <Text style={[styles.badgeText, { color: '#F59E0B' }]}>
+          Pending
+        </Text>
       </View>
     );
   }
+
+  if (status === 'OVERDUE' || remain < 0) {
+    return (
+      <View style={[styles.badge, styles.badgeRed]}>
+        <AlertCircle size={12} color="#DC2626" style={{ marginRight: 4 }} />
+        <Text style={[styles.badgeText, { color: '#DC2626' }]}>
+          Overdue {Math.abs(remain)} days
+        </Text>
+      </View>
+    );
+  }
+
+  if (remain === 0) {
+    return (
+      <View style={[styles.badge, styles.badgeOrange]}>
+        <AlertCircle size={12} color="#F59E0B" style={{ marginRight: 4 }} />
+        <Text style={[styles.badgeText, { color: '#F59E0B' }]}>
+          Overdue Today
+        </Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={[styles.badge, styles.badgeGreen]}>
-      <Text style={[styles.badgeText, { color: '#27AE60' }]}>Remain {remain} days</Text>
+    <View style={[styles.badge, styles.badgeBlue]}>
+      <CheckCircle size={12} color="#2563EB" style={{ marginRight: 4 }} />
+      <Text style={[styles.badgeText, { color: '#2563EB' }]}>
+        Remain {remain} days
+      </Text>
     </View>
   );
 }
@@ -190,6 +215,7 @@ export default function BorrowedBookScreen() {
     PENDING: 0,
     RETURNED: 0,
     OVERDUE: 0,
+    REJECTED: 0
   });
 
   const currentTab = TABS.find(t => t.key === activeTab)!;
@@ -197,11 +223,12 @@ export default function BorrowedBookScreen() {
   // ── Fetch counts bằng 4 API song song ─────────────────────────────────────
   const fetchCounts = useCallback(async () => {
     try {
-      const [resBorrowing, resPending, resReturned, resOverdue] = await Promise.allSettled([
+      const [resBorrowing, resPending, resReturned, resOverdue, resRejected] = await Promise.allSettled([
         loanService.getLoanByUser(1, 9999, 'BORROWING'),
         loanService.getLoanByUser(1, 9999, 'PENDING'),
         loanService.getLoanByUser(1, 9999, 'RETURNED'),
         loanService.getLoanByUser(1, 9999, 'OVERDUE'),
+        loanService.getLoanByUser(1, 9999, 'REJECTED'),
       ]);
 
       const safeCount = (result: PromiseSettledResult<any>): number => {
@@ -216,18 +243,19 @@ export default function BorrowedBookScreen() {
       const pending = safeCount(resPending);
       const returned = safeCount(resReturned);
       const overdue = safeCount(resOverdue);
+      const rejected = safeCount(resRejected);
 
-     
-      let allTotal = borrowing + pending + returned + overdue;
+
+      let allTotal = borrowing + pending + returned + overdue + rejected;
       try {
         const resAll = await loanService.getLoanByUser(1, 1);
         const dataAll: LoanResponse = resAll?.data?.data;
         if (dataAll?.total != null) allTotal = dataAll.total;
       } catch {
-       
+
       }
 
-      setCounts({ ALL: allTotal, BORROWING: borrowing, PENDING: pending, RETURNED: returned, OVERDUE: overdue });
+      setCounts({ ALL: allTotal, BORROWING: borrowing, PENDING: pending, RETURNED: returned, OVERDUE: overdue, REJECTED: rejected });
     } catch (e) {
       console.error('fetchCounts error:', e);
     }
@@ -250,7 +278,7 @@ export default function BorrowedBookScreen() {
           } else {
             setBooks(prev => [...prev, ...(data.list ?? [])]);
           }
-       
+
           if (activeTab === 'ALL') {
             setCounts(prev => ({ ...prev, ALL: data.total ?? prev.ALL }));
           }
@@ -267,7 +295,7 @@ export default function BorrowedBookScreen() {
     [activeTab, currentTab.apiStatus],
   );
 
-  
+
   useEffect(() => {
     fetchCounts();
   }, []);
@@ -294,7 +322,7 @@ export default function BorrowedBookScreen() {
     }
   };
 
- 
+
   const tabIcon = (key: TabKey, active: boolean) => {
     const color = active ? '#fff' : '#6B7280';
     const size = 15;
@@ -304,10 +332,19 @@ export default function BorrowedBookScreen() {
       case 'PENDING': return <Clock size={size} color={color} />;
       case 'RETURNED': return <CheckCircle size={size} color={color} />;
       case 'OVERDUE': return <AlertCircle size={size} color={color} />;
+      case 'REJECTED': return <XCircle size={size} color={color} />;
     }
   };
 
-  const tabActiveColor = (key: TabKey) => (key === 'OVERDUE' ? '#E53935' : '#27AE60');
+  const tabActiveColor = (key: TabKey) =>
+  ({
+    ALL: '#7C3AED',
+    BORROWING: '#2563EB',
+    PENDING: '#F59E0B',
+    RETURNED: '#16A34A',
+    OVERDUE: '#DC2626',
+    REJECTED: '#6B7280',
+  }[key] ?? '#27AE60');
 
   // ─── List header ──────────────────────────────────────────────────────────
   const ListHeader = () => (
@@ -384,7 +421,7 @@ export default function BorrowedBookScreen() {
         </ScrollView>
       </View>
 
-  
+
       {loading ? (
         <View style={styles.centerLoader}>
           <ActivityIndicator size="large" color="#27AE60" />
@@ -426,7 +463,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F4F6F8',
   },
 
-  
+
   header: {
     backgroundColor: '#27AE60',
     paddingHorizontal: 20,
@@ -497,7 +534,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 6,
     paddingHorizontal: 4,
-    
+
   },
   tabScroll: {
     paddingHorizontal: 2,
@@ -545,7 +582,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
 
-  
+
   listContent: {
     paddingHorizontal: 16,
     paddingBottom: 32,
@@ -626,10 +663,24 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 20,
   },
-  badgeGreen: { backgroundColor: '#E8F5E9' },
-  badgeRed: { backgroundColor: '#FDECEA' },
-  badgeYellow: { backgroundColor: '#FFF9C4' },
-  badgeBlue: { backgroundColor: '#EFF6FF' },
+  badgeGreen: {
+    backgroundColor: '#DCFCE7',
+  },
+
+  badgeOrange: {
+    backgroundColor: '#FEF3C7',
+  },
+
+  badgeRed: {
+    backgroundColor: '#FEE2E2',
+  },
+
+  badgeGray: {
+    backgroundColor: '#F3F4F6',
+  },
+  badgeBlue: {
+    backgroundColor: '#DBEAFE', 
+  },
   badgeText: {
     fontSize: 11,
     fontWeight: '700',

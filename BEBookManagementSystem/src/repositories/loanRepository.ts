@@ -39,5 +39,23 @@ export const LoanRepository = AppDataSource.getRepository(Loan).extend({
             .leftJoinAndSelect('loan.user', 'user')
             .where('loan.status = :status', { status })
             .getMany();
+    },
+    async getLoanStatsByUserId(userId: string) {
+        return await this.manager
+            .getRepository(Loan)
+            .createQueryBuilder("loan")
+            .leftJoin("loan.loanDetails", "loanDetail")
+            .where("loan.userId = :userId", { userId })
+            .select([
+                "COALESCE(SUM(CASE WHEN loanDetail.status = :borrowing THEN 1 ELSE 0 END), 0) AS totalBorrowing",
+                "COALESCE(SUM(CASE WHEN loanDetail.status = :overdue THEN 1 ELSE 0 END), 0) AS totalOverdue",
+                "COALESCE(SUM(CASE WHEN loanDetail.status = :returned THEN 1 ELSE 0 END), 0) AS totalReturned",
+            ])
+            .setParameters({
+                borrowing: LoanStatus.BORROWING,
+                overdue: LoanStatus.OVERDUE,
+                returned: LoanStatus.RETURNED,
+            })
+            .getRawOne();
     }
 });
