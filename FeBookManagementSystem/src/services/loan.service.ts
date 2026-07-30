@@ -42,8 +42,8 @@ export const loanService = {
         });
         return res;
     },
-     getLoanHome: async (): Promise<LoanHomeResponse> => {
-        const res = await api.get(`/loan//loan-home`);
+    getLoanHome: async (): Promise<LoanHomeResponse> => {
+        const res = await api.get(`/loan/loan-home`);
         return res.data;
     },
 }
