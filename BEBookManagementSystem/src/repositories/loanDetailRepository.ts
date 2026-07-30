@@ -51,5 +51,5 @@ export const loanDetailRepository = AppDataSource.getRepository(LoanDetail).exte
             .andWhere('loan.status = :status', { status: LoanStatus.BORROWING })
             .orderBy('loan.borrowDate', 'DESC')
             .getOne();
-    }
+    },
 });
