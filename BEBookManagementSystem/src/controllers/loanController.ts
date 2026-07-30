@@ -46,7 +46,7 @@ export const LoanController = {
 
     returnBookByBarcode: async (req: Request, res: Response) => {
         try {
-            
+
             const { userId, barcodes } = req.body;
             const result = await LoanService.returnBookByBarcode(userId, barcodes);
             return res.status(200).json({ message: 'Return book successfully', data: result });
@@ -143,6 +143,20 @@ export const LoanController = {
                 success: false,
                 message: err.message
             });
+        }
+    },
+    getHomeData: async (req: Request, res: Response) => {
+        try {
+            const userId = (req as any).user.id;
+            if (!userId) {
+                res.status(400).json({ message: 'userId is required' });
+                return;
+            }
+            const response = await LoanService.getLoanHomeData(userId);
+            res.status(200).json(response);
+        } catch (error) {
+            console.error('Error in getHomeData:', error);
+            res.status(500).json({ message: 'Internal Server Error' });
         }
     }
 }

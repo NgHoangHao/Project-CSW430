@@ -45,7 +45,7 @@ export interface LoanDetailResponse {
     dueDate: Date;
     author: string;
     url: string;
-    title:string;
+    title: string;
     status: 'PENDING' | 'REJECTED' | 'BORROWING' | 'RETURNED' | 'OVERDUE';
     borrowedRemain: number;
 }
@@ -56,4 +56,12 @@ export interface LoanResponse {
     total: number;
     totalPages: number;
     list: LoanDetailResponse[];
+}
+
+export interface LoanHomeResponse {
+    totalBorrowing: number;
+    totalOverdue: number;
+    totalReturned: number;
+    progress: number;
+    recentLoan: LoanDetailResponse | null;
 }

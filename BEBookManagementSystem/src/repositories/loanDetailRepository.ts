@@ -28,5 +28,28 @@ export const loanDetailRepository = AppDataSource.getRepository(LoanDetail).exte
             items,
             total
         };
+    },
+    // async getLoanStatsByUserId(userId: string) {
+    //     return await loanDetailRepository.createQueryBuilder('loanDetail')
+    //         .innerJoin('loanDetail.loan', 'loan')
+    //         .where('loan.userId = :userId', { userId })
+    //         .select([
+    //             `COALESCE(SUM(CASE WHEN loanDetail.status = '${LoanStatus.BORROWING}' THEN 1 ELSE 0 END), 0) AS totalBorrowing`,
+    //             `COALESCE(SUM(CASE WHEN loanDetail.status = '${LoanStatus.OVERDUE}' THEN 1 ELSE 0 END), 0) AS totalOverdue`,
+    //             `COALESCE(SUM(CASE WHEN loanDetail.status = '${LoanStatus.RETURNED}' THEN 1 ELSE 0 END), 0) AS totalReturned`
+    //         ])
+    //         .getRawOne();
+    // },
+
+    async getRecentLoanDetailByUserId(userId: string): Promise<LoanDetail | null> {
+        return await loanDetailRepository
+            .createQueryBuilder('loanDetail')
+            .innerJoinAndSelect('loanDetail.loan', 'loan')
+            .innerJoinAndSelect('loanDetail.copyBook', 'copyBook')
+            .innerJoinAndSelect('copyBook.book', 'book')
+            .where('loan.userId = :userId', { userId })
+            .andWhere('loan.status = :status', { status: LoanStatus.BORROWING })
+            .orderBy('loan.borrowDate', 'DESC')
+            .getOne();
     }
 });

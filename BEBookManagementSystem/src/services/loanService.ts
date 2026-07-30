@@ -12,7 +12,7 @@ import { BookStatus, CopyBookStatus, LoanStatus, RoleName } from "../utils/enums
 import { Book } from "../entities/Book";
 import { LoanDetailDTO } from "../dtos/loan/LoanDetailDTO";
 import { loanDetailRepository } from "../repositories/loanDetailRepository";
-import { LoanDetailResponse, LoanResponse } from "../dtos/loan/LoanResponse";
+import { LoanDetailResponse, LoanHomeResponse, LoanResponse } from "../dtos/loan/LoanResponse";
 
 export const LoanService = {
 
@@ -104,7 +104,7 @@ export const LoanService = {
                 relations: {
                     loanDetails: {
                         copyBook: {
-                            book: true 
+                            book: true
                         }
                     }
                 }
@@ -328,7 +328,7 @@ export const LoanService = {
         return responseLoan;
     },
 
-    getLoanDetails: async (userId: string,page = 1,size = 10,status?: LoanStatus): Promise<LoanResponse> => {
+    getLoanDetails: async (userId: string, page = 1, size = 10, status?: LoanStatus): Promise<LoanResponse> => {
         const { items: loanDetails, total } =
             await loanDetailRepository.getLoanDetailsByUserId(
                 userId,
@@ -337,7 +337,7 @@ export const LoanService = {
                 status
             );
         const now = new Date();
-        
+
         const list: LoanDetailResponse[] = loanDetails.map(item => {
             const borrowedRemain = Math.ceil(
                 (item.loan.dueDate.getTime() - now.getTime()) /
@@ -348,7 +348,7 @@ export const LoanService = {
                 dueDate: item.loan.dueDate,
                 author: item.copyBook.book.author,
                 url: item.copyBook.book.url,
-                title:item.copyBook.book.title,
+                title: item.copyBook.book.title,
                 status: item.status,
                 borrowedRemain
             };
@@ -361,5 +361,43 @@ export const LoanService = {
             list
         };
         return response;
+    },
+    async getLoanHomeData(userId: string): Promise<LoanHomeResponse> {
+        const stats = await LoanRepository.getLoanStatsByUserId(userId);
+        const recentLoanDetail = await loanDetailRepository.getRecentLoanDetailByUserId(userId);
+        let progress = 0;
+        let recentLoanResponse = null;
+
+        if (recentLoanDetail) {
+            const borrowDate = recentLoanDetail.loan.borrowDate;
+            const dueDate = recentLoanDetail.loan.dueDate;
+
+            const endDate = recentLoanDetail.returnDate ? recentLoanDetail.returnDate : new Date();
+            const msPerDay = 1000 * 60 * 60 * 24;
+
+            const totalDay = (dueDate.getTime() - borrowDate.getTime()) / msPerDay;
+            const borrowedDays = (endDate.getTime() - borrowDate.getTime()) / msPerDay;
+            if (totalDay > 0) {
+                progress = Math.round((borrowedDays / totalDay) * 100);
+                progress = Math.max(0, Math.min(progress, 100));
+            }
+            const borrowedRemain = Math.round(totalDay - borrowedDays);
+            recentLoanResponse = {
+                borrowDate: borrowDate,
+                dueDate: dueDate,
+                title: recentLoanDetail.copyBook.book.title,
+                author: recentLoanDetail.copyBook.book.author,
+                url: recentLoanDetail.copyBook.book.url,
+                status: recentLoanDetail.status,
+                borrowedRemain: borrowedRemain
+            } as LoanDetailResponse;
+        }
+        return {
+            totalBorrowing: Number(stats?.totalBorrowing) || 0,
+            totalOverdue: Number(stats?.totalOverdue) || 0,
+            totalReturned: Number(stats?.totalReturned) || 0,
+            progress: progress,
+            recentLoan: recentLoanResponse
+        };
     }
 }

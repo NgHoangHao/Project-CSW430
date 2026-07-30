@@ -10,6 +10,14 @@ export interface LoanDetailResponse {
     borrowedRemain: number;
 }
 
+export interface LoanHomeResponse{
+    totalBorrowing:number;
+    totalOverdue:number;
+    totalReturned:number;
+    progress:number;
+    recentLoan:LoanDetailResponse|null;
+}
+
 export interface LoanResponse {
     page: number;
     size: number;
