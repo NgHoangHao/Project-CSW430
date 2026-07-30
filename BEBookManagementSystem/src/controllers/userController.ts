@@ -1,8 +1,8 @@
 
 import { Request, Response } from 'express';
-import { assignRoleUser, getAllUsers, getUserProfile, removeRoleUser, updateUserProfile, deleteUserById } from '../services/userService';
+import { assignRoleUser, getAllUsers, getUserProfile, removeRoleUser, updateUserProfile, deleteUserById, getAnalysisByAdmin } from '../services/userService';
 import { changePasswordAfterForgot, verifyForgotPasswordOtp } from '../services/userService';
-import { NotFoundException } from '../common/errors/error';
+import { ForbiddenException, NotFoundException } from '../common/errors/error';
 import { AssignRoleUserDto, DeleteRoleUserDto } from '../dtos/user/user';
 
 export const getProfile = async (req: Request, res: Response) => {
@@ -174,3 +174,36 @@ export const getUserPage = async (
     });
   }
 };
+
+export const getAnalysisController = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id;
+    const result = await getAnalysisByAdmin(userId);
+    return res.status(200).json({
+      success: true,
+      message: 'Get analysis successfully',
+      data: result
+    })
+  } catch (error) {
+    console.error(error)
+    if(error instanceof NotFoundException){
+      const statusCode = error.message == 'User not found' || 'Role not found' ? 404 : 400;
+      res.status(statusCode).json({
+        success: false,
+        message: error.message
+      });
+      return;
+    }
+    if(error instanceof ForbiddenException){
+      const statusCode = 403;
+      return res.status(statusCode).json({
+        success: false,
+        message: error.message
+      })
+    }
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+}

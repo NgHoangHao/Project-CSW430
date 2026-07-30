@@ -6,9 +6,9 @@ import { LoanStatus, UserStatus } from '../utils/enums';
 import bcrypt from 'bcrypt';
 import { ResetPasswordDto } from '../dtos/auth/ResetPasswordDTO';
 import { UserProfileDto } from '../dtos/user/userProfileDTO';
-import { addRoleUser, deleteRoleUser, getUserById,getUserPage,countBlockedUsers,countActiveUsers } from '../repositories/userRepository';
+import { addRoleUser, deleteRoleUser, getUserById,getUserPage,countBlockedUsers,countActiveUsers, getAnalysisAdmin } from '../repositories/userRepository';
 import { roleService } from './roleService';
-import { NotFoundException } from '../common/errors/error';
+import { ForbiddenException, NotFoundException } from '../common/errors/error';
 
 
 export const getUserProfile = async (userId: string): Promise<UserProfileDto> => {
@@ -174,3 +174,14 @@ export const deleteUserById = async (userId: string) => {
             userList,
         };
     }
+
+export const getAnalysisByAdmin = async (userId: string) =>{
+  const user = await getUserById(userId);
+  if (!user) {
+    throw new Error('USER_NOT_FOUND');
+  }
+  if(!user.roles.filter(r => r.roleName == 'ADMIN')){
+    throw new ForbiddenException("You don't have permission to access this");
+  }
+  return await getAnalysisAdmin();
+}
