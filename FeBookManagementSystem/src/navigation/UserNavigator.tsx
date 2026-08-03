@@ -9,6 +9,7 @@ import { book, borrowBook, home, user } from '../constants/icon';
 import { USER_ROUTES } from '../constants/routes';
 import { UserStackParamList, UserTabParamList } from './types';
 import BookScreen from '../screens/user/BookScreen';
+import { StyleSheet, View } from 'react-native';
 
 const Tab = createBottomTabNavigator<UserTabParamList>();
 const Stack = createNativeStackNavigator<UserStackParamList>();
@@ -21,13 +22,30 @@ function UserTabs() {
         headerShown: false,
         tabBarActiveTintColor: '#27AE60',
         tabBarInactiveTintColor: '#828282',
-        tabBarIcon: ({ color }) => {
+        tabBarStyle: {
+          height: 85,                
+          paddingTop: 10,             
+          paddingBottom: 15,          
+          backgroundColor: '#FFFFFF',
+          borderTopWidth: 1,
+          borderTopColor: '#E0E0E0',
+        },
+        tabBarIcon: ({ color, focused }) => {
           let IconComponent: any = home;
           if (route.name === USER_ROUTES.HOME) IconComponent = home;
           else if (route.name == USER_ROUTES.BOOKS) IconComponent = book;
           else if (route.name == USER_ROUTES.BORROW) IconComponent = borrowBook;
           else if (route.name == USER_ROUTES.PROFILE) IconComponent = user;
-          return <IconComponent color={color} size={24} />;
+          return (
+            <View
+              style={[
+                styles.iconContainer,
+                focused && styles.activeIconContainer, // Chỉ áp dụng khi focused là true
+              ]}
+            >
+              <IconComponent color={color} size={24} />
+            </View>
+          );
         },
       })}
     >
@@ -48,3 +66,17 @@ export const UserNavigator = () => {
     </Stack.Navigator>
   );
 };
+
+const styles = StyleSheet.create({
+  iconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent', // Mặc định không có nền
+  },
+  activeIconContainer: {
+    backgroundColor: '#E8F8EE', // Màu nền xanh nhạt khi active (bạn có thể đổi màu tùy ý)
+  },
+});
