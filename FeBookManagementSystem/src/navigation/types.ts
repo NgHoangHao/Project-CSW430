@@ -15,6 +15,7 @@ export type UserTabParamList = {
     Books: undefined;
     Borrow: undefined;
     Profile: undefined;
+    About:undefined;
 }
 
 export type UserStackParamList = UserTabParamList & {
@@ -23,11 +24,15 @@ export type UserStackParamList = UserTabParamList & {
     UpdateProfile: undefined;
 }
 
-export type AdminStackParamList = {
+export type AdminTabParamList = {
     Dashboard: undefined;
     Books: undefined;
     User: undefined;
     Loan: undefined;
     Request: undefined;
     Profile: undefined;
+}
+
+export type AdminStackParamList = AdminTabParamList & {
+    UpdateProfile: undefined;
 }

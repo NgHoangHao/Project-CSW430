@@ -187,7 +187,7 @@ export default function LoanManagementScreen() {
             ? overdueRes.value?.data?.length ?? 0
             : 0,
       });
-    } catch (_) {}
+    } catch (_) { }
   }, []);
 
   const refreshSelectedLoan = async () => {
@@ -325,7 +325,7 @@ export default function LoanManagementScreen() {
               Alert.alert(
                 'Lỗi',
                 err?.response?.data?.message ||
-                  'Có lỗi xảy ra. Vui lòng thử lại.',
+                'Có lỗi xảy ra. Vui lòng thử lại.',
               );
             } finally {
               setActionLoading(false);
@@ -360,7 +360,7 @@ export default function LoanManagementScreen() {
             }
             setActionLoading(true);
             try {
-              await loanService.returnBookByBarcode(selectedLoan.userId,barcodes);
+              await loanService.returnBookByBarcode(selectedLoan.userId, barcodes);
               Alert.alert('Thành công', 'Đã xác nhận trả sách thành công.');
               setSelectedLoan(null);
               fetchLoans(page);
@@ -379,7 +379,7 @@ export default function LoanManagementScreen() {
     );
   };
 
-  const handleReturnBookByBarCode = async (userId: string, barcodeId: string) => {
+  const handleReturnBookByBarCode = async (userId: string, barcodeId?: string) => {
     Alert.alert('Confirm return book', 'Are you sure to return book ?', [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -396,7 +396,7 @@ export default function LoanManagementScreen() {
           }
           setActionLoading(true);
           try {
-            await loanService.returnBookByBarcode(userId,barcodes);
+            await loanService.returnBookByBarcode(userId, barcodes);
             Alert.alert('Thành công', 'Đã xác nhận trả sách thành công.');
             fetchLoans(page);
             fetchStats();
@@ -422,8 +422,8 @@ export default function LoanManagementScreen() {
     }
     setActionLoading(true);
     try {
-      if(selectedLoan==null) return ;
-      await loanService.returnBookByBarcode(selectedLoan?.userId,[trimmed]);
+      if (selectedLoan == null) return;
+      await loanService.returnBookByBarcode(selectedLoan?.userId, [trimmed]);
       Alert.alert('Thành công', `Đã xử lý trả sách cho barcode: ${trimmed}`);
       setBarcodeInput('');
       fetchLoans(page);
@@ -499,7 +499,7 @@ export default function LoanManagementScreen() {
         {(item.status == 'BORROWING' || item.status == 'OVERDUE') && (
           <TouchableOpacity
             style={styles.buttonReturn}
-            onPress={() => handleReturnBookByBarCode(selectedLoan != null ? selectedLoan.loanId : "" ,item.barcode)}
+            onPress={() => handleReturnBookByBarCode(selectedLoan != null ? selectedLoan.loanId : "", item.barcode)}
           >
             <Text style={{ color: '#fff', fontWeight: '500' }}>Return</Text>
           </TouchableOpacity>
@@ -524,11 +524,11 @@ export default function LoanManagementScreen() {
     const isPending = item.status === 'PENDING';
     const initials = item.userName
       ? item.userName
-          .split(' ')
-          .map(w => w[0])
-          .slice(-2)
-          .join('')
-          .toUpperCase()
+        .split(' ')
+        .map(w => w[0])
+        .slice(-2)
+        .join('')
+        .toUpperCase()
       : '?';
 
     return (
@@ -809,25 +809,25 @@ export default function LoanManagementScreen() {
 
           {(selectedLoan.status === 'BORROWING' ||
             selectedLoan.status === 'OVERDUE') && (
-            <View style={styles.modalFooter}>
-              <TouchableOpacity
-                style={styles.modalReturnBtn}
-                onPress={() => handleReturnLoan(selectedLoan.loanId)}
-                disabled={actionLoading}
-              >
-                {actionLoading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <>
-                    <ArrowDownToLine size={16} color="#fff" />
-                    <Text style={styles.modalReturnBtnText}>
-                      Xác nhận trả sách
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-          )}
+              <View style={styles.modalFooter}>
+                <TouchableOpacity
+                  style={styles.modalReturnBtn}
+                  onPress={() => handleReturnLoan(selectedLoan.loanId)}
+                  disabled={actionLoading}
+                >
+                  {actionLoading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <>
+                      <ArrowDownToLine size={16} color="#fff" />
+                      <Text style={styles.modalReturnBtnText}>
+                        Xác nhận trả sách
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
         </SafeAreaView>
       </Modal>
     );

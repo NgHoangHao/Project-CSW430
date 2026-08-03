@@ -11,19 +11,18 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { LogOut, Leaf, Pencil } from 'lucide-react-native';
+import { LogOut, ShieldCheck, Pencil } from 'lucide-react-native';
 import { useAuth } from '../../store/authProvider';
-import { UserStackParamList } from '../../navigation/types';
+import { AdminStackParamList } from '../../navigation/types';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
-  const navigation = useNavigation<NativeStackNavigationProp<UserStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<AdminStackParamList>>();
   const [loggingOut, setLoggingOut] = useState(false);
 
   const displayName = user?.userName || 'Người dùng';
   const email = user?.email || '';
   const phone = user?.phone || '';
-  const credit = user?.credit||'';
   const initials = displayName
     .split(' ')
     .slice(-2)
@@ -58,16 +57,16 @@ export default function ProfileScreen() {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <View style={styles.headerIconWrapper}>
-              <Leaf size={18} color="#fff" />
+              <ShieldCheck size={18} color="#fff" />
             </View>
-            <Text style={styles.headerTitle}>Tài khoản</Text>
+            <Text style={styles.headerTitle}>Quản trị viên</Text>
           </View>
           <TouchableOpacity
             style={styles.editButton}
             activeOpacity={0.7}
             onPress={() => navigation.navigate('UpdateProfile')}
           >
-            <Pencil size={18} color="#27AE60" />
+            <Pencil size={18} color="#2C3E50" />
           </TouchableOpacity>
         </View>
 
@@ -93,34 +92,26 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* ── Membership Card ── */}
-        <View style={styles.memberCard}>
+        {/* ── Admin Card ── */}
+        <View style={styles.adminCard}>
           {/* Decorative circles */}
           <View style={styles.decCircle1} />
           <View style={styles.decCircle2} />
 
-          <View style={styles.memberCardTop}>
-            <View style={styles.memberBrandRow}>
-              <View style={styles.memberIconWrapper}>
-                <Leaf size={16} color="#fff" />
+          <View style={styles.adminCardTop}>
+            <View style={styles.adminBrandRow}>
+              <View style={styles.adminIconWrapper}>
+                <ShieldCheck size={16} color="#fff" />
               </View>
-              <Text style={styles.memberBrandText}>BOOKCONNECT</Text>
+              <Text style={styles.adminBrandText}>BOOKCONNECT</Text>
             </View>
-            <View style={styles.memberBadge}>
-              <Text style={styles.memberBadgeText}>Thành viên</Text>
+            <View style={styles.adminBadge}>
+              <Text style={styles.adminBadgeText}>Quản trị hệ thống</Text>
             </View>
           </View>
 
-          <Text style={styles.memberName}>{displayName}</Text>
-          <Text style={styles.memberSince}>Tham gia từ Tháng 1, 2025</Text>
-        </View>
-
-        <View style={styles.memberCard}>
-          {/* Decorative circles */}
-          <View style={styles.decCircle1} />
-          <View style={styles.decCircle2} />
-
-          <Text style={styles.memberName}>Uy tín còn :{credit}</Text>
+          <Text style={styles.adminName}>{displayName}</Text>
+          <Text style={styles.adminSince}>Hệ thống quản lý</Text>
         </View>
 
         {/* ── Logout Button ── */}
@@ -182,7 +173,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 10,
-    backgroundColor: '#27AE60',
+    backgroundColor: '#2C3E50',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -195,7 +186,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#EAFBF1',
+    backgroundColor: '#F2F4F4',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -222,7 +213,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 16,
-    backgroundColor: '#27AE60',
+    backgroundColor: '#2C3E50',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -259,7 +250,7 @@ const styles = StyleSheet.create({
   },
   phoneBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#EAFBF1',
+    backgroundColor: '#F2F4F4',
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -268,17 +259,17 @@ const styles = StyleSheet.create({
   phoneText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#27AE60',
+    color: '#2C3E50',
   },
 
-  /* Membership Card */
-  memberCard: {
-    backgroundColor: '#27AE60',
+  /* Admin Card */
+  adminCard: {
+    backgroundColor: '#2C3E50',
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
     overflow: 'hidden',
-    shadowColor: '#27AE60',
+    shadowColor: '#2C3E50',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
     shadowRadius: 12,
@@ -302,18 +293,18 @@ const styles = StyleSheet.create({
     right: 40,
     bottom: -20,
   },
-  memberCardTop: {
+  adminCardTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
   },
-  memberBrandRow: {
+  adminBrandRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  memberIconWrapper: {
+  adminIconWrapper: {
     width: 30,
     height: 30,
     borderRadius: 8,
@@ -321,30 +312,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  memberBrandText: {
+  adminBrandText: {
     fontSize: 14,
     fontWeight: '800',
     color: '#fff',
     letterSpacing: 1.5,
   },
-  memberBadge: {
+  adminBadge: {
     backgroundColor: 'rgba(255,255,255,0.22)',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 5,
   },
-  memberBadgeText: {
+  adminBadgeText: {
     fontSize: 13,
     fontWeight: '700',
     color: '#fff',
   },
-  memberName: {
+  adminName: {
     fontSize: 20,
     fontWeight: '800',
     color: '#fff',
     marginBottom: 4,
   },
-  memberSince: {
+  adminSince: {
     fontSize: 13,
     color: 'rgba(255,255,255,0.75)',
     fontWeight: '500',
