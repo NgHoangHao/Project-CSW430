@@ -2,18 +2,21 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native'; // Import thêm View và StyleSheet
 import BookManagementScreen from '../screens/admin/BookManagementScreen';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { book, home, loan, user, users } from '../constants/icon';
 import { ADMIN_ROUTES } from '../constants/routes';
-import { AdminStackParamList } from './types';
-import ProfileScreen from '../screens/admin/ProfileScreen';
+import { AdminStackParamList, AdminTabParamList } from './types';
+import ProfileScreen from '../screens/admin/AdminProfileScreen';
 import Dashboard from '../screens/admin/DashBoardAdminScreen';
 import UserManagement from '../screens/admin/UserManagementScreen';
 import { useAuth } from '../store/authProvider';
 import LoanManagement from '../screens/admin/LoanManagementScreen';
+import UpdateProfileScreen from '../screens/user/UpdateProfileScreen';
 
-const Tab = createBottomTabNavigator<AdminStackParamList>();
+const Tab = createBottomTabNavigator<AdminTabParamList>();
+const Stack = createNativeStackNavigator<AdminStackParamList>();
 
-export const AdminNavigator = () => {
+function AdminTabs() {
   const { userRole } = useAuth();
 
   return (
@@ -58,6 +61,15 @@ export const AdminNavigator = () => {
       <Tab.Screen name="Loan" component={LoanManagement} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
+  );
+}
+
+export const AdminNavigator = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Dashboard" component={AdminTabs} />
+      <Stack.Screen name="UpdateProfile" component={UpdateProfileScreen} />
+    </Stack.Navigator>
   );
 };
 

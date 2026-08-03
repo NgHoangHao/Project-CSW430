@@ -21,4 +21,5 @@ export const USER_ROUTES = {
     BORROW: "Borrow",
     PROFILE: "Profile",
     BOOK_DETAIL: "BookDetail",
+    ABOUT:"About"
 }

@@ -153,10 +153,13 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
         >
           {/* Header Section */}
           <View style={styles.topSection}>
-            <Image
-              source={require('../../../assets/auth/logo.png')}
-              style={styles.logo}
-            />
+            <View style={styles.logoContainer}>
+              <Image
+                source={require('../../../assets/auth/logo.png')}
+                style={styles.logo}
+              />
+              <Text style={styles.logoText}>K2H</Text>
+            </View>
             <TouchableOpacity onPress={() => navigation.navigate('Register')}>
               <Text style={styles.registerButtonText}>Register</Text>
             </TouchableOpacity>
@@ -294,10 +297,20 @@ const styles = StyleSheet.create({
     height: 60,
     width: '100%',
   },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   logo: {
     width: 45,
     height: 45,
     resizeMode: 'contain',
+    marginRight: 8,
+  },
+  logoText: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#2c9e56',
   },
   registerButtonText: {
     color: '#2c9e56',
