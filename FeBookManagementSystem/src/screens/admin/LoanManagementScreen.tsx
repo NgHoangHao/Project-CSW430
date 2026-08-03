@@ -499,7 +499,7 @@ export default function LoanManagementScreen() {
         {(item.status == 'BORROWING' || item.status == 'OVERDUE') && (
           <TouchableOpacity
             style={styles.buttonReturn}
-            onPress={() => handleReturnBookByBarCode(selectedLoan.userId ,item.barcode)}
+            onPress={() => handleReturnBookByBarCode(selectedLoan != null ? selectedLoan.loanId : "" ,item.barcode)}
           >
             <Text style={{ color: '#fff', fontWeight: '500' }}>Return</Text>
           </TouchableOpacity>
