@@ -26,7 +26,7 @@ function AdminTabs() {
         tabBarActiveTintColor: '#27AE60',
         tabBarInactiveTintColor: '#828282',
         tabBarStyle: {
-          height: 85,                 // Tăng chiều cao tổng thể của thanh bottom bar (bạn có thể tăng lên 90 nếu muốn cao hơn nữa)
+          height: 90,                 // Tăng chiều cao tổng thể của thanh bottom bar (bạn có thể tăng lên 90 nếu muốn cao hơn nữa)
           paddingTop: 10,             // Đẩy icon xuống một chút cho đỡ sát mép trên
           paddingBottom: 15,          // Đẩy chữ lên một chút cho đỡ sát mép dưới
           backgroundColor: '#FFFFFF',
@@ -76,9 +76,9 @@ export const AdminNavigator = () => {
 // Tạo Styles để code sạch sẽ hơn
 const styles = StyleSheet.create({
   iconContainer: {
-    width: 45,
-    height: 45,
-    borderRadius: 22.5, // Tạo hình tròn hoàn hảo
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'transparent', // Mặc định không có nền
