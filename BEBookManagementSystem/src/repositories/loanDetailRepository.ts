@@ -52,4 +52,8 @@ export const loanDetailRepository = AppDataSource.getRepository(LoanDetail).exte
             .orderBy('loan.borrowDate', 'DESC')
             .getOne();
     },
+
+    async updateLoanDetail(loanDetail: LoanDetail) {
+        return this.save(loanDetail);
+    },
 });

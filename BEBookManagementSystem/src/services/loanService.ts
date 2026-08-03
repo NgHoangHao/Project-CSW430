@@ -13,6 +13,7 @@ import { Book } from "../entities/Book";
 import { LoanDetailDTO } from "../dtos/loan/LoanDetailDTO";
 import { loanDetailRepository } from "../repositories/loanDetailRepository";
 import { LoanDetailResponse, LoanHomeResponse, LoanResponse } from "../dtos/loan/LoanResponse";
+import { userRepository } from "../repositories/userRepository";
 
 export const LoanService = {
 
@@ -339,10 +340,15 @@ export const LoanService = {
         const now = new Date();
 
         const list: LoanDetailResponse[] = loanDetails.map(item => {
-            const borrowedRemain = Math.ceil(
-                (item.loan.dueDate.getTime() - now.getTime()) /
-                (1000 * 60 * 60 * 24)
-            );
+            const dueDate = new Date(item.loan.dueDate);
+            dueDate.setHours(0, 0, 0, 0);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const borrowedRemain =
+                Math.floor(
+                    (dueDate.getTime() - today.getTime()) /
+                    (1000 * 60 * 60 * 24)
+                );
             return {
                 borrowDate: item.loan.borrowDate,
                 dueDate: item.loan.dueDate,
@@ -399,5 +405,23 @@ export const LoanService = {
             progress: progress,
             recentLoan: recentLoanResponse
         };
+    },
+    checkOverdueLoans: async () => {
+        const loans = await LoanRepository.getLoansToCheckOverdue();
+        for (const loan of loans) {
+            let hasOverdue = false;
+            for (const detail of loan.loanDetails) {
+                if (detail.status !== LoanStatus.RETURNED) {
+                    detail.status = LoanStatus.OVERDUE;
+                    await loanDetailRepository.updateLoanDetail(detail);
+                    hasOverdue = true;
+                }
+            }
+            if (!hasOverdue) continue;
+            loan.status = LoanStatus.OVERDUE;
+            await LoanRepository.updateLoanStatus(loan);
+            await userRepository.deductCredit(loan.user, 10);
+            console.log(`Loan ${loan.loanId} -> OVERDUE`);
+        }
     }
 }
