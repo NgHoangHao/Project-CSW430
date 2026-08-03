@@ -1,3 +1,4 @@
+import { LessThan } from "typeorm";
 import { AppDataSource } from "../config/database";
 import { Loan } from "../entities/Loan";
 import { LoanDetail } from "../entities/LoanDetail";
@@ -57,5 +58,21 @@ export const LoanRepository = AppDataSource.getRepository(Loan).extend({
                 returned: LoanStatus.RETURNED,
             })
             .getRawOne();
-    }
+    },
+    async getLoansToCheckOverdue() {
+        return this.find({
+            where: {
+                status: LoanStatus.BORROWING,
+                dueDate: LessThan(new Date()),
+            },
+            relations: {
+                loanDetails: true,
+                user: true,
+            },
+        });
+    },
+
+    async updateLoanStatus(loan: Loan) {
+        return this.save(loan);
+    },
 });

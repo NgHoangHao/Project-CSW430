@@ -85,7 +85,7 @@ export const countBlockedUsers = async () => {
   });
 }
 
-export const getAnalysisAdmin = async() : Promise<{totalBooks: number, borrowing: number, overdue: number, totalUsers: number, monthlyLoans: number, avgDuration: number}> => {
+export const getAnalysisAdmin = async (): Promise<{ totalBooks: number, borrowing: number, overdue: number, totalUsers: number, monthlyLoans: number, avgDuration: number }> => {
   const result = await AppDataSource.query(`
     SELECT
       (SELECT COUNT(*) FROM book) AS totalBooks,
@@ -102,13 +102,20 @@ export const getAnalysisAdmin = async() : Promise<{totalBooks: number, borrowing
         (SELECT AVG(DATEDIFF(dueDate, borrowDate)) FROM loan), 0
       ) AS avgDuration
     `);
-    const stats = result[0];
-    return {
-      totalBooks: Number(stats?.totalBooks) || 0,
+  const stats = result[0];
+  return {
+    totalBooks: Number(stats?.totalBooks) || 0,
     borrowing: Number(stats?.borrowing) || 0,
     overdue: Number(stats?.overdue) || 0,
     totalUsers: Number(stats?.totalUsers) || 0,
     monthlyLoans: Number(stats?.monthlyLoans) || 0,
     avgDuration: Number(parseFloat(stats?.avgDuration || 0).toFixed(1)),
-    }
+  }
 }
+
+export const userRepository = AppDataSource.getRepository(User).extend({
+  async deductCredit(user: User, amount: number) {
+    user.credit = Math.max(0, user.credit - amount);
+    return this.save(user);
+  },
+});
