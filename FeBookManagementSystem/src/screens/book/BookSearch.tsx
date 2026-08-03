@@ -94,7 +94,7 @@ export default function BookSearch() {
 
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + 14);
-
+    dueDate.setHours(23, 59, 59, 999);
     setBorrowing(true);
     try {
       await loanService.createLoan({
