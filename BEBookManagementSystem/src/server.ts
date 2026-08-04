@@ -1,6 +1,7 @@
 import { AppDataSource } from "./config/database";
 import app from "./app";
 import { startLoanCron } from "./scheduler/loanSchuduler";
+import { startUserCron } from "./scheduler/userScheduler";
 
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -12,6 +13,7 @@ AppDataSource.initialize()
 
     // Chạy cron
     await startLoanCron();
+    await startUserCron();
 
     // Khởi động server
     app.listen(PORT, HOST, () => {

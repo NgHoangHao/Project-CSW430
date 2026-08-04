@@ -411,7 +411,7 @@ export const LoanService = {
         for (const loan of loans) {
             let hasOverdue = false;
             for (const detail of loan.loanDetails) {
-                if (detail.status !== LoanStatus.RETURNED) {
+                if (detail.status === LoanStatus.BORROWING) {
                     detail.status = LoanStatus.OVERDUE;
                     await loanDetailRepository.updateLoanDetail(detail);
                     hasOverdue = true;
