@@ -338,7 +338,6 @@ export const LoanService = {
                 status
             );
         const now = new Date();
-
         const list: LoanDetailResponse[] = loanDetails.map(item => {
             const dueDate = new Date(item.loan.dueDate);
             dueDate.setHours(0, 0, 0, 0);
@@ -373,14 +372,11 @@ export const LoanService = {
         const recentLoanDetail = await loanDetailRepository.getRecentLoanDetailByUserId(userId);
         let progress = 0;
         let recentLoanResponse = null;
-
         if (recentLoanDetail) {
             const borrowDate = recentLoanDetail.loan.borrowDate;
             const dueDate = recentLoanDetail.loan.dueDate;
-
             const endDate = recentLoanDetail.returnDate ? recentLoanDetail.returnDate : new Date();
             const msPerDay = 1000 * 60 * 60 * 24;
-
             const totalDay = (dueDate.getTime() - borrowDate.getTime()) / msPerDay;
             const borrowedDays = (endDate.getTime() - borrowDate.getTime()) / msPerDay;
             if (totalDay > 0) {
