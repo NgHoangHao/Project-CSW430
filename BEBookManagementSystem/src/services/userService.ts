@@ -6,7 +6,7 @@ import { LoanStatus, UserStatus } from '../utils/enums';
 import bcrypt from 'bcrypt';
 import { ResetPasswordDto } from '../dtos/auth/ResetPasswordDTO';
 import { UserProfileDto } from '../dtos/user/userProfileDTO';
-import { addRoleUser, deleteRoleUser, getUserById,getUserPage,countBlockedUsers,countActiveUsers, getAnalysisAdmin } from '../repositories/userRepository';
+import { addRoleUser, deleteRoleUser, getUserById, getUserPage, countBlockedUsers, countActiveUsers, getAnalysisAdmin, userRepository } from '../repositories/userRepository';
 import { roleService } from './roleService';
 import { ForbiddenException, NotFoundException } from '../common/errors/error';
 
@@ -122,66 +122,70 @@ export const deleteUserById = async (userId: string) => {
   await userRepository.remove(user);
 }
 
- export const getAllUsers = async(
-        page: number,
-        size: number,
-        userName?: string
-    ) =>{
-        const { users, total } = await getUserPage(
-            page,
-            size,
-            userName
-        );
-        const totalActive = await countActiveUsers();
-        const totalBlock = await countBlockedUsers();
-        const now = new Date();
-        const userList = users.map((user) => {
-            let borrowingBooks = 0;
-            let expiredBooks = 0;
-            let totalBorrowedBook = 0;
-            user.loans.forEach((loan) => {
-                totalBorrowedBook += loan.loanDetails.length;
-                loan.loanDetails.forEach((detail) => {
-                    if (detail.status === LoanStatus.BORROWING) {
-                        borrowingBooks++;
+export const getAllUsers = async (
+  page: number,
+  size: number,
+  userName?: string
+) => {
+  const { users, total } = await getUserPage(
+    page,
+    size,
+    userName
+  );
+  const totalActive = await countActiveUsers();
+  const totalBlock = await countBlockedUsers();
+  const now = new Date();
+  const userList = users.map((user) => {
+    let borrowingBooks = 0;
+    let expiredBooks = 0;
+    let totalBorrowedBook = 0;
+    user.loans.forEach((loan) => {
+      totalBorrowedBook += loan.loanDetails.length;
+      loan.loanDetails.forEach((detail) => {
+        if (detail.status === LoanStatus.BORROWING) {
+          borrowingBooks++;
 
-                        if (loan.dueDate < now) {
-                            expiredBooks++;
-                        }
-                    }
-                });
-            });
+          if (loan.dueDate < now) {
+            expiredBooks++;
+          }
+        }
+      });
+    });
 
-            return {
-                userId: user.userId,
-                userName: user.userName,
-                email: user.email,
-                phone: user.phone,
-                createdAt: user.createdAt,
-                borrowingBooks,
-                expiredBooks,
-                totalBorrowedBook,
-                status: user.status,
-            };
-        });
-        return {
-            page,
-            size,
-            total,
-            totalPages: Math.ceil(total / size),
-            totalActive,
-            totalBlock,
-            userList,
-        };
-    }
+    return {
+      userId: user.userId,
+      userName: user.userName,
+      email: user.email,
+      phone: user.phone,
+      createdAt: user.createdAt,
+      borrowingBooks,
+      expiredBooks,
+      totalBorrowedBook,
+      status: user.status,
+    };
+  });
+  return {
+    page,
+    size,
+    total,
+    totalPages: Math.ceil(total / size),
+    totalActive,
+    totalBlock,
+    userList,
+  };
+}
 
-export const getAnalysisByAdmin = async (userId: string) =>{
+export const getAnalysisByAdmin = async (userId: string) => {
   const user = await getUserById(userId);
   if (!user) {
     throw new Error('USER_NOT_FOUND');
   }
-  if(!user.roles.filter(r => r.roleName == 'ADMIN')){
+  if (!user.roles.filter(r => r.roleName == 'ADMIN')) {
     throw new ForbiddenException("You don't have permission to access this");
   }
   return await getAnalysisAdmin();
+}
+
+export const addCreditForAllUser = async () => {
+  userRepository.addCreditsToAllUsers();
 }

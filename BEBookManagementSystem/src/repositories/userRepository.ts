@@ -118,4 +118,14 @@ export const userRepository = AppDataSource.getRepository(User).extend({
     user.credit = Math.max(0, user.credit - amount);
     return this.save(user);
   },
+  async addCreditsToAllUsers(){
+    await userRepository
+      .createQueryBuilder()
+      .update(User)
+      .set({
+        credit: () => 'CASE WHEN credit + 10 > 100 THEN 100 ELSE credit + 10 END',
+      })
+      .where('credit < :maxCredit', { maxCredit: 100 })
+      .execute();
+  }
 });
