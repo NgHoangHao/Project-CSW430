@@ -26,9 +26,11 @@ import {
   BoxIcon,
   ArchiveIcon,
   BookOpenIcon,
+  AlertCircle,
 } from 'lucide-react-native';
 import { UserStackParamList } from '../../navigation/types';
 import { bookService } from '../../services/book.service';
+import { loanService } from '../../services/loan.service';
 import { BACKEND_URL } from '@env';
 import { useAuth } from '../../store/authProvider';
 
@@ -40,6 +42,7 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
+  const [overdueCount, setOverdueCount] = useState(0);
 
   // FAB animation
   const fabScale = useRef(new Animated.Value(1)).current;
@@ -67,15 +70,25 @@ export default function HomeScreen() {
     }
   };
 
+  const fetchMyOverdueLoans = async () => {
+    try {
+      const res = await loanService.getMyLoans();
+      if (res && Array.isArray(res.data)) {
+        const count = res.data.filter((l) => l.status === 'OVERDUE').length;
+        setOverdueCount(count);
+      }
+    } catch (_) {}
+  };
+
   const loadData = async () => {
     setLoading(true);
-    await fetchBooks();
+    await Promise.all([fetchBooks(), fetchMyOverdueLoans()]);
     setLoading(false);
   };
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchBooks();
+    await Promise.all([fetchBooks(), fetchMyOverdueLoans()]);
     setRefreshing(false);
   };
 
@@ -100,7 +113,7 @@ export default function HomeScreen() {
     return url.startsWith('/') ? `${baseUrl}${url}` : `${baseUrl}/${url}`;
   };
 
-  const displayName = user?.userName || 'Nguyễn Văn A';
+  const displayName = user?.userName || 'User';
   const displayAvatarLetter = displayName.charAt(0).toUpperCase();
 
   return (
@@ -123,6 +136,24 @@ export default function HomeScreen() {
             <Text style={styles.avatarText}>{displayAvatarLetter}</Text>
           </View>
         </View>
+
+        {/* Overdue Notification Banner */}
+        {overdueCount > 0 && (
+          <TouchableOpacity
+            style={styles.overdueHomeBanner}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('Borrow')}
+          >
+            <AlertCircle size={22} color="#DC2626" style={{ marginRight: 10 }} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.overdueHomeBannerTitle}>⚠️ OVERDUE BOOK NOTICE</Text>
+              <Text style={styles.overdueHomeBannerSubtitle}>
+                You have {overdueCount} overdue book(s). Tap to view and return your books!
+              </Text>
+            </View>
+            <ChevronRight size={18} color="#DC2626" />
+          </TouchableOpacity>
+        )}
 
         {/* Stats Grid */}
         <View style={styles.statsContainer}>
@@ -174,7 +205,7 @@ export default function HomeScreen() {
             <View style={styles.readingBookDueDateRow}>
               <View style={styles.dueDateWrapper}>
                 <Calendar size={14} color="#8E8E93" style={{ marginRight: 4 }} />
-                <Text style={styles.dueDateText}>Hạn trả: 15/07/2026</Text>
+                <Text style={styles.dueDateText}>Due date: 07/15/2026</Text>
               </View>
               <View style={styles.daysLeftBadge}>
                 <Text style={styles.daysLeftText}>5 days</Text>
@@ -271,7 +302,7 @@ export default function HomeScreen() {
               <BookOpen size={20} color="#fff" />
             </View>
             <Text style={styles.actionTitle}>Browse categories</Text>
-            <Text style={styles.actionSubtext}>12,543 đầu sách</Text>
+            <Text style={styles.actionSubtext}>12,543 books</Text>
             <ArrowRight size={18} color="#27AE60" style={styles.actionArrow} />
           </TouchableOpacity>
 
@@ -636,6 +667,33 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 40,
-  }
+  },
+  overdueHomeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1.5,
+    borderColor: '#FCA5A5',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 20,
+    shadowColor: '#EF4444',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  overdueHomeBannerTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#DC2626',
+    marginBottom: 2,
+  },
+  overdueHomeBannerSubtitle: {
+    fontSize: 12,
+    color: '#991B1B',
+    lineHeight: 16,
+    fontWeight: '500',
+  },
 });
 

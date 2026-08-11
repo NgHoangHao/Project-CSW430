@@ -63,14 +63,14 @@ export const PassInputScreen = ({ navigation, route }: { navigation: any; route:
       await userService.forgotPass(email, newPass, confirmPass);
       Alert.alert('Success', 'Password reset successful! Please log in again.', [
         {
-          text: 'Đăng nhập',
+          text: 'Sign In',
           onPress: () => navigation.navigate(ROUTES.LOGIN),
         },
       ]);
     } catch (error: any) {
       console.log('Reset password error:', error);
       const message = error?.response?.data?.message || 'An error occurred during the password reset process.';
-      Alert.alert('Lỗi', message);
+      Alert.alert('Error', message);
     } finally {
       setIsResetting(false);
     }

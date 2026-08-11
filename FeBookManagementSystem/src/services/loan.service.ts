@@ -31,5 +31,9 @@ export const loanService = {
     getLoanByStatus: async (status: string): Promise<ApiResponse<LoanDetailDTO[]>> => {
         const res = await api.get(`/loan/get-loan-by-status/${status}`);
         return res.data;
+    },
+    sendLoanEmailNotice: async (loanId: string, customMessage?: string): Promise<any> => {
+        const res = await api.post('/loan/send-email-notice', { loanId, customMessage });
+        return res.data;
     }
 }

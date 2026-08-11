@@ -110,8 +110,10 @@ export class BookService {
     if (!book) return null;
     const copyBookDTOs: CopyBookDTO[] = book.copyBooks && book.copyBooks.length > 0
       ? book.copyBooks.map((cb) => ({
+        copyBookId: cb.copyBookId,
         barcode: cb.barcode,
-        location: cb.location
+        location: cb.location,
+        status: cb.status
       }))
       : [];
     const bookDetail: BookDetail = {

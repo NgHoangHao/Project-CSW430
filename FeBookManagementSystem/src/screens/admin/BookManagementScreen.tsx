@@ -103,24 +103,24 @@ export default function BookManagementScreen() {
 
   const handleDelete = (bookId: string, title: string) => {
     Alert.alert(
-      'Xóa Sách',
-      `Bạn có chắc chắn muốn xóa sách "${title}" không?`,
+      'Delete Book',
+      `Are you sure you want to delete "${title}"?`,
       [
-        { text: 'Hủy', style: 'cancel' },
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Xóa',
+          text: 'Delete',
           style: 'destructive',
           onPress: async () => {
             try {
               const res = await bookService.deleteBook(bookId);
               if (res.data?.success) {
-                Alert.alert('Thành công', 'Đã xóa sách.');
+                Alert.alert('Success', 'Book deleted successfully.');
                 fetchBooks(currentPage, searchText);
               } else {
-                Alert.alert('Lỗi', res.data?.message || 'Không thể xóa.');
+                Alert.alert('Error', res.data?.message || 'Unable to delete.');
               }
             } catch (err: any) {
-              Alert.alert('Lỗi', 'Lỗi hệ thống khi xóa sách.');
+              Alert.alert('Error', 'System error while deleting book.');
             }
           },
         },
@@ -167,18 +167,18 @@ export default function BookManagementScreen() {
         setFormImageUrl('');
       }
     } catch (error) {
-      Alert.alert('Lỗi', 'Không thể chọn ảnh');
+      Alert.alert('Error', 'Unable to select image');
     }
   };
 
   const handleSubmit = async () => {
     if (!formTitle || !formAuthor) {
-      Alert.alert('Lỗi', 'Vui lòng nhập Tên sách và Tác giả.');
+      Alert.alert('Error', 'Please enter Book Title and Author.');
       return;
     }
 
     if (!isEditing && !formImage?.uri && !formImageUrl.trim()) {
-      Alert.alert('Lỗi', 'Vui lòng chọn ảnh bìa hoặc nhập link ảnh.');
+      Alert.alert('Error', 'Please select a cover image or enter an image URL.');
       return;
     }
 
@@ -204,25 +204,25 @@ export default function BookManagementScreen() {
       if (isEditing && editingBookId) {
         const res = await bookService.updateBook(editingBookId, formData);
         if (res.data?.success) {
-          Alert.alert('Thành công', 'Đã cập nhật thông tin sách.');
+          Alert.alert('Success', 'Book details updated successfully.');
           setModalVisible(false);
           fetchBooks(currentPage, searchText);
         } else {
-          Alert.alert('Lỗi', res.data?.message || 'Không thể cập nhật sách.');
+          Alert.alert('Error', res.data?.message || 'Unable to update book.');
         }
       } else {
         const res = await bookService.createBook(formData);
         if (res.status === 201 || res.data?.success) {
-          Alert.alert('Thành công', 'Đã thêm sách mới.');
+          Alert.alert('Success', 'New book added successfully.');
           setModalVisible(false);
           fetchBooks(1, searchText);
         } else {
-          Alert.alert('Lỗi', res.data?.message || 'Không thể thêm sách mới.');
+          Alert.alert('Error', res.data?.message || 'Unable to add new book.');
         }
       }
     } catch (err: any) {
       console.log(err.response?.data || err);
-      Alert.alert('Lỗi', err.response?.data?.message || 'Không thể lưu sách. Vui lòng thử lại.');
+      Alert.alert('Error', err.response?.data?.message || 'Unable to save book. Please try again.');
     }
   };
 
@@ -256,15 +256,15 @@ export default function BookManagementScreen() {
 
             <View style={styles.bookMeta}>
               <View style={styles.categoryBadge}>
-                <Text style={styles.categoryText}>{item.category || 'Khác'}</Text>
+                <Text style={styles.categoryText}>{item.category || 'Other'}</Text>
               </View>
               <Text style={styles.metaText}>{item.publishYear}</Text>
             </View>
 
             <View style={styles.stockInfo}>
-              <Text style={styles.stockLabel}>Còn lại:</Text>
+              <Text style={styles.stockLabel}>In stock:</Text>
               <Text style={[styles.stockValue, { color: availableCopies > 0 ? '#27AE60' : '#EB5757' }]}>
-                {availableCopies} bản
+                {availableCopies} copies
               </Text>
             </View>
           </View>
@@ -273,12 +273,12 @@ export default function BookManagementScreen() {
         <View style={styles.actionRow}>
           <TouchableOpacity style={styles.actionBtn} onPress={() => openEditModal(item)}>
             <Edit2 size={16} color="#4F4F4F" />
-            <Text style={styles.actionText}>Sửa</Text>
+            <Text style={styles.actionText}>Edit</Text>
           </TouchableOpacity>
           <View style={styles.actionDivider} />
           <TouchableOpacity style={styles.actionBtn} onPress={() => handleDelete(item.bookId!, item.title)}>
             <Trash2 size={16} color="#EB5757" />
-            <Text style={[styles.actionText, { color: '#EB5757' }]}>Xóa</Text>
+            <Text style={[styles.actionText, { color: '#EB5757' }]}>Delete</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -318,7 +318,7 @@ export default function BookManagementScreen() {
           <View style={styles.headerIconWrapper}>
             <BookOpen size={16} color="#ffffff" />
           </View>
-          <Text style={styles.headerTitle}>Quản lý Sách</Text>
+          <Text style={styles.headerTitle}>Book Management</Text>
         </View>
         <TouchableOpacity style={styles.bellBtn}>
           <Bell size={20} color="#333" />
@@ -333,7 +333,7 @@ export default function BookManagementScreen() {
             <Search size={18} color="#8E8E93" style={{ marginRight: 8 }} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Tìm kiếm sách..."
+              placeholder="Search books..."
               placeholderTextColor="#999"
               value={searchText}
               onChangeText={setSearchText}
@@ -344,7 +344,7 @@ export default function BookManagementScreen() {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.totalText}>Tổng cộng: {totalBooks} quyển sách</Text>
+        <Text style={styles.totalText}>Total: {totalBooks} books</Text>
 
         {loading && !refreshing ? (
           <View style={styles.loadingContainer}>
@@ -361,7 +361,7 @@ export default function BookManagementScreen() {
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <BookOpen size={48} color="#C8D6C8" />
-                <Text style={styles.emptyText}>Chưa có sách nào.</Text>
+                <Text style={styles.emptyText}>No books found.</Text>
               </View>
             }
             ListFooterComponent={renderPagination}
@@ -374,7 +374,7 @@ export default function BookManagementScreen() {
         <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{isEditing ? 'Sửa Sách' : 'Thêm Sách Mới'}</Text>
+              <Text style={styles.modalTitle}>{isEditing ? 'Edit Book' : 'Add New Book'}</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
                 <X size={20} color="#333" />
               </TouchableOpacity>
@@ -389,44 +389,44 @@ export default function BookManagementScreen() {
                 ) : (
                   <View style={styles.imagePlaceholder}>
                     <ImageIcon size={32} color="#8E8E93" />
-                    <Text style={styles.imagePlaceholderText}>Chọn ảnh từ máy</Text>
+                    <Text style={styles.imagePlaceholderText}>Choose image</Text>
                   </View>
                 )}
               </TouchableOpacity>
 
-              <Text style={styles.inputLabel}>Hoặc nhập Link ảnh bìa trực tiếp</Text>
-              <TextInput style={styles.input} value={formImageUrl} onChangeText={(text) => { setFormImageUrl(text); setFormImage(null); }} placeholder="VD: https://example.com/image.jpg" />
+              <Text style={styles.inputLabel}>Or enter image URL directly</Text>
+              <TextInput style={styles.input} value={formImageUrl} onChangeText={(text) => { setFormImageUrl(text); setFormImage(null); }} placeholder="e.g. https://example.com/image.jpg" />
 
-              <Text style={styles.inputLabel}>Tên sách *</Text>
-              <TextInput style={styles.input} value={formTitle} onChangeText={setFormTitle} placeholder="Nhập tên sách" />
+              <Text style={styles.inputLabel}>Book Title *</Text>
+              <TextInput style={styles.input} value={formTitle} onChangeText={setFormTitle} placeholder="Enter book title" />
 
-              <Text style={styles.inputLabel}>Tác giả *</Text>
-              <TextInput style={styles.input} value={formAuthor} onChangeText={setFormAuthor} placeholder="Nhập tên tác giả" />
+              <Text style={styles.inputLabel}>Author *</Text>
+              <TextInput style={styles.input} value={formAuthor} onChangeText={setFormAuthor} placeholder="Enter author name" />
 
-              <Text style={styles.inputLabel}>Nhà xuất bản</Text>
-              <TextInput style={styles.input} value={formPublisher} onChangeText={setFormPublisher} placeholder="Nhập nhà xuất bản" />
+              <Text style={styles.inputLabel}>Publisher</Text>
+              <TextInput style={styles.input} value={formPublisher} onChangeText={setFormPublisher} placeholder="Enter publisher" />
 
               <View style={styles.rowInputs}>
                 <View style={{ flex: 1, marginRight: 8 }}>
-                  <Text style={styles.inputLabel}>Năm xuất bản</Text>
-                  <TextInput style={styles.input} value={formYear} onChangeText={setFormYear} keyboardType="numeric" placeholder="VD: 2023" />
+                  <Text style={styles.inputLabel}>Publication Year</Text>
+                  <TextInput style={styles.input} value={formYear} onChangeText={setFormYear} keyboardType="numeric" placeholder="e.g. 2023" />
                 </View>
                 <View style={{ flex: 1, marginLeft: 8 }}>
-                  <Text style={styles.inputLabel}>Số trang</Text>
-                  <TextInput style={styles.input} value={formPage} onChangeText={setFormPage} keyboardType="numeric" placeholder="VD: 300" />
+                  <Text style={styles.inputLabel}>Pages</Text>
+                  <TextInput style={styles.input} value={formPage} onChangeText={setFormPage} keyboardType="numeric" placeholder="e.g. 300" />
                 </View>
               </View>
 
-              <Text style={styles.inputLabel}>Thể loại</Text>
-              <TextInput style={styles.input} value={formCategory} onChangeText={setFormCategory} placeholder="VD: Tiểu thuyết" />
+              <Text style={styles.inputLabel}>Category</Text>
+              <TextInput style={styles.input} value={formCategory} onChangeText={setFormCategory} placeholder="e.g. Fiction" />
             </ScrollView>
 
             <View style={styles.modalFooter}>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setModalVisible(false)}>
-                <Text style={styles.cancelBtnText}>Hủy</Text>
+                <Text style={styles.cancelBtnText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.saveBtn} onPress={handleSubmit}>
-                <Text style={styles.saveBtnText}>Lưu</Text>
+                <Text style={styles.saveBtnText}>Save</Text>
               </TouchableOpacity>
             </View>
           </View>

@@ -80,7 +80,7 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
     } catch (error: any) {
       console.log('Forgot password OTP send error:', error);
       const message = error?.response?.data?.message || 'Unable to send the verification code. Please try again.';
-      Alert.alert('Lỗi', message);
+      Alert.alert('Error', message);
     } finally {
       setIsSendingOtp(false);
     }
@@ -201,7 +201,7 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
             {/* Footer Section */}
             <View style={styles.footerSection}>
               <Text style={styles.footerText}>
-                You already have an account?{' '}
+                Don't have an account?{' '}
               </Text>
               <TouchableOpacity onPress={() => navigation.navigate('Register')}>
                 <Text style={styles.footerLink}>Register</Text>

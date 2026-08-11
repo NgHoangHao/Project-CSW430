@@ -20,7 +20,7 @@ export default function ProfileScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<UserStackParamList>>();
   const [loggingOut, setLoggingOut] = useState(false);
 
-  const displayName = user?.userName || 'Người dùng';
+  const displayName = user?.userName || 'User';
   const email = user?.email || '';
   const phone = user?.phone || '';
   const credit = user?.credit||'';
@@ -31,10 +31,10 @@ export default function ProfileScreen() {
     .join('');
 
   const handleLogout = () => {
-    Alert.alert('Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất không?', [
-      { text: 'Hủy', style: 'cancel' },
+    Alert.alert('Log out', 'Are you sure you want to log out?', [
+      { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Đăng xuất',
+        text: 'Log out',
         style: 'destructive',
         onPress: async () => {
           try {
@@ -60,7 +60,7 @@ export default function ProfileScreen() {
             <View style={styles.headerIconWrapper}>
               <Leaf size={18} color="#fff" />
             </View>
-            <Text style={styles.headerTitle}>Tài khoản</Text>
+            <Text style={styles.headerTitle}>Account</Text>
           </View>
           <TouchableOpacity
             style={styles.editButton}
@@ -87,7 +87,7 @@ export default function ProfileScreen() {
             {!!email && <Text style={styles.userEmail}>{email}</Text>}
             {!!phone && (
               <View style={styles.phoneBadge}>
-                <Text style={styles.phoneText}>SDT: {phone}</Text>
+                <Text style={styles.phoneText}>Phone: {phone}</Text>
               </View>
             )}
           </View>
@@ -107,12 +107,12 @@ export default function ProfileScreen() {
               <Text style={styles.memberBrandText}>BOOKCONNECT</Text>
             </View>
             <View style={styles.memberBadge}>
-              <Text style={styles.memberBadgeText}>Thành viên</Text>
+              <Text style={styles.memberBadgeText}>Member</Text>
             </View>
           </View>
 
           <Text style={styles.memberName}>{displayName}</Text>
-          <Text style={styles.memberSince}>Tham gia từ Tháng 1, 2025</Text>
+          <Text style={styles.memberSince}>Member since Jan 2025</Text>
         </View>
 
         <View style={styles.memberCard}>
@@ -120,7 +120,7 @@ export default function ProfileScreen() {
           <View style={styles.decCircle1} />
           <View style={styles.decCircle2} />
 
-          <Text style={styles.memberName}>Uy tín còn :{credit}</Text>
+          <Text style={styles.memberName}>Remaining Credits: {credit}</Text>
         </View>
 
         {/* ── Logout Button ── */}
@@ -135,7 +135,7 @@ export default function ProfileScreen() {
           ) : (
             <>
               <LogOut size={20} color="#E53935" style={{ marginRight: 8 }} />
-              <Text style={styles.logoutText}>Đăng xuất</Text>
+              <Text style={styles.logoutText}>Log out</Text>
             </>
           )}
         </TouchableOpacity>

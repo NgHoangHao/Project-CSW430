@@ -175,7 +175,7 @@ export const RegisterScreen = ({ navigation }: { navigation: any }) => {
                 <View style={styles.passwordComponent}>
                   <TextInput
                     style={[styles.input]}
-                    placeholder="Enter your password"
+                    placeholder="Confirm your password"
                     placeholderTextColor="#aaa"
                     secureTextEntry={isVisibleConfirmPassword == false}
                     value={confirmPassword}

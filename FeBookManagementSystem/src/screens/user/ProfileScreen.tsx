@@ -32,7 +32,7 @@ export default function ProfileScreen() {
 
   const handleLogout = () => {
     Alert.alert('Log out', 'Are you sure you want to log out?', [
-      { text: 'Hủy', style: 'cancel' },
+      { text: 'Cancel', style: 'cancel' },
       {
         text: 'Log out',
         style: 'destructive',
@@ -87,7 +87,7 @@ export default function ProfileScreen() {
             {!!email && <Text style={styles.userEmail}>{email}</Text>}
             {!!phone && (
               <View style={styles.phoneBadge}>
-                <Text style={styles.phoneText}>SDT: {phone}</Text>
+                <Text style={styles.phoneText}>Phone: {phone}</Text>
               </View>
             )}
           </View>
@@ -120,7 +120,7 @@ export default function ProfileScreen() {
           <View style={styles.decCircle1} />
           <View style={styles.decCircle2} />
 
-          <Text style={styles.memberName}>Credits remains:{credit}</Text>
+          <Text style={styles.memberName}>Remaining Credits: {credit}</Text>
         </View>
 
         {/* ── Logout Button ── */}
@@ -135,7 +135,7 @@ export default function ProfileScreen() {
           ) : (
             <>
               <LogOut size={20} color="#E53935" style={{ marginRight: 8 }} />
-              <Text style={styles.logoutText}>Đăng xuất</Text>
+              <Text style={styles.logoutText}>Log out</Text>
             </>
           )}
         </TouchableOpacity>

@@ -162,7 +162,7 @@ export default function BookSearch() {
             <View style={styles.bookMeta}>
               <View style={styles.categoryBadge}>
                 <Text style={styles.categoryText} numberOfLines={1}>
-                  {item.category || 'Khác'}
+                  {item.category || 'Other'}
                 </Text>
               </View>
               <Text style={styles.publishYear}>{item.publishYear}</Text>
@@ -187,7 +187,7 @@ export default function BookSearch() {
           {/* Status badge */}
           <View style={[styles.statusBadge, isAvailable ? styles.statusAvailable : styles.statusUnavailable]}>
             <Text style={[styles.statusText, isAvailable ? styles.statusTextAvailable : styles.statusTextUnavailable]}>
-              {isAvailable ? 'Có sẵn' : 'Hết'}
+              {isAvailable ? 'Available' : 'Out of stock'}
             </Text>
           </View>
         </TouchableOpacity>
@@ -203,9 +203,9 @@ export default function BookSearch() {
         <View style={styles.emptyIconWrapper}>
           <BookOpen size={48} color="#C8D6C8" />
         </View>
-        <Text style={styles.emptyTitle}>Không tìm thấy sách</Text>
+        <Text style={styles.emptyTitle}>No books found</Text>
         <Text style={styles.emptySubtitle}>
-          {searchText ?`No results for "${searchText}"` : 'No books in the system yet'}
+          {searchText ? `No results for "${searchText}"` : 'No books in the system yet'}
         </Text>
       </View>
     );
@@ -225,7 +225,7 @@ export default function BookSearch() {
     return (
       <View style={styles.paginationContainer}>
         <Text style={styles.paginationInfo}>
-          {totalElements} sách • Trang {currentPage}/{totalPages}
+          {totalElements} books • Page {currentPage}/{totalPages}
         </Text>
         <View style={styles.paginationRow}>
           <TouchableOpacity
@@ -269,7 +269,7 @@ export default function BookSearch() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Tìm kiếm sách 📚</Text>
+          <Text style={styles.headerTitle}>Book Search 📚</Text>
         </View>
 
         {/* Search Bar */}
@@ -279,7 +279,7 @@ export default function BookSearch() {
             <TextInput
               ref={inputRef}
               style={styles.searchInput}
-              placeholder="Nhập tên sách cần tìm..."
+              placeholder="Search book title..."
               placeholderTextColor="#AEAEB2"
               value={searchText}
               onChangeText={setSearchText}
@@ -300,9 +300,9 @@ export default function BookSearch() {
         {hasSearched && !loading && books.length > 0 && (
           <View style={styles.resultInfo}>
             <Text style={styles.resultInfoText}>
-              {searchText ? `Kết quả cho "${searchText}"` : 'Tất cả sách'}
+              {searchText ? `Results for "${searchText}"` : 'All Books'}
             </Text>
-            <Text style={styles.resultCount}>{totalElements} sách</Text>
+            <Text style={styles.resultCount}>{totalElements} books</Text>
           </View>
         )}
 
@@ -310,7 +310,7 @@ export default function BookSearch() {
         {loading && (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#27AE60" />
-            <Text style={styles.loadingText}>Đang tìm kiếm...</Text>
+            <Text style={styles.loadingText}>Searching...</Text>
           </View>
         )}
 

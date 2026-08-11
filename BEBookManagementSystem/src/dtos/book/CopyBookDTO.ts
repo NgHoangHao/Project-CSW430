@@ -1,5 +1,7 @@
-export interface CopyBookDTO{
-      barcode: string;
-      location: string;
+export interface CopyBookDTO {
+  copyBookId?: string;
+  barcode: string;
+  location: string;
+  status?: string;
 }
 

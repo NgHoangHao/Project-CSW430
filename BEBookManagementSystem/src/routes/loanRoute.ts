@@ -12,6 +12,6 @@ loanRouters.get('/get-loan', authorize(['USER', 'LIBRARIAN', 'ADMIN']), LoanCont
 loanRouters.get('/get-loan-detail/:loanId', authorize(['USER', 'LIBRARIAN', 'ADMIN']), LoanController.getLoanDetailByLoanId);
 loanRouters.get('/get-all-loan-details', authorize(['LIBRARIAN', 'ADMIN']), LoanController.getAllLoanDetails);
 loanRouters.get('/get-loan-by-status/:status', authorize(['LIBRARIAN', 'ADMIN']), LoanController.getLoanByStatus);
-
+loanRouters.post('/send-email-notice', authorize(['LIBRARIAN', 'ADMIN']), LoanController.sendLoanEmailNotice);
 
 export default loanRouters;
