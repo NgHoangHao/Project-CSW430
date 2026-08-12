@@ -3,6 +3,7 @@ export type RootStackParamList = {
 }
 
 export type AuthStackParamList = {
+    Splash: undefined;
     Login: undefined;
     Register: undefined;
     OtpVerify: { email: string; isForgetPass?: boolean };
