@@ -47,8 +47,8 @@ export const LoanController = {
     returnBookByBarcode: async (req: Request, res: Response) => {
         try {
             const userId = (req as any).user.id;
-            const { barcodes } = req.body;
-            const result = await LoanService.returnBookByBarcode(userId, barcodes);
+            const { barcodes, userId: targetUserId } = req.body;
+            const result = await LoanService.returnBookByBarcode(userId, barcodes, targetUserId);
             return res.status(200).json({ message: 'Return book successfully', data: result });
         } catch (error: any) {
             if (error instanceof NotFoundException) {

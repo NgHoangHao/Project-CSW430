@@ -155,7 +155,7 @@ export const LoanService = {
         })
     },
 
-    returnBookByBarcode: async (userId: string, barcodes: string[]) => {
+    returnBookByBarcode: async (userId: string, barcodes: string[], targetUserId?: string) => {
         const user = await getUserById(userId);
         if (!user) {
             throw new NotFoundException('User not found');
@@ -163,33 +163,43 @@ export const LoanService = {
         if (!barcodes || barcodes.length === 0) {
             throw new BadRequestException('No barcodes provided');
         }
+
+        const isAdminOrLibrarian = user.roles?.some((r: any) => r.roleName === RoleName.ADMIN || r.roleName === RoleName.LIBRARIAN);
+
         return await AppDataSource.transaction(async (transactionalEntityManager) => {
             const copyBooks = await transactionalEntityManager.find(CopyBook, {
                 where: { barcode: In(barcodes) },
                 relations: { book: true }
-            })
+            });
 
             if (copyBooks.length !== barcodes.length) {
                 const foundBarcodes = copyBooks.map(cb => cb.barcode);
                 const missingBarcodes = barcodes.filter(b => !foundBarcodes.includes(b));
-                throw new NotFoundException(`Copy books not found: ${missingBarcodes.join(', ')}`)
+                throw new NotFoundException(`Copy books not found: ${missingBarcodes.join(', ')}`);
             }
 
             const copyBookIds = copyBooks.map(cb => cb.copyBookId);
 
+            const whereCondition: any = {
+                copyBook: { copyBookId: In(copyBookIds) },
+                status: In([LoanStatus.BORROWING, LoanStatus.OVERDUE]),
+            };
+
+            if (!isAdminOrLibrarian) {
+                whereCondition.loan = { user: { userId } };
+            } else if (targetUserId) {
+                whereCondition.loan = { user: { userId: targetUserId } };
+            }
+
             const loanDetails = await transactionalEntityManager.find(LoanDetail, {
-                where: {
-                    copyBook: { copyBookId: In(copyBookIds) },
-                    status: LoanStatus.BORROWING,
-                    loan: { user: { userId } }
-                },
+                where: whereCondition,
                 relations: { loan: true, copyBook: true }
             });
 
             if (loanDetails.length !== copyBooks.length) {
                 const foundBookIds = loanDetails.map(ld => ld.copyBook.copyBookId);
                 const missingBarcodes = copyBooks.filter(cb => !foundBookIds.includes(cb.copyBookId)).map(cb => cb.barcode);
-                throw new NotFoundException(`One or more books were not borrowed by this user or are not in borrowing status: ${missingBarcodes.join(', ')}`);
+                throw new NotFoundException(`One or more books were not borrowed or are not in active borrowing status: ${missingBarcodes.join(', ')}`);
             }
 
             const today = new Date();
@@ -197,24 +207,17 @@ export const LoanService = {
             const affectedBookIds = new Set<string>();
 
             for (const detail of loanDetails) {
-                const dueDate = new Date(detail.loan.dueDate);
-
-                if (today.getTime() > dueDate.getTime()) {
-                    detail.status = LoanStatus.OVERDUE;
-                } else {
-                    detail.status = LoanStatus.RETURNED;
-                }
-
+                detail.status = LoanStatus.RETURNED;
                 detail.returnDate = today;
                 affectedLoanIds.add(detail.loan.loanId);
 
-                const linkedCopyBook = copyBooks.find(cb => cb.copyBookId === detail.copyBook.copyBookId)
+                const linkedCopyBook = copyBooks.find(cb => cb.copyBookId === detail.copyBook.copyBookId);
 
                 if (linkedCopyBook) {
                     linkedCopyBook.status = CopyBookStatus.AVAILABLE;
-                    await transactionalEntityManager.save(linkedCopyBook)
+                    await transactionalEntityManager.save(linkedCopyBook);
 
-                    const bookId = linkedCopyBook.book.bookId || (linkedCopyBook as any).bookId;
+                    const bookId = linkedCopyBook.book?.bookId || (linkedCopyBook as any).bookId;
 
                     if (bookId) {
                         affectedBookIds.add(bookId);
@@ -222,30 +225,24 @@ export const LoanService = {
                 }
             }
 
-            await transactionalEntityManager.save(loanDetails)
+            await transactionalEntityManager.save(loanDetails);
 
             for (const loanId of affectedLoanIds) {
-                const remainingBorrowingBooks = await transactionalEntityManager.count(LoanDetail, {
+                const remainingActiveBooks = await transactionalEntityManager.count(LoanDetail, {
                     where: {
                         loan: { loanId },
-                        status: LoanStatus.BORROWING
+                        status: In([LoanStatus.BORROWING, LoanStatus.OVERDUE])
                     }
-                })
-                if (remainingBorrowingBooks === 0) {
-                    const hasOverdueBook = await transactionalEntityManager.count(LoanDetail, {
-                        where: {
-                            loan: { loanId },
-                            status: LoanStatus.OVERDUE
-                        }
-                    })
-                    const finalStatus = hasOverdueBook > 0 ? LoanStatus.OVERDUE : LoanStatus.RETURNED;
-                    await transactionalEntityManager.update(Loan, { loanId }, { status: finalStatus });
+                });
+                if (remainingActiveBooks === 0) {
+                    await transactionalEntityManager.update(Loan, { loanId }, { status: LoanStatus.RETURNED });
                 }
             }
+
             for (const bookId of affectedBookIds) {
                 const book = await transactionalEntityManager.findOne(Book, {
                     where: { bookId }
-                })
+                });
                 if (book && book.status === BookStatus.OUT_OF_STOCK) {
                     book.status = BookStatus.AVAILABLE;
                     await transactionalEntityManager.save(book);

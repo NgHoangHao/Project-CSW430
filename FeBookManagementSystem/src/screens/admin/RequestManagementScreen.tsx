@@ -311,7 +311,7 @@ export default function RequestManagementScreen() {
             }
             setActionLoading(true);
             try {
-              await loanService.returnBookByBarcode(barcodes);
+              await loanService.returnBookByBarcode(barcodes, selectedLoan.userId);
               Alert.alert('Success', 'Book return confirmed successfully.');
               setSelectedLoan(null);
               fetchLoans(page);

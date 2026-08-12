@@ -194,7 +194,7 @@ export const mailService = {
       return true;
     } catch (error) {
       console.error('Error sending overdue notice email:', error);
-      throw new Error(error?.message || 'Failed to send overdue email notice');
+      throw new Error((error as any)?.message || 'Failed to send overdue email notice');
     }
   }
 };

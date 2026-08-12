@@ -16,8 +16,8 @@ export const loanService = {
         const res = await api.get("/loan/get-all-loan-details");
         return res.data;
     },
-    returnBookByBarcode: async (barcodes: string[]): Promise<any> => {
-        const res = await api.post('/loan/return-book', { barcodes });
+    returnBookByBarcode: async (barcodes: string[], userId?: string): Promise<any> => {
+        const res = await api.post('/loan/return-book', { barcodes, userId });
         return res.data;
     },
     getMyLoans: async (): Promise<ApiResponse<LoanUser[]>> => {
