@@ -193,7 +193,7 @@ export default function RequestManagementScreen() {
               dueDate: row.dueDate,
               status: row.status as any,
               userName: row.userName,
-              userId: row.userId,
+              userId: row.userId || "",
               loanDetails: [],
             });
           }
@@ -289,7 +289,7 @@ export default function RequestManagementScreen() {
     );
   };
 
-  const handleReturnLoan = (loanId: string) => {
+  const handleReturnLoan = (userId:string, loanId: string) => {
     Alert.alert(
       'Xác nhận trả sách',
       'Bạn có chắc chắn muốn xác nhận trả tất cả sách của yêu cầu này không?',
@@ -310,7 +310,7 @@ export default function RequestManagementScreen() {
             }
             setActionLoading(true);
             try {
-              await loanService.returnBookByBarcode(barcodes);
+              await loanService.returnBookByBarcode(userId, barcodes);
               Alert.alert('Thành công', 'Đã xác nhận trả sách thành công.');
               setSelectedLoan(null);
               fetchLoans(page);
@@ -326,7 +326,7 @@ export default function RequestManagementScreen() {
     );
   };
 
-  const handleBarcodeReturn = async () => {
+  const handleBarcodeReturn = async (userId: string) => {
     const trimmed = barcodeInput.trim();
     if (!trimmed) {
       Alert.alert('Thông báo', 'Vui lòng nhập hoặc quét mã barcode.');
@@ -334,7 +334,7 @@ export default function RequestManagementScreen() {
     }
     setActionLoading(true);
     try {
-      await loanService.returnBookByBarcode([trimmed]);
+      await loanService.returnBookByBarcode(userId, [trimmed]);
       Alert.alert('Thành công', `Đã xử lý trả sách cho barcode: ${trimmed}`);
       setBarcodeInput('');
       fetchLoans(page);
@@ -561,11 +561,11 @@ export default function RequestManagementScreen() {
                   value={barcodeInput}
                   onChangeText={setBarcodeInput}
                   returnKeyType="send"
-                  onSubmitEditing={handleBarcodeReturn}
+                  onSubmitEditing={() => handleBarcodeReturn(loans[0].userId)}
                 />
                 <TouchableOpacity
                   style={styles.barcodeSendBtn}
-                  onPress={handleBarcodeReturn}
+                  onPress={() => handleBarcodeReturn(loans[0].userId)}
                   disabled={actionLoading}
                 >
                   <SendHorizonal size={16} color="#fff" />
@@ -607,7 +607,7 @@ export default function RequestManagementScreen() {
             <View style={styles.modalFooter}>
               <TouchableOpacity
                 style={styles.modalReturnBtn}
-                onPress={() => handleReturnLoan(selectedLoan.loanId)}
+                onPress={() => handleReturnLoan(selectedLoan.userId, selectedLoan.loanId)}
                 disabled={actionLoading}
               >
                 {actionLoading ? (
