@@ -128,26 +128,26 @@ export default function UserManagementScreen() {
 
   const handleDeleteUser = (userId: string, userName: string) => {
     Alert.alert(
-      'Xóa người dùng',
-      `Bạn có chắc chắn muốn xóa người dùng "${userName}" không?`,
+      'Delete User',
+      `Are you sure you want to delete user "${userName}"?`,
       [
-        { text: 'Hủy', style: 'cancel' },
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Xóa',
+          text: 'Delete',
           style: 'destructive',
           onPress: async () => {
             try {
               const res = await userService.deleteUser(userId);
               if (res.status === 200 || res.data?.success) {
-                Alert.alert('Thành công', 'Đã xóa người dùng thành công.');
+                Alert.alert('Success', 'User deleted successfully.');
                 // Refresh list
                 fetchUsers(currentPage, searchText);
               } else {
-                Alert.alert('Lỗi', res.data?.message || 'Không thể xóa người dùng.');
+                Alert.alert('Error', res.data?.message || 'Unable to delete user.');
               }
             } catch (err: any) {
               console.error('Error deleting user:', err);
-              Alert.alert('Lỗi', err.response?.data?.message || 'Có lỗi xảy ra khi xóa người dùng.');
+              Alert.alert('Error', err.response?.data?.message || 'An error occurred while deleting user.');
             }
           },
         },
@@ -156,7 +156,7 @@ export default function UserManagementScreen() {
   };
 
   const handleSendMail = (email: string) => {
-    Alert.alert('Gửi Mail', `Chức năng gửi mail tới ${email} đang được phát triển.`);
+    Alert.alert('Send Mail', `Send mail to ${email} feature is under development.`);
   };
 
   const [detailsModalVisible, setDetailsModalVisible] = useState(false);
@@ -172,12 +172,12 @@ export default function UserManagementScreen() {
     try {
       const res = await userService.assignRole(selectedUser.userId, [roleId]);
       if (res.data?.success) {
-        Alert.alert('Thành công', 'Đã cấp quyền thành công!');
+        Alert.alert('Success', 'Role assigned successfully!');
       } else {
-        Alert.alert('Lỗi', res.data?.message || 'Không thể cấp quyền.');
+        Alert.alert('Error', res.data?.message || 'Unable to assign role.');
       }
     } catch (err: any) {
-      Alert.alert('Lỗi', 'Lỗi hệ thống khi cấp quyền.');
+      Alert.alert('Error', 'System error while assigning role.');
     }
   };
 
@@ -186,12 +186,12 @@ export default function UserManagementScreen() {
     try {
       const res = await userService.deleteRole(selectedUser.userId, [roleId]);
       if (res.data?.success) {
-        Alert.alert('Thành công', 'Đã thu hồi quyền thành công!');
+        Alert.alert('Success', 'Role revoked successfully!');
       } else {
-        Alert.alert('Lỗi', res.data?.message || 'Không thể thu hồi quyền.');
+        Alert.alert('Error', res.data?.message || 'Unable to revoke role.');
       }
     } catch (err: any) {
-      Alert.alert('Lỗi', 'Lỗi hệ thống khi thu hồi quyền.');
+      Alert.alert('Error', 'System error while revoking role.');
     }
   };
 
@@ -202,21 +202,16 @@ export default function UserManagementScreen() {
     return (parts[parts.length - 2].substring(0, 1) + parts[parts.length - 1].substring(0, 1)).toUpperCase();
   };
 
-  const getRelativeTime = (dateString?: string | Date) => {
-    if (!dateString) return 'Vừa xong';
-    const now = new Date();
-    const date = new Date(dateString);
-    const diffMs = now.getTime() - date.getTime();
-    const diffMin = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMin / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffMin < 1) return 'Vừa xong';
-    if (diffMin < 60) return `${diffMin} phút trước`;
-    if (diffHours < 24) return `${diffHours} giờ trước`;
-    if (diffDays === 1) return 'Hôm qua';
-    if (diffDays < 30) return `${diffDays} ngày trước`;
-    return date.toLocaleDateString('vi-VN');
+  const formatRelativeTime = (dateStr?: string) => {
+    if (!dateStr) return '';
+    const diff = new Date().getTime() - new Date(dateStr).getTime();
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 60) return minutes === 0 ? 'Just now' : `${minutes} minutes ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hours ago`;
+    const days = Math.floor(hours / 24);
+    if (days === 1) return 'Yesterday';
+    return `${days} days ago`;
   };
 
   const getMembershipId = (user: UserListItem) => {
@@ -239,25 +234,25 @@ export default function UserManagementScreen() {
     const isOverdue = item.expiredBooks > 0;
 
     let avatarBg = '#27AE60'; // Active / default
-    let statusText = 'Hoạt động';
+    let statusText = 'Active';
     let statusColor = '#27AE60';
     let statusBg = '#EAFBF1';
 
     if (isBlocked) {
       avatarBg = '#93A5B8';
-      statusText = 'Bị khóa';
+      statusText = 'Blocked';
       statusColor = '#EB5757';
       statusBg = '#FEE8E7';
     } else if (isOverdue) {
       avatarBg = '#F2994A';
-      statusText = 'Quá hạn';
+      statusText = 'Overdue';
       statusColor = '#F2994A';
       statusBg = '#FFF5E6';
     }
 
     const initials = getInitials(item.userName);
     const cardCode = getMembershipId(item);
-    const timeAgo = getRelativeTime(item.createdAt);
+    const timeAgo = formatRelativeTime(item.createdAt);
 
     return (
       <View style={styles.card}>
@@ -282,19 +277,19 @@ export default function UserManagementScreen() {
           <View style={styles.statBox}>
             <BookOpen size={16} color="#2F80ED" style={styles.statIcon} />
             <Text style={styles.statCount}>{item.borrowingBooks}</Text>
-            <Text style={styles.statLabel}>Đang mượn</Text>
+            <Text style={styles.statLabel}>Borrowing</Text>
           </View>
           {/* Overdue stat */}
           <View style={styles.statBox}>
             <AlertTriangle size={16} color="#EB5757" style={styles.statIcon} />
             <Text style={styles.statCount}>{item.expiredBooks}</Text>
-            <Text style={styles.statLabel}>Quá hạn</Text>
+            <Text style={styles.statLabel}>Overdue</Text>
           </View>
           {/* Total borrowed stat */}
           <View style={styles.statBox}>
             <Clock size={16} color="#4F4F4F" style={styles.statIcon} />
             <Text style={styles.statCount}>{item.totalBorrowedBook}</Text>
-            <Text style={styles.statLabel}>Tổng mượn</Text>
+            <Text style={styles.statLabel}>Total Borrowed</Text>
           </View>
         </View>
 
@@ -313,21 +308,21 @@ export default function UserManagementScreen() {
         <View style={styles.actionRow}>
           <TouchableOpacity style={styles.actionButton} onPress={() => handleShowDetails(item)}>
             <ChevronRight size={16} color="#4F4F4F" />
-            <Text style={styles.actionText}>Chi tiết</Text>
+            <Text style={styles.actionText}>Details</Text>
           </TouchableOpacity>
 
           <View style={styles.verticalDivider} />
 
           <TouchableOpacity style={styles.actionButton} onPress={() => handleSendMail(item.email)}>
             <Mail size={16} color="#4F4F4F" />
-            <Text style={styles.actionText}>Gửi mail</Text>
+            <Text style={styles.actionText}>Send Mail</Text>
           </TouchableOpacity>
 
           <View style={styles.verticalDivider} />
 
           <TouchableOpacity style={styles.actionButton} onPress={() => handleDeleteUser(item.userId, item.userName)}>
             <Trash2 size={16} color="#EB5757" />
-            <Text style={[styles.actionText, { color: '#EB5757' }]}>Xóa</Text>
+            <Text style={[styles.actionText, { color: '#EB5757' }]}>Delete</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -369,7 +364,7 @@ export default function UserManagementScreen() {
           <View style={styles.headerIconWrapper}>
             <Leaf size={16} color="#ffffff" />
           </View>
-          <Text style={styles.headerTitle}>Người dùng</Text>
+          <Text style={styles.headerTitle}>Users</Text>
         </View>
         <TouchableOpacity style={styles.bellBtn} activeOpacity={0.7}>
           <Bell size={20} color="#333" />
@@ -383,7 +378,7 @@ export default function UserManagementScreen() {
         <View style={styles.searchBar}>
           <TextInput
             style={styles.searchInput}
-            placeholder="Tên, email, mã thẻ..."
+            placeholder="Name, email, card code..."
             placeholderTextColor="#999"
             value={searchText}
             onChangeText={setSearchText}
@@ -396,28 +391,28 @@ export default function UserManagementScreen() {
             style={[styles.tab, activeTab === 'all' && styles.activeTab]}
             onPress={() => setActiveTab('all')}
           >
-            <Text style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>Tất cả</Text>
+            <Text style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>All</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.tab, activeTab === 'active' && styles.activeTab]}
             onPress={() => setActiveTab('active')}
           >
-            <Text style={[styles.tabText, activeTab === 'active' && styles.activeTabText]}>Hoạt động</Text>
+            <Text style={[styles.tabText, activeTab === 'active' && styles.activeTabText]}>Active</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.tab, activeTab === 'overdue' && styles.activeTab]}
             onPress={() => setActiveTab('overdue')}
           >
-            <Text style={[styles.tabText, activeTab === 'overdue' && styles.activeTabText]}>Quá hạn</Text>
+            <Text style={[styles.tabText, activeTab === 'overdue' && styles.activeTabText]}>Overdue</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.tab, activeTab === 'blocked' && styles.activeTab]}
             onPress={() => setActiveTab('blocked')}
           >
-            <Text style={[styles.tabText, activeTab === 'blocked' && styles.activeTabText]}>Bị khóa</Text>
+            <Text style={[styles.tabText, activeTab === 'blocked' && styles.activeTabText]}>Blocked</Text>
           </TouchableOpacity>
         </View>
 
@@ -426,22 +421,22 @@ export default function UserManagementScreen() {
           {/* Total Metric */}
           <View style={[styles.metricCard, { backgroundColor: '#F8F9FA' }]}>
             <Text style={[styles.metricNumber, { color: '#333333' }]}>{stats.total}</Text>
-            <Text style={styles.metricLabel}>Tổng</Text>
+            <Text style={styles.metricLabel}>Total</Text>
           </View>
           {/* Active Metric */}
           <View style={[styles.metricCard, { backgroundColor: '#EAFBF1' }]}>
             <Text style={[styles.metricNumber, { color: '#27AE60' }]}>{stats.active}</Text>
-            <Text style={styles.metricLabel}>Hoạt động</Text>
+            <Text style={styles.metricLabel}>Active</Text>
           </View>
           {/* Overdue Metric */}
           <View style={[styles.metricCard, { backgroundColor: '#FFF5E6' }]}>
             <Text style={[styles.metricNumber, { color: '#F2994A' }]}>{stats.overdue}</Text>
-            <Text style={styles.metricLabel}>Quá hạn</Text>
+            <Text style={styles.metricLabel}>Overdue</Text>
           </View>
           {/* Blocked Metric */}
           <View style={[styles.metricCard, { backgroundColor: '#FEE8E7' }]}>
             <Text style={[styles.metricNumber, { color: '#EB5757' }]}>{stats.blocked}</Text>
-            <Text style={styles.metricLabel}>Bị khóa</Text>
+            <Text style={styles.metricLabel}>Blocked</Text>
           </View>
         </View>
 
@@ -449,7 +444,7 @@ export default function UserManagementScreen() {
         {loading && !refreshing ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#27AE60" />
-            <Text style={styles.loadingText}>Đang tải người dùng...</Text>
+            <Text style={{ marginTop: 10, color: '#828282' }}>Loading users...</Text>
           </View>
         ) : (
           <FlatList
@@ -467,7 +462,7 @@ export default function UserManagementScreen() {
             }
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>Không tìm thấy người dùng nào.</Text>
+                <Text style={{ color: '#828282' }}>No users found.</Text>
               </View>
             }
             ListFooterComponent={renderPagination}
@@ -481,29 +476,29 @@ export default function UserManagementScreen() {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Chi tiết người dùng</Text>
+                <Text style={styles.modalTitle}>User Details</Text>
                 <TouchableOpacity onPress={() => setDetailsModalVisible(false)} style={styles.closeBtn}>
                   <Text style={{ fontSize: 16, color: '#333' }}>X</Text>
                 </TouchableOpacity>
               </View>
 
               <View style={styles.userInfoSection}>
-                <Text style={styles.infoText}>Tên: {selectedUser.userName}</Text>
+                <Text style={styles.infoText}>Name: {selectedUser.userName}</Text>
                 <Text style={styles.infoText}>Email: {selectedUser.email}</Text>
-                <Text style={styles.infoText}>SĐT: {selectedUser.phone || 'Chưa cập nhật'}</Text>
-                <Text style={styles.infoText}>Trạng thái: {selectedUser.status}</Text>
+                <Text style={styles.infoText}>Phone: {selectedUser.phone || 'Not updated'}</Text>
+                <Text style={styles.infoText}>Status: {selectedUser.status}</Text>
               </View>
 
-              <Text style={styles.roleTitle}>Quản lý Quyền (Roles)</Text>
+              <Text style={styles.roleTitle}>Role Management</Text>
               
               <View style={styles.roleActionRow}>
                 <Text style={styles.roleName}>ADMIN</Text>
                 <View style={styles.roleBtnGroup}>
                   <TouchableOpacity style={styles.assignBtn} onPress={() => handleAssignRole('role-admin-1234')}>
-                    <Text style={styles.assignBtnText}>Cấp</Text>
+                    <Text style={styles.assignBtnText}>Assign</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.revokeBtn} onPress={() => handleRevokeRole('role-admin-1234')}>
-                    <Text style={styles.revokeBtnText}>Thu hồi</Text>
+                    <Text style={styles.revokeBtnText}>Revoke</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -512,10 +507,10 @@ export default function UserManagementScreen() {
                 <Text style={styles.roleName}>LIBRARIAN</Text>
                 <View style={styles.roleBtnGroup}>
                   <TouchableOpacity style={styles.assignBtn} onPress={() => handleAssignRole('role-librarian-1234')}>
-                    <Text style={styles.assignBtnText}>Cấp</Text>
+                    <Text style={styles.assignBtnText}>Assign</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.revokeBtn} onPress={() => handleRevokeRole('role-librarian-1234')}>
-                    <Text style={styles.revokeBtnText}>Thu hồi</Text>
+                    <Text style={styles.revokeBtnText}>Revoke</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -524,10 +519,10 @@ export default function UserManagementScreen() {
                 <Text style={styles.roleName}>USER</Text>
                 <View style={styles.roleBtnGroup}>
                   <TouchableOpacity style={styles.assignBtn} onPress={() => handleAssignRole('role-user-1234')}>
-                    <Text style={styles.assignBtnText}>Cấp</Text>
+                    <Text style={styles.assignBtnText}>Assign</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.revokeBtn} onPress={() => handleRevokeRole('role-user-1234')}>
-                    <Text style={styles.revokeBtnText}>Thu hồi</Text>
+                    <Text style={styles.revokeBtnText}>Revoke</Text>
                   </TouchableOpacity>
                 </View>
               </View>

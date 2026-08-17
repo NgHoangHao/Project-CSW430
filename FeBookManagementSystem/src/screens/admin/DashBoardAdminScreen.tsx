@@ -47,11 +47,11 @@ const topBooks = [
 
 // Mock data for recent activities
 const recentActivities = [
-  { id: '1', user: 'A', action: 'mượn', book: 'Dune', time: '5 phút trước', status: 'Đã duyệt', statusColor: '#27AE60', statusBg: '#EAFBF1' },
-  { id: '2', user: 'B', action: 'trả', book: 'Sapiens', time: '12 phút trước', status: 'Đã trả', statusColor: '#2F80ED', statusBg: '#EAF2FF' },
-  { id: '3', user: 'C', action: 'quá hạn', book: 'The Alchemist', time: '1 giờ trước', status: 'Quá hạn', statusColor: '#EB5757', statusBg: '#FEE8E7' },
-  { id: '4', user: 'D', action: 'mượn', book: 'Atomic Habits', time: '2 giờ trước', status: 'Đã duyệt', statusColor: '#27AE60', statusBg: '#EAFBF1' },
-  { id: '5', user: 'E', action: 'gia hạn', book: '1984', time: '3 giờ trước', status: 'Gia hạn', statusColor: '#F2994A', statusBg: '#FFF5E6' },
+  { id: '1', user: 'A', action: 'borrow', book: 'Dune', time: '5 phút trước', status: 'Approved', statusColor: '#27AE60', statusBg: '#EAFBF1' },
+  { id: '2', user: 'B', action: 'return', book: 'Sapiens', time: '12 phút trước', status: 'Returned', statusColor: '#2F80ED', statusBg: '#EAF2FF' },
+  { id: '3', user: 'C', action: 'overdue', book: 'The Alchemist', time: '1 giờ trước', status: 'Overdue', statusColor: '#EB5757', statusBg: '#FEE8E7' },
+  { id: '4', user: 'D', action: 'borrow', book: 'Atomic Habits', time: '2 giờ trước', status: 'Approved', statusColor: '#27AE60', statusBg: '#EAFBF1' },
+  { id: '5', user: 'E', action: 'extend', book: '1984', time: '3 giờ trước', status: 'Extended', statusColor: '#F2994A', statusBg: '#FFF5E6' },
 ];
 
 export default function DashBoard() {
@@ -83,7 +83,7 @@ export default function DashBoard() {
   // Adjusted slightly to match the 7 days (index 0 to 6)
   const muonPoints = [40, 58, 35, 65, 85, 110, 95];
   const traPoints = [35, 48, 50, 40, 55, 75, 88];
-  const days = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   // Helper to generate smooth cubic Bezier lines
   const getCurvePath = (points: number[]) => {
@@ -110,10 +110,10 @@ export default function DashBoard() {
   const donutRadius = 35;
   const donutCircumference = 2 * Math.PI * donutRadius;
   const donutData = [
-    { key: 'available', percentage: 80, color: '#27AE60', label: 'Có sẵn', count: '11,890' },
-    { key: 'borrowed', percentage: 11, color: '#2F80ED', label: 'Đang mượn', count: '342' },
-    { key: 'overdue', percentage: 3, color: '#EB5757', label: 'Quá hạn', count: '47' },
-    { key: 'maintenance', percentage: 6, color: '#828282', label: 'Bảo trì', count: '264' },
+    { key: 'available', percentage: 80, color: '#27AE60', label: 'Available', count: '11,890' },
+    { key: 'borrowed', percentage: 11, color: '#2F80ED', label: 'Borrowing', count: '342' },
+    { key: 'overdue', percentage: 3, color: '#EB5757', label: 'Overdue', count: '47' },
+    { key: 'maintenance', percentage: 6, color: '#828282', label: 'Maintenance', count: '264' },
   ];
 
   let accumulatedPercentage = 0;
@@ -270,7 +270,7 @@ export default function DashBoard() {
           <View style={styles.chartHeader}>
             <View>
               <Text style={styles.chartTitle}>Tendency to borrow and repay</Text>
-              <Text style={styles.chartSubtitle}>7 ngày gần nhất</Text>
+              <Text style={styles.chartSubtitle}>Last 7 days</Text>
             </View>
             <View style={styles.chartLegend}>
               <View style={styles.legendItem}>

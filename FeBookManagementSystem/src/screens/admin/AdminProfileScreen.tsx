@@ -20,7 +20,7 @@ export default function ProfileScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<AdminStackParamList>>();
   const [loggingOut, setLoggingOut] = useState(false);
 
-  const displayName = user?.userName || 'Người dùng';
+  const displayName = user?.userName || 'User';
   const email = user?.email || '';
   const phone = user?.phone || '';
   const initials = displayName
@@ -30,10 +30,10 @@ export default function ProfileScreen() {
     .join('');
 
   const handleLogout = () => {
-    Alert.alert('Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất không?', [
-      { text: 'Hủy', style: 'cancel' },
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Đăng xuất',
+        text: 'Logout',
         style: 'destructive',
         onPress: async () => {
           try {
@@ -59,7 +59,7 @@ export default function ProfileScreen() {
             <View style={styles.headerIconWrapper}>
               <ShieldCheck size={18} color="#fff" />
             </View>
-            <Text style={styles.headerTitle}>Quản trị viên</Text>
+            <Text style={styles.headerTitle}>Administrator</Text>
           </View>
           <TouchableOpacity
             style={styles.editButton}
@@ -86,7 +86,7 @@ export default function ProfileScreen() {
             {!!email && <Text style={styles.userEmail}>{email}</Text>}
             {!!phone && (
               <View style={styles.phoneBadge}>
-                <Text style={styles.phoneText}>SDT: {phone}</Text>
+                <Text style={styles.phoneText}>Phone: {phone}</Text>
               </View>
             )}
           </View>
@@ -106,12 +106,12 @@ export default function ProfileScreen() {
               <Text style={styles.adminBrandText}>BOOKCONNECT</Text>
             </View>
             <View style={styles.adminBadge}>
-              <Text style={styles.adminBadgeText}>Quản trị hệ thống</Text>
+              <Text style={styles.adminBadgeText}>System Administrator</Text>
             </View>
           </View>
 
           <Text style={styles.adminName}>{displayName}</Text>
-          <Text style={styles.adminSince}>Hệ thống quản lý</Text>
+          <Text style={styles.adminSince}>Management System</Text>
         </View>
 
         {/* ── Logout Button ── */}
@@ -126,7 +126,7 @@ export default function ProfileScreen() {
           ) : (
             <>
               <LogOut size={20} color="#E53935" style={{ marginRight: 8 }} />
-              <Text style={styles.logoutText}>Đăng xuất</Text>
+              <Text style={styles.logoutText}>Logout</Text>
             </>
           )}
         </TouchableOpacity>
