@@ -52,11 +52,11 @@ type TabType =
   | 'REJECTED';
 
 const STATUS_LABEL: Record<string, string> = {
-  PENDING: 'Chờ duyệt',
-  BORROWING: 'Đang mượn',
-  RETURNED: 'Đã trả',
-  REJECTED: 'Đã từ chối',
-  OVERDUE: 'Quá hạn',
+  PENDING: 'Pending',
+  BORROWING: 'Borrowing',
+  RETURNED: 'Returned',
+  REJECTED: 'Rejected',
+  OVERDUE: 'Overdue',
 };
 
 // --------------------------------------------------------------------------
@@ -249,7 +249,7 @@ export default function LoanManagementScreen() {
         }
       } catch (error) {
         console.error('Error fetching loan requests:', error);
-        Alert.alert('Lỗi', 'Không thể tải danh sách yêu cầu mượn.');
+        Alert.alert('Error', 'Unable to load loan requests.');
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -299,33 +299,33 @@ export default function LoanManagementScreen() {
   ) => {
     const isApprove = status === 'BORROWING';
     Alert.alert(
-      isApprove ? 'Duyệt yêu cầu' : 'Từ chối yêu cầu',
+      isApprove ? 'Approve Request' : 'Reject Request',
       isApprove
-        ? 'Bạn có chắc chắn muốn duyệt yêu cầu mượn sách này không?'
-        : 'Bạn có chắc chắn muốn từ chối yêu cầu mượn sách này không?',
+        ? 'Are you sure you want to approve this loan request?'
+        : 'Are you sure you want to reject this loan request?',
       [
-        { text: 'Hủy', style: 'cancel' },
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: isApprove ? 'Duyệt' : 'Từ chối',
+          text: isApprove ? 'Approve' : 'Reject',
           style: isApprove ? 'default' : 'destructive',
           onPress: async () => {
             setActionLoading(true);
             try {
               await loanService.confirmLoan({ loanId, status });
               Alert.alert(
-                'Thành công',
+                'Success',
                 isApprove
-                  ? 'Đã duyệt yêu cầu thành công.'
-                  : 'Đã từ chối yêu cầu.',
+                  ? 'Request approved successfully.'
+                  : 'Request rejected.',
               );
               setSelectedLoan(null);
               fetchLoans(page);
               fetchStats();
             } catch (err: any) {
               Alert.alert(
-                'Lỗi',
+                'Error',
                 err?.response?.data?.message ||
-                'Có lỗi xảy ra. Vui lòng thử lại.',
+                'An error occurred. Please try again.',
               );
             } finally {
               setActionLoading(false);
@@ -338,12 +338,12 @@ export default function LoanManagementScreen() {
 
   const handleReturnLoan = (loanId: string) => {
     Alert.alert(
-      'Xác nhận trả sách',
-      'Bạn có chắc chắn muốn xác nhận trả tất cả sách của yêu cầu này không?',
+      'Confirm Return',
+      'Are you sure you want to confirm the return of all books in this request?',
       [
-        { text: 'Hủy', style: 'cancel' },
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Trả sách',
+          text: 'Return Book',
           style: 'default',
           onPress: async () => {
             if (!selectedLoan) return;
@@ -353,22 +353,22 @@ export default function LoanManagementScreen() {
               .filter(Boolean);
             if (!barcodes || barcodes.length === 0) {
               Alert.alert(
-                'Thông báo',
-                'Không có sách nào đang được mượn trong yêu cầu này.',
+                'Info',
+                'No books are currently borrowed in this request.',
               );
               return;
             }
             setActionLoading(true);
             try {
               await loanService.returnBookByBarcode(selectedLoan.userId, barcodes);
-              Alert.alert('Thành công', 'Đã xác nhận trả sách thành công.');
+              Alert.alert('Success', 'Book return confirmed successfully.');
               setSelectedLoan(null);
               fetchLoans(page);
               fetchStats();
             } catch (err: any) {
               Alert.alert(
-                'Lỗi',
-                err?.response?.data?.message || 'Không thể xử lý trả sách.',
+                'Error',
+                err?.response?.data?.message || 'Unable to process book return.',
               );
             } finally {
               setActionLoading(false);
@@ -389,22 +389,22 @@ export default function LoanManagementScreen() {
           const barcodes: string[] = barcodeId ? [barcodeId] : [];
           if (!barcodes || barcodes.length === 0) {
             Alert.alert(
-              'Thông báo',
-              'Không có sách nào đang được mượn trong yêu cầu này.',
+              'Info',
+              'No books are currently borrowed in this request.',
             );
             return;
           }
           setActionLoading(true);
           try {
             await loanService.returnBookByBarcode(userId, barcodes);
-            Alert.alert('Thành công', 'Đã xác nhận trả sách thành công.');
+            Alert.alert('Success', 'Book return confirmed successfully.');
             fetchLoans(page);
             fetchStats();
             await refreshSelectedLoan();
           } catch (err: any) {
             Alert.alert(
-              'Lỗi',
-              err?.response?.data?.message || 'Không thể xử lý trả sách.',
+              'Error',
+              err?.response?.data?.message || 'Unable to process book return.',
             );
           } finally {
             setActionLoading(false);
@@ -417,21 +417,21 @@ export default function LoanManagementScreen() {
   const handleBarcodeReturn = async () => {
     const trimmed = barcodeInput.trim();
     if (!trimmed) {
-      Alert.alert('Thông báo', 'Vui lòng nhập hoặc quét mã barcode.');
+      Alert.alert('Info', 'Please enter or scan the barcode.');
       return;
     }
     setActionLoading(true);
     try {
       if (selectedLoan == null) return;
       await loanService.returnBookByBarcode(selectedLoan?.userId, [trimmed]);
-      Alert.alert('Thành công', `Đã xử lý trả sách cho barcode: ${trimmed}`);
+      Alert.alert('Success', `Processed book return for barcode: ${trimmed}`);
       setBarcodeInput('');
       fetchLoans(page);
       fetchStats();
     } catch (err: any) {
       Alert.alert(
-        'Lỗi',
-        err?.response?.data?.message || 'Không thể xử lý trả sách.',
+        'Error',
+        err?.response?.data?.message || 'Unable to process book return.',
       );
     } finally {
       setActionLoading(false);
@@ -512,12 +512,12 @@ export default function LoanManagementScreen() {
   // -----------------------------------------------------------------------
 
   const TABS: { key: TabType; label: string }[] = [
-    { key: 'ALL', label: 'Tất cả' },
-    { key: 'PENDING', label: 'Chờ duyệt' },
-    { key: 'BORROWING', label: 'Đang mượn' },
-    { key: 'OVERDUE', label: 'Quá hạn' },
-    { key: 'RETURNED', label: 'Đã trả' },
-    { key: 'REJECTED', label: 'Đã từ chối' },
+    { key: 'ALL', label: 'All' },
+    { key: 'PENDING', label: 'Pending' },
+    { key: 'BORROWING', label: 'Borrowing' },
+    { key: 'OVERDUE', label: 'Overdue' },
+    { key: 'RETURNED', label: 'Returned' },
+    { key: 'REJECTED', label: 'Rejected' },
   ];
 
   const renderLoanCard = ({ item }: { item: LoanDetailDTO }) => {
@@ -543,7 +543,7 @@ export default function LoanManagementScreen() {
           </View>
           <View style={styles.cardHeaderInfo}>
             <Text style={styles.cardBorrowerName} numberOfLines={1}>
-              {item.userName || 'Người dùng không rõ'}
+              {item.userName || 'Unknown User'}
             </Text>
             <Text style={styles.cardLoanId}>
               #{item.loanId?.slice(0, 8).toUpperCase()}
@@ -555,7 +555,7 @@ export default function LoanManagementScreen() {
         <View style={styles.cardDates}>
           <View style={styles.dateChip}>
             <Calendar size={12} color="#6B7280" />
-            <Text style={styles.dateChipText}>Mượn: {item.borrowDate}</Text>
+            <Text style={styles.dateChipText}>Borrow: {item.borrowDate}</Text>
           </View>
           <View style={styles.dateChip}>
             <Calendar
@@ -568,7 +568,7 @@ export default function LoanManagementScreen() {
                 item.status === 'OVERDUE' && { color: '#EF4444' },
               ]}
             >
-              Hạn: {item.dueDate}
+              Due: {item.dueDate}
             </Text>
           </View>
         </View>
@@ -576,14 +576,14 @@ export default function LoanManagementScreen() {
         {item.loanDetails && item.loanDetails.length > 0 && (
           <View style={styles.bookListPreview}>
             <Text style={styles.bookListLabel}>
-              Sách đăng ký ({item.loanDetails.length} cuốn)
+              Registered Books ({item.loanDetails.length} items)
             </Text>
             {item.loanDetails.slice(0, 2).map(detail => (
               <BookItemRow key={detail.loanDetailId} item={detail} />
             ))}
             {item.loanDetails.length > 2 && (
               <Text style={styles.moreBooks}>
-                +{item.loanDetails.length - 2} cuốn khác...
+                +{item.loanDetails.length - 2} more items...
               </Text>
             )}
           </View>
@@ -597,7 +597,7 @@ export default function LoanManagementScreen() {
               disabled={actionLoading}
             >
               <XCircle size={14} color="#EF4444" />
-              <Text style={styles.rejectBtnText}>Từ chối</Text>
+              <Text style={styles.rejectBtnText}>Reject</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.approveBtn}
@@ -609,7 +609,7 @@ export default function LoanManagementScreen() {
               ) : (
                 <>
                   <ShieldCheck size={14} color="#ffffff" />
-                  <Text style={styles.approveBtnText}>Duyệt yêu cầu</Text>
+                  <Text style={styles.approveBtnText}>Approve</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -624,7 +624,7 @@ export default function LoanManagementScreen() {
               disabled={actionLoading}
             >
               <ArrowDownToLine size={14} color="#ffffff" />
-              <Text style={styles.returnBtnText}>Xác nhận trả sách</Text>
+              <Text style={styles.returnBtnText}>Confirm Return</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -650,7 +650,7 @@ export default function LoanManagementScreen() {
         <SafeAreaView style={styles.modalSafe}>
           <View style={styles.modalHeader}>
             <View>
-              <Text style={styles.modalTitle}>Chi tiết phiếu mượn</Text>
+              <Text style={styles.modalTitle}>Loan Details</Text>
               <Text style={styles.modalSubtitle}>
                 #{selectedLoan.loanId?.slice(0, 8).toUpperCase()}
               </Text>
@@ -683,7 +683,7 @@ export default function LoanManagementScreen() {
                 </View>
                 <View style={{ flex: 1, marginLeft: 12 }}>
                   <Text style={styles.modalBorrowerName}>
-                    {selectedLoan.userName || 'Không rõ'}
+                    {selectedLoan.userName || 'Unknown'}
                   </Text>
                   <Text style={styles.modalBorrowerId}>
                     ID: {selectedLoan.userId?.slice(0, 12) || '—'}
@@ -694,10 +694,10 @@ export default function LoanManagementScreen() {
             </View>
 
             <View style={styles.modalSection}>
-              <Text style={styles.sectionLabel}>Thông tin thời gian</Text>
+              <Text style={styles.sectionLabel}>Time Information</Text>
               <View style={styles.infoRow}>
                 <Calendar size={14} color="#6B7280" />
-                <Text style={styles.infoKey}>Ngày mượn</Text>
+                <Text style={styles.infoKey}>Borrow Date</Text>
                 <Text style={styles.infoValue}>{selectedLoan.borrowDate}</Text>
               </View>
               <View style={styles.infoRow}>
@@ -713,7 +713,7 @@ export default function LoanManagementScreen() {
                     selectedLoan.status === 'OVERDUE' && { color: '#EF4444' },
                   ]}
                 >
-                  Hạn trả
+                  Due Date
                 </Text>
                 <Text
                   style={[
@@ -731,7 +731,7 @@ export default function LoanManagementScreen() {
 
             <View style={styles.modalSection}>
               <Text style={styles.sectionLabel}>
-                Sách đăng ký ({selectedLoan.loanDetails?.length ?? 0} cuốn)
+                Registered Books ({selectedLoan.loanDetails?.length ?? 0} items)
               </Text>
               {detailLoading ? (
                 <ActivityIndicator color="#10B981" style={{ marginTop: 12 }} />
@@ -740,13 +740,13 @@ export default function LoanManagementScreen() {
                   <BookItemRow key={detail.loanDetailId} item={detail} />
                 ))
               ) : (
-                <Text style={styles.emptySubText}>Không có sách nào.</Text>
+                <Text style={styles.emptySubText}>No books available.</Text>
               )}
             </View>
 
             <View style={styles.modalSection}>
               <Text style={styles.sectionLabel}>
-                Quét / Nhập barcode trả sách nhanh
+                Scan / Enter barcode for quick return
               </Text>
               <View style={styles.barcodeInputRow}>
                 <ScanBarcode
@@ -756,7 +756,7 @@ export default function LoanManagementScreen() {
                 />
                 <TextInput
                   style={styles.barcodeInput}
-                  placeholder="Nhập hoặc quét barcode..."
+                  placeholder="Enter or scan barcode..."
                   placeholderTextColor="#9CA3AF"
                   value={barcodeInput}
                   onChangeText={setBarcodeInput}
@@ -784,7 +784,7 @@ export default function LoanManagementScreen() {
                 disabled={actionLoading}
               >
                 <XCircle size={16} color="#EF4444" />
-                <Text style={styles.modalRejectBtnText}>Từ chối</Text>
+                <Text style={styles.modalRejectBtnText}>Reject</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.modalApproveBtn}
@@ -799,7 +799,7 @@ export default function LoanManagementScreen() {
                   <>
                     <ShieldCheck size={16} color="#fff" />
                     <Text style={styles.modalApproveBtnText}>
-                      Duyệt yêu cầu
+                      Approve
                     </Text>
                   </>
                 )}
@@ -821,7 +821,7 @@ export default function LoanManagementScreen() {
                     <>
                       <ArrowDownToLine size={16} color="#fff" />
                       <Text style={styles.modalReturnBtnText}>
-                        Xác nhận trả sách
+                        Confirm Return
                       </Text>
                     </>
                   )}
@@ -881,10 +881,10 @@ export default function LoanManagementScreen() {
                   color="#10B981"
                   style={{ marginRight: 8 }}
                 />
-                <Text style={styles.titleText}>Quản lý mượn sách</Text>
+                <Text style={styles.titleText}>Loan Management</Text>
               </View>
               <Text style={styles.subtitleText}>
-                Theo dõi và quản lý mượn/trả sách toàn diện.
+                Track and manage book borrowing/returning.
               </Text>
             </View>
 
@@ -894,28 +894,28 @@ export default function LoanManagementScreen() {
                 <Text style={[styles.statNum, { color: '#B45309' }]}>
                   {stats.pending}
                 </Text>
-                <Text style={styles.statLabel}>Chờ duyệt</Text>
+                <Text style={styles.statLabel}>Pending</Text>
               </View>
               <View style={[styles.statCard, { borderLeftColor: '#3B82F6' }]}>
                 <BookOpen size={16} color="#3B82F6" />
                 <Text style={[styles.statNum, { color: '#1D4ED8' }]}>
                   {stats.borrowing}
                 </Text>
-                <Text style={styles.statLabel}>Đang mượn</Text>
+                <Text style={styles.statLabel}>Borrowing</Text>
               </View>
               <View style={[styles.statCard, { borderLeftColor: '#10B981' }]}>
                 <CheckCircle2 size={16} color="#10B981" />
                 <Text style={[styles.statNum, { color: '#065F46' }]}>
                   {stats.returned}
                 </Text>
-                <Text style={styles.statLabel}>Đã trả</Text>
+                <Text style={styles.statLabel}>Returned</Text>
               </View>
               <View style={[styles.statCard, { borderLeftColor: '#EF4444' }]}>
                 <AlertTriangle size={16} color="#EF4444" />
                 <Text style={[styles.statNum, { color: '#991B1B' }]}>
                   {stats.overdue}
                 </Text>
-                <Text style={styles.statLabel}>Quá hạn</Text>
+                <Text style={styles.statLabel}>Overdue</Text>
               </View>
               <View
                 style={[
@@ -927,7 +927,7 @@ export default function LoanManagementScreen() {
                 <Text style={[styles.statNum, { color: '#6D28D9' }]}>
                   {stats.rejected}
                 </Text>
-                <Text style={styles.statLabel}>Từ chối</Text>
+                <Text style={styles.statLabel}>Rejected</Text>
               </View>
             </View>
 
@@ -935,7 +935,7 @@ export default function LoanManagementScreen() {
               <Search size={17} color="#9CA3AF" style={{ marginRight: 8 }} />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Tìm sách, người mượn, barcode..."
+                placeholder="Search book, borrower, barcode..."
                 placeholderTextColor="#D1D5DB"
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -995,9 +995,9 @@ export default function LoanManagementScreen() {
           ) : (
             <View style={styles.emptyContainer}>
               <Inbox size={52} color="#D1D5DB" />
-              <Text style={styles.emptyText}>Không có dữ liệu.</Text>
+              <Text style={styles.emptyText}>No data available.</Text>
               <Text style={styles.emptySubText}>
-                Thử đổi bộ lọc hoặc làm mới danh sách.
+                Try changing filters or refreshing.
               </Text>
             </View>
           )
@@ -1016,7 +1016,7 @@ export default function LoanManagementScreen() {
                 />
               </TouchableOpacity>
               <Text style={styles.paginationInfo}>
-                Trang {page} / {totalPages}
+                Page {page} / {totalPages}
               </Text>
               <TouchableOpacity
                 style={[
