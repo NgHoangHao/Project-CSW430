@@ -228,6 +228,19 @@ export default function RequestManagementScreen() {
     }
   };
 
+  const refreshSelectedLoan = async () => {
+    if (!selectedLoan?.loanId) return;
+    try {
+      setDetailLoading(true);
+      const res = await loanService.getLoanDetail(selectedLoan.loanId);
+      if (res?.data) setSelectedLoan(res.data);
+    } catch (error) {
+      console.error('Error refreshing loan detail:', error);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
   const handleConfirmAction = (loanId: string, status: 'BORROWING' | 'REJECTED') => {
     const isApprove = status === 'BORROWING';
     Alert.alert(
@@ -259,7 +272,7 @@ export default function RequestManagementScreen() {
     );
   };
 
-  const handleReturnLoan = (userId:string, loanId: string) => {
+  const handleReturnLoan = (userId: string, loanId: string) => {
     Alert.alert(
       'Confirm Return',
       'Are you sure you want to confirm the return of all books in this request?',
@@ -282,9 +295,9 @@ export default function RequestManagementScreen() {
             try {
               await loanService.returnBookByBarcode(userId, barcodes);
               Alert.alert('Success', 'Book return confirmed successfully.');
-              setSelectedLoan(null);
               fetchLoans(page);
               fetchStats();
+              await refreshSelectedLoan();
             } catch (err: any) {
               Alert.alert('Error', err?.response?.data?.message || 'Unable to process book return.');
             } finally {
@@ -302,6 +315,10 @@ export default function RequestManagementScreen() {
       Alert.alert('Info', 'Please enter or scan the barcode.');
       return;
     }
+    if (!userId) {
+      Alert.alert('Error', 'No loan selected.');
+      return;
+    }
     setActionLoading(true);
     try {
       await loanService.returnBookByBarcode(userId, [trimmed]);
@@ -309,6 +326,7 @@ export default function RequestManagementScreen() {
       setBarcodeInput('');
       fetchLoans(page);
       fetchStats();
+      await refreshSelectedLoan();
     } catch (err: any) {
       Alert.alert('Error', err?.response?.data?.message || 'Unable to process book return.');
     } finally {

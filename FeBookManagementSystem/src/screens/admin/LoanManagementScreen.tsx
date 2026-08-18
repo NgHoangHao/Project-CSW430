@@ -336,7 +336,7 @@ export default function LoanManagementScreen() {
     );
   };
 
-  const handleReturnLoan = (loanId: string) => {
+  const handleReturnLoan = (userId: string, loanId: string) => {
     Alert.alert(
       'Confirm Return',
       'Are you sure you want to confirm the return of all books in this request?',
@@ -360,7 +360,7 @@ export default function LoanManagementScreen() {
             }
             setActionLoading(true);
             try {
-              await loanService.returnBookByBarcode(selectedLoan.userId, barcodes);
+              await loanService.returnBookByBarcode(userId, barcodes);
               Alert.alert('Success', 'Book return confirmed successfully.');
               setSelectedLoan(null);
               fetchLoans(page);
@@ -380,6 +380,12 @@ export default function LoanManagementScreen() {
   };
 
   const handleReturnBookByBarCode = async (userId: string, barcodeId?: string) => {
+    // Fall back to the currently selected loan's userId if the passed value is empty
+    const resolvedUserId = userId?.trim() || selectedLoan?.userId || '';
+    if (!resolvedUserId) {
+      Alert.alert('Error', 'Unable to identify the borrower. Please try again.');
+      return;
+    }
     Alert.alert('Confirm return book', 'Are you sure to return book ?', [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -396,7 +402,7 @@ export default function LoanManagementScreen() {
           }
           setActionLoading(true);
           try {
-            await loanService.returnBookByBarcode(userId, barcodes);
+            await loanService.returnBookByBarcode(resolvedUserId, barcodes);
             Alert.alert('Success', 'Book return confirmed successfully.');
             fetchLoans(page);
             fetchStats();
@@ -420,14 +426,18 @@ export default function LoanManagementScreen() {
       Alert.alert('Info', 'Please enter or scan the barcode.');
       return;
     }
+    if (selectedLoan == null) {
+      Alert.alert('Error', 'No loan selected.');
+      return;
+    }
     setActionLoading(true);
     try {
-      if (selectedLoan == null) return;
-      await loanService.returnBookByBarcode(selectedLoan?.userId, [trimmed]);
+      await loanService.returnBookByBarcode(selectedLoan.userId, [trimmed]);
       Alert.alert('Success', `Processed book return for barcode: ${trimmed}`);
       setBarcodeInput('');
       fetchLoans(page);
       fetchStats();
+      await refreshSelectedLoan();
     } catch (err: any) {
       Alert.alert(
         'Error',
@@ -496,10 +506,46 @@ export default function LoanManagementScreen() {
       </View>
       <View>
         <StatusBadge status={item.status} />
+        {/* {(item.status == 'BORROWING' || item.status == 'OVERDUE') && (
+          <TouchableOpacity
+            style={styles.buttonReturn}
+            onPress={() => handleReturnBookByBarCode(selectedLoan?.userId ?? '', item.barcode)}
+          >
+            <Text style={{ color: '#fff', fontWeight: '500' }}>Return</Text>
+          </TouchableOpacity>
+        )} */}
+      </View>
+    </View>
+  );
+
+  const BookItemRowDetails = ({ item }: BookItemRowProps) => (
+    <View style={styles.bookRow}>
+      {item.url ? (
+        <Image
+          source={{ uri: getImageUrl(item.url) || '' }}
+          style={styles.bookThumb}
+          resizeMode="cover"
+        />
+      ) : (
+        <View style={[styles.bookThumb, styles.bookThumbPlaceholder]}>
+          <Book size={16} color="#9CA3AF" />
+        </View>
+      )}
+      <View style={styles.bookRowInfo}>
+        <Text style={styles.bookRowTitle} numberOfLines={2}>
+          {item.bookName}
+        </Text>
+        <View style={styles.bookRowMeta}>
+          <Barcode size={11} color="#9CA3AF" />
+          <Text style={styles.bookRowMetaText}>{item.barcode}</Text>
+        </View>
+      </View>
+      <View>
+        <StatusBadge status={item.status} />
         {(item.status == 'BORROWING' || item.status == 'OVERDUE') && (
           <TouchableOpacity
             style={styles.buttonReturn}
-            onPress={() => handleReturnBookByBarCode(selectedLoan != null ? selectedLoan.loanId : "", item.barcode)}
+            onPress={() => handleReturnBookByBarCode(selectedLoan?.userId ?? '', item.barcode)}
           >
             <Text style={{ color: '#fff', fontWeight: '500' }}>Return</Text>
           </TouchableOpacity>
@@ -616,7 +662,7 @@ export default function LoanManagementScreen() {
           </View>
         )}
 
-        {(item.status === 'BORROWING' || item.status === 'OVERDUE') && (
+        {/* {(item.status === 'BORROWING' || item.status === 'OVERDUE') && (
           <View style={styles.cardActions}>
             <TouchableOpacity
               style={styles.returnBtn}
@@ -627,7 +673,7 @@ export default function LoanManagementScreen() {
               <Text style={styles.returnBtnText}>Confirm Return</Text>
             </TouchableOpacity>
           </View>
-        )}
+        )} */}
       </TouchableOpacity>
     );
   };
@@ -737,7 +783,7 @@ export default function LoanManagementScreen() {
                 <ActivityIndicator color="#10B981" style={{ marginTop: 12 }} />
               ) : selectedLoan.loanDetails?.length > 0 ? (
                 selectedLoan.loanDetails.map(detail => (
-                  <BookItemRow key={detail.loanDetailId} item={detail} />
+                  <BookItemRowDetails key={detail.loanDetailId} item={detail} />
                 ))
               ) : (
                 <Text style={styles.emptySubText}>No books available.</Text>
@@ -812,7 +858,7 @@ export default function LoanManagementScreen() {
               <View style={styles.modalFooter}>
                 <TouchableOpacity
                   style={styles.modalReturnBtn}
-                  onPress={() => handleReturnLoan(selectedLoan.loanId)}
+                  onPress={() => handleReturnLoan(selectedLoan.userId, selectedLoan.loanId)}
                   disabled={actionLoading}
                 >
                   {actionLoading ? (
