@@ -449,10 +449,9 @@ export const LoanService = {
       const borrowedDays =
         (endDate.getTime() - borrowDate.getTime()) / msPerDay;
       if (totalDay > 0) {
-        progress = Math.round((borrowedDays / totalDay) * 100);
+        progress = Math.round((Math.ceil(borrowedDays) / totalDay) * 100);
         progress = Math.max(0, Math.min(progress, 100));
       }
-      const borrowedRemain = Math.round(totalDay - borrowedDays);
       recentLoanResponse = {
         borrowDate: borrowDate,
         dueDate: dueDate,
@@ -460,7 +459,7 @@ export const LoanService = {
         author: recentLoanDetail.copyBook.book.author,
         url: recentLoanDetail.copyBook.book.url,
         status: recentLoanDetail.status,
-        borrowedRemain: borrowedRemain,
+        borrowedRemain: progress,
       } as LoanDetailResponse;
     }
     return {
