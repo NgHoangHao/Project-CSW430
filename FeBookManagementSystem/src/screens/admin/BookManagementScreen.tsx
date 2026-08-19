@@ -18,7 +18,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  Leaf,
   Bell,
   Search,
   Plus,
@@ -29,13 +28,22 @@ import {
   ChevronLeft,
   ChevronRight,
   BookOpen,
+  Copy,
+  MinusCircle,
+  PlusCircle,
 } from 'lucide-react-native';
 import { bookService } from '../../services/book.service';
 import { Book } from '../../types/Book';
 import { BACKEND_URL } from '@env';
 import { launchImageLibrary } from 'react-native-image-picker';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+interface CopyBookEntry {
+  copyBookId?: string | null;
+  barcode: string;
+  location: string;
+}
+
+const { height: screenHeight } = Dimensions.get('window');
 
 export default function BookManagementScreen() {
   const [books, setBooks] = useState<Book[]>([]);
@@ -50,6 +58,7 @@ export default function BookManagementScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingBookId, setEditingBookId] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const [formTitle, setFormTitle] = useState('');
   const [formAuthor, setFormAuthor] = useState('');
@@ -59,6 +68,11 @@ export default function BookManagementScreen() {
   const [formCategory, setFormCategory] = useState('');
   const [formImage, setFormImage] = useState<any>(null);
   const [formImageUrl, setFormImageUrl] = useState('');
+
+  // Copy books state — each entry needs barcode + location for BE
+  const [copyBooks, setCopyBooks] = useState<CopyBookEntry[]>([
+    { copyBookId: null, barcode: '', location: '' },
+  ]);
 
   const fetchBooks = useCallback(
     async (page: number, search: string, isRefresh = false) => {
@@ -129,9 +143,7 @@ export default function BookManagementScreen() {
     ]);
   };
 
-  const openAddModal = () => {
-    setIsEditing(false);
-    setEditingBookId(null);
+  const resetForm = () => {
     setFormTitle('');
     setFormAuthor('');
     setFormPublisher('');
@@ -140,6 +152,13 @@ export default function BookManagementScreen() {
     setFormCategory('');
     setFormImage(null);
     setFormImageUrl('');
+    setCopyBooks([{ barcode: '', location: '' }]);
+  };
+
+  const openAddModal = () => {
+    setIsEditing(false);
+    setEditingBookId(null);
+    resetForm();
     setModalVisible(true);
   };
 
@@ -157,6 +176,11 @@ export default function BookManagementScreen() {
       book.url && (book.url.startsWith('http') || !book.url.startsWith('/'))
         ? book.url
         : '',
+    );
+    setCopyBooks(
+      book.availableBooks
+        ? book.availableBooks
+        : [{ barcode: '', location: '' }],
     );
     setModalVisible(true);
   };
@@ -176,6 +200,26 @@ export default function BookManagementScreen() {
     }
   };
 
+  // ─── Copy Book helpers ────────────────────────────────────────────────────
+  const addCopyRow = () =>
+    setCopyBooks(prev => [...prev, { barcode: '', location: '' }]);
+
+  const removeCopyRow = (index: number) =>
+    setCopyBooks(prev => prev.filter((_, i) => i !== index));
+
+  const updateCopyField = (
+    index: number,
+    field: keyof CopyBookEntry,
+    value: string,
+  ) => {
+    setCopyBooks(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
+
+  // ─── Submit ───────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     if (!formTitle || !formAuthor) {
       Alert.alert('Error', 'Please enter the book title and author.');
@@ -183,10 +227,28 @@ export default function BookManagementScreen() {
     }
 
     if (!isEditing && !formImage?.uri && !formImageUrl.trim()) {
-      Alert.alert('Error', 'Please select a cover photo or enter an image link.');
+      Alert.alert(
+        'Error',
+        'Please select a cover photo or enter an image link.',
+      );
       return;
     }
 
+    // For create: require at least one fully filled copy book entry
+    if (!isEditing) {
+      const validCopies = copyBooks.filter(
+        c => c.barcode.trim() && c.location.trim(),
+      );
+      if (validCopies.length === 0) {
+        Alert.alert(
+          'Error',
+          'Please add at least one copy book with barcode and location.',
+        );
+        return;
+      }
+    }
+
+    setSubmitting(true);
     try {
       const formData = new FormData();
       formData.append('title', formTitle);
@@ -196,8 +258,9 @@ export default function BookManagementScreen() {
       formData.append('page', formPage);
       formData.append('category', formCategory);
 
+      // Multer field on BE is 'url' (route: upload.single('url'))
       if (formImage && formImage.uri && !formImage.uri.startsWith('http')) {
-        formData.append('image', {
+        formData.append('url', {
           uri: formImage.uri,
           type: formImage.type || 'image/jpeg',
           name: formImage.fileName || 'book_cover.jpg',
@@ -206,6 +269,18 @@ export default function BookManagementScreen() {
         formData.append('url', formImageUrl.trim());
       }
 
+      // Attach copy books as JSON string for createBook (BE parses JSON.parse)
+      // if (!isEditing) {
+      const validCopies = copyBooks
+        .filter(c => c.barcode.trim() && c.location.trim())
+        .map(c => ({
+          ...(c.copyBookId ? { copyBookId: c.copyBookId } : {}),
+          barcode: c.barcode.trim(),
+          location: c.location.trim(),
+        }));
+      formData.append('copyBooks', JSON.stringify(validCopies));
+      // }
+
       if (isEditing && editingBookId) {
         const res = await bookService.updateBook(editingBookId, formData);
         if (res.data?.success) {
@@ -213,7 +288,10 @@ export default function BookManagementScreen() {
           setModalVisible(false);
           fetchBooks(currentPage, searchText);
         } else {
-          Alert.alert('Error', res.data?.message || 'Unable to update the book.');
+          Alert.alert(
+            'Error',
+            res.data?.message || 'Unable to update the book.',
+          );
         }
       } else {
         const res = await bookService.createBook(formData);
@@ -229,13 +307,16 @@ export default function BookManagementScreen() {
       console.log(err.response?.data || err);
       Alert.alert(
         'Error',
-        err.response?.data?.message || 'Unable to save the book. Please try again.',
+        err.response?.data?.message ||
+        'Unable to save the book. Please try again.',
       );
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const getImageUrl = (url: string) => {
-    if (!url) return null;
+    if (!url) return undefined;
     if (url.startsWith('http://') || url.startsWith('https://')) return url;
     const baseUrl = (BACKEND_URL || 'http://10.0.2.2:3000').replace('/api', '');
     return url.startsWith('/') ? `${baseUrl}${url}` : `${baseUrl}/${url}`;
@@ -307,7 +388,9 @@ export default function BookManagementScreen() {
             onPress={() => handleDelete(item.bookId!, item.title)}
           >
             <Trash2 size={16} color="#EB5757" />
-            <Text style={[styles.actionText, { color: '#EB5757' }]}>Delete</Text>
+            <Text style={[styles.actionText, { color: '#EB5757' }]}>
+              Delete
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -449,7 +532,7 @@ export default function BookManagementScreen() {
                   />
                 ) : formImageUrl ? (
                   <Image
-                    source={{ uri: formImageUrl }}
+                    source={{ uri: getImageUrl(formImageUrl) }}
                     style={styles.previewImage}
                   />
                 ) : (
@@ -528,7 +611,65 @@ export default function BookManagementScreen() {
                 value={formCategory}
                 onChangeText={setFormCategory}
                 placeholder="Ex: Novel"
+                placeholderTextColor="#AEAEB2"
               />
+
+              {/* Copy Books section — only shown when adding a new book */}
+              {true && (
+                <View style={styles.copySection}>
+                  <View style={styles.copySectionHeader}>
+                    <View style={styles.copySectionTitleRow}>
+                      <Copy size={16} color="#27AE60" />
+                      <Text style={styles.copySectionTitle}>Copy Books *</Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={addCopyRow}
+                      style={styles.addCopyBtn}
+                    >
+                      <PlusCircle size={22} color="#27AE60" />
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.copySectionHint}>
+                    Add barcode &amp; shelf location for each physical copy
+                  </Text>
+
+                  {copyBooks.map((copy, index) => (
+                    <View key={index} style={styles.copyRow}>
+                      <View style={styles.copyRowIndex}>
+                        <Text style={styles.copyIndexText}>#{index + 1}</Text>
+                      </View>
+                      <View style={styles.copyRowFields}>
+                        <TextInput
+                          style={styles.copyInput}
+                          value={copy.barcode}
+                          onChangeText={val =>
+                            updateCopyField(index, 'barcode', val)
+                          }
+                          placeholder="Barcode"
+                          placeholderTextColor="#AEAEB2"
+                        />
+                        <TextInput
+                          style={[styles.copyInput, { marginTop: 6 }]}
+                          value={copy.location}
+                          onChangeText={val =>
+                            updateCopyField(index, 'location', val)
+                          }
+                          placeholder="Shelf location (e.g. A1-03)"
+                          placeholderTextColor="#AEAEB2"
+                        />
+                      </View>
+                      {copyBooks.length > 1 && (
+                        <TouchableOpacity
+                          onPress={() => removeCopyRow(index)}
+                          style={styles.removeCopyBtn}
+                        >
+                          <MinusCircle size={20} color="#EB5757" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              )}
             </ScrollView>
 
             <View style={styles.modalFooter}>
@@ -538,8 +679,16 @@ export default function BookManagementScreen() {
               >
                 <Text style={styles.cancelBtnText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.saveBtn} onPress={handleSubmit}>
-                <Text style={styles.saveBtnText}>Save</Text>
+              <TouchableOpacity
+                style={[styles.saveBtn, submitting && styles.saveBtnDisabled]}
+                onPress={handleSubmit}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.saveBtnText}>Save</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -809,4 +958,58 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveBtnText: { fontSize: 15, fontWeight: '600', color: '#fff' },
+  saveBtnDisabled: { opacity: 0.6 },
+
+  // Copy Books section
+  copySection: {
+    marginTop: 20,
+    backgroundColor: '#F0FBF4',
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#C8EDD8',
+  },
+  copySectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  copySectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  copySectionTitle: { fontSize: 14, fontWeight: '700', color: '#1A7A40' },
+  addCopyBtn: { padding: 2 },
+  copySectionHint: { fontSize: 11, color: '#6AAD80', marginBottom: 12 },
+  copyRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#D8EDDF',
+  },
+  copyRowIndex: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#EAFBF1',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+    marginTop: 8,
+  },
+  copyIndexText: { fontSize: 11, fontWeight: '700', color: '#27AE60' },
+  copyRowFields: { flex: 1 },
+  copyInput: {
+    backgroundColor: '#F8F9FA',
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    height: 38,
+    fontSize: 13,
+    color: '#333',
+  },
+  removeCopyBtn: { padding: 4, marginLeft: 8, marginTop: 8 },
 });

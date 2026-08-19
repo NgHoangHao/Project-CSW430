@@ -11,6 +11,7 @@ import {
   RefreshControl,
   Dimensions,
   Modal,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -23,8 +24,14 @@ import {
   Clock,
   ChevronRight,
   ChevronLeft,
+  ShieldCheck,
+  ShieldOff,
+  X,
+  Shield,
 } from 'lucide-react-native';
 import { userService } from '../../services/user.service';
+import { Role } from '../../types/admin/role';
+import { RoleService } from '../../services/role.service';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -38,6 +45,7 @@ interface UserListItem {
   expiredBooks: number;
   totalBorrowedBook: number;
   status: string;
+  roles?: { roleId: string; roleName: string }[];
 }
 
 type TabType = 'all' | 'active' | 'overdue' | 'blocked';
@@ -50,6 +58,7 @@ export default function UserManagementScreen() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [pageSize] = useState(10);
+  const [roles, setRoles] = useState<Role[]>([]);
 
   const [stats, setStats] = useState({
     total: 0,
@@ -59,6 +68,24 @@ export default function UserManagementScreen() {
   });
 
   const [activeTab, setActiveTab] = useState<TabType>('all');
+
+  const fetchRoles = async () => {
+    try {
+      const response = await RoleService.getAllRole();
+      if (Array.isArray(response)) {
+        setRoles(response);
+      } else {
+        setRoles([]);
+      }
+    } catch (error) {
+      console.error('Error fetching roles:', error);
+      setRoles([]);
+    }
+  };
+
+  // Roles currently assigned to the selected user (tracked locally)
+  const [userRoleIds, setUserRoleIds] = useState<string[]>([]);
+  const [roleLoading, setRoleLoading] = useState(false);
 
   const fetchUsers = useCallback(async (page: number, search: string, isRefresh = false) => {
     if (isRefresh) {
@@ -95,6 +122,10 @@ export default function UserManagementScreen() {
       setRefreshing(false);
     }
   }, [pageSize]);
+
+  useEffect(() => {
+    fetchRoles();
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -164,34 +195,44 @@ export default function UserManagementScreen() {
 
   const handleShowDetails = (user: UserListItem) => {
     setSelectedUser(user);
+    // Seed from user list data if available, otherwise empty
+    setUserRoleIds((user.roles ?? []).map(r => r.roleId));
     setDetailsModalVisible(true);
   };
 
   const handleAssignRole = async (roleId: string) => {
     if (!selectedUser) return;
+    setRoleLoading(true);
     try {
       const res = await userService.assignRole(selectedUser.userId, [roleId]);
       if (res.data?.success) {
+        setUserRoleIds(prev => (prev.includes(roleId) ? prev : [...prev, roleId]));
         Alert.alert('Success', 'Role assigned successfully!');
       } else {
         Alert.alert('Error', res.data?.message || 'Unable to assign role.');
       }
     } catch (err: any) {
-      Alert.alert('Error', 'System error while assigning role.');
+      Alert.alert('Error', err.response?.data?.message || 'System error while assigning role.');
+    } finally {
+      setRoleLoading(false);
     }
   };
 
   const handleRevokeRole = async (roleId: string) => {
     if (!selectedUser) return;
+    setRoleLoading(true);
     try {
       const res = await userService.deleteRole(selectedUser.userId, [roleId]);
       if (res.data?.success) {
+        setUserRoleIds(prev => prev.filter(id => id !== roleId));
         Alert.alert('Success', 'Role revoked successfully!');
       } else {
         Alert.alert('Error', res.data?.message || 'Unable to revoke role.');
       }
     } catch (err: any) {
-      Alert.alert('Error', 'System error while revoking role.');
+      Alert.alert('Error', err.response?.data?.message || 'System error while revoking role.');
+    } finally {
+      setRoleLoading(false);
     }
   };
 
@@ -340,7 +381,7 @@ export default function UserManagementScreen() {
         >
           <ChevronLeft size={18} color={currentPage === 1 ? '#C4C4C4' : '#27AE60'} />
         </TouchableOpacity>
-        
+
         <Text style={styles.paginationInfo}>
           {currentPage} / {totalPages}
         </Text>
@@ -475,57 +516,132 @@ export default function UserManagementScreen() {
         <Modal visible={detailsModalVisible} animationType="slide" transparent={true}>
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
+
+              {/* Modal Header */}
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>User Details</Text>
-                <TouchableOpacity onPress={() => setDetailsModalVisible(false)} style={styles.closeBtn}>
-                  <Text style={{ fontSize: 16, color: '#333' }}>X</Text>
+                <TouchableOpacity
+                  onPress={() => setDetailsModalVisible(false)}
+                  style={styles.closeBtn}
+                >
+                  <X size={20} color="#333" />
                 </TouchableOpacity>
               </View>
 
-              <View style={styles.userInfoSection}>
-                <Text style={styles.infoText}>Name: {selectedUser.userName}</Text>
-                <Text style={styles.infoText}>Email: {selectedUser.email}</Text>
-                <Text style={styles.infoText}>Phone: {selectedUser.phone || 'Not updated'}</Text>
-                <Text style={styles.infoText}>Status: {selectedUser.status}</Text>
-              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {/* User Info */}
+                <View style={styles.userInfoSection}>
+                  <View style={styles.modalAvatarRow}>
+                    <View style={[styles.modalAvatar,
+                      { backgroundColor: selectedUser.status === 'LOCK' ? '#93A5B8'
+                        : selectedUser.expiredBooks > 0 ? '#F2994A' : '#27AE60' }]}>
+                      <Text style={styles.modalAvatarText}>
+                        {getInitials(selectedUser.userName)}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.modalUserName}>{selectedUser.userName}</Text>
+                      <Text style={styles.modalUserEmail}>{selectedUser.email}</Text>
+                    </View>
+                  </View>
 
-              <Text style={styles.roleTitle}>Role Management</Text>
-              
-              <View style={styles.roleActionRow}>
-                <Text style={styles.roleName}>ADMIN</Text>
-                <View style={styles.roleBtnGroup}>
-                  <TouchableOpacity style={styles.assignBtn} onPress={() => handleAssignRole('role-admin-1234')}>
-                    <Text style={styles.assignBtnText}>Assign</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.revokeBtn} onPress={() => handleRevokeRole('role-admin-1234')}>
-                    <Text style={styles.revokeBtnText}>Revoke</Text>
-                  </TouchableOpacity>
+                  <View style={styles.infoGrid}>
+                    <View style={styles.infoItem}>
+                      <Text style={styles.infoLabel}>Phone</Text>
+                      <Text style={styles.infoValue}>{selectedUser.phone || 'Not updated'}</Text>
+                    </View>
+                    <View style={styles.infoItem}>
+                      <Text style={styles.infoLabel}>Status</Text>
+                      <Text style={[
+                        styles.infoValue,
+                        { color: selectedUser.status === 'LOCK' ? '#EB5757' : '#27AE60', fontWeight: '700' }
+                      ]}>{selectedUser.status}</Text>
+                    </View>
+                    <View style={styles.infoItem}>
+                      <Text style={styles.infoLabel}>Borrowing</Text>
+                      <Text style={styles.infoValue}>{selectedUser.borrowingBooks}</Text>
+                    </View>
+                    <View style={styles.infoItem}>
+                      <Text style={styles.infoLabel}>Overdue</Text>
+                      <Text style={[styles.infoValue, { color: selectedUser.expiredBooks > 0 ? '#EB5757' : '#333' }]}>
+                        {selectedUser.expiredBooks}
+                      </Text>
+                    </View>
+                  </View>
                 </View>
-              </View>
 
-              <View style={styles.roleActionRow}>
-                <Text style={styles.roleName}>LIBRARIAN</Text>
-                <View style={styles.roleBtnGroup}>
-                  <TouchableOpacity style={styles.assignBtn} onPress={() => handleAssignRole('role-librarian-1234')}>
-                    <Text style={styles.assignBtnText}>Assign</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.revokeBtn} onPress={() => handleRevokeRole('role-librarian-1234')}>
-                    <Text style={styles.revokeBtnText}>Revoke</Text>
-                  </TouchableOpacity>
+                {/* Role Management */}
+                <View style={styles.roleSectionHeader}>
+                  <Shield size={16} color="#27AE60" />
+                  <Text style={styles.roleTitle}>Role Management</Text>
                 </View>
-              </View>
+                <Text style={styles.roleSubtitle}>
+                  Assign or revoke roles for this user
+                </Text>
 
-              <View style={styles.roleActionRow}>
-                <Text style={styles.roleName}>USER</Text>
-                <View style={styles.roleBtnGroup}>
-                  <TouchableOpacity style={styles.assignBtn} onPress={() => handleAssignRole('role-user-1234')}>
-                    <Text style={styles.assignBtnText}>Assign</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.revokeBtn} onPress={() => handleRevokeRole('role-user-1234')}>
-                    <Text style={styles.revokeBtnText}>Revoke</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
+                {roleLoading && (
+                  <ActivityIndicator size="small" color="#27AE60" style={{ marginVertical: 8 }} />
+                )}
+
+                {roles.length === 0 ? (
+                  <View style={styles.noRolesContainer}>
+                    <Text style={styles.noRolesText}>No roles found. Check API connection.</Text>
+                  </View>
+                ) : (
+                  roles.map(role => {
+                    const isAssigned = userRoleIds.includes(role.roleId);
+                    return (
+                      <View key={role.roleId} style={styles.roleActionRow}>
+                        <View style={styles.roleNameRow}>
+                          {isAssigned ? (
+                            <ShieldCheck size={16} color="#27AE60" />
+                          ) : (
+                            <Shield size={16} color="#AEAEB2" />
+                          )}
+                          <Text style={[styles.roleName, isAssigned && styles.roleNameActive]}>
+                            {role.roleName}
+                          </Text>
+                          {isAssigned && (
+                            <View style={styles.assignedBadge}>
+                              <Text style={styles.assignedBadgeText}>Assigned</Text>
+                            </View>
+                          )}
+                        </View>
+                        <View style={styles.roleBtnGroup}>
+                          <TouchableOpacity
+                            style={[styles.assignBtn, isAssigned && styles.assignBtnActive]}
+                            onPress={() => handleAssignRole(role.roleId)}
+                            disabled={roleLoading || isAssigned}
+                          >
+                            <ShieldCheck size={13} color={isAssigned ? '#AEAEB2' : '#27AE60'} />
+                            <Text style={[styles.assignBtnText, isAssigned && { color: '#AEAEB2' }]}>
+                              Assign
+                            </Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.revokeBtn, !isAssigned && styles.revokeBtnDisabled]}
+                            onPress={() => handleRevokeRole(role.roleId)}
+                            disabled={roleLoading || !isAssigned}
+                          >
+                            <ShieldOff size={13} color={!isAssigned ? '#AEAEB2' : '#EB5757'} />
+                            <Text style={[styles.revokeBtnText, !isAssigned && { color: '#AEAEB2' }]}>
+                              Revoke
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    );
+                  })
+                )}
+              </ScrollView>
+
+              {/* Close button */}
+              <TouchableOpacity
+                style={styles.modalCloseFooterBtn}
+                onPress={() => setDetailsModalVisible(false)}
+              >
+                <Text style={styles.modalCloseFooterText}>Close</Text>
+              </TouchableOpacity>
 
             </View>
           </View>
@@ -847,88 +963,235 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#4F4F4F',
   },
-  
+
   // Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 16,
   },
   modalContent: {
-    width: '90%',
+    width: '100%',
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 20,
+    maxHeight: '88%',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#333',
+    color: '#0D1B2A',
   },
   closeBtn: {
-    padding: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F4F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
+
+  // User info in modal
   userInfoSection: {
     marginBottom: 20,
     backgroundColor: '#F8F9FA',
-    padding: 12,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+  },
+  modalAvatarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 12,
+  },
+  modalAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  modalAvatarText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  modalUserName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0D1B2A',
+    marginBottom: 2,
+  },
+  modalUserEmail: {
+    fontSize: 13,
+    color: '#8E8E93',
+  },
+  infoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  infoItem: {
+    width: '47%',
+    backgroundColor: '#fff',
     borderRadius: 8,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
+  infoLabel: {
+    fontSize: 11,
+    color: '#8E8E93',
+    fontWeight: '600',
+    marginBottom: 3,
+    textTransform: 'uppercase',
+  },
+  infoValue: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
   },
   infoText: {
     fontSize: 14,
     color: '#333',
     marginBottom: 6,
   },
+
+  // Role section
+  roleSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
   roleTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
-    color: '#333',
-    marginBottom: 12,
+    color: '#0D1B2A',
+  },
+  roleSubtitle: {
+    fontSize: 12,
+    color: '#8E8E93',
+    marginBottom: 14,
+    marginTop: 2,
   },
   roleActionRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: '#F8F9FA',
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+  },
+  roleNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
   },
   roleName: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: '#4F4F4F',
+  },
+  roleNameActive: {
+    color: '#1A7A40',
+  },
+  assignedBadge: {
+    backgroundColor: '#EAFBF1',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginLeft: 4,
+  },
+  assignedBadgeText: {
+    fontSize: 10,
+    color: '#27AE60',
+    fontWeight: '700',
   },
   roleBtnGroup: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
   },
   assignBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     backgroundColor: '#EAFBF1',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#C8EDD8',
+  },
+  assignBtnActive: {
+    backgroundColor: '#F4F4F6',
+    borderColor: '#E5E5EA',
   },
   assignBtnText: {
     color: '#27AE60',
     fontWeight: '600',
-    fontSize: 13,
+    fontSize: 12,
   },
   revokeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     backgroundColor: '#FEE8E7',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FAD0CE',
+  },
+  revokeBtnDisabled: {
+    backgroundColor: '#F4F4F6',
+    borderColor: '#E5E5EA',
   },
   revokeBtnText: {
     color: '#EB5757',
     fontWeight: '600',
+    fontSize: 12,
+  },
+  noRolesContainer: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  noRolesText: {
     fontSize: 13,
+    color: '#8E8E93',
+  },
+  modalCloseFooterBtn: {
+    marginTop: 16,
+    height: 46,
+    borderRadius: 12,
+    backgroundColor: '#F4F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
+  modalCloseFooterText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#4F4F4F',
   },
 });
