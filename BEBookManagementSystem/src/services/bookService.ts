@@ -44,39 +44,111 @@ export class BookService {
   }
 
   static async updateBook(bookId: string, bookDto: Partial<BookUpdate>) {
-    const bookRepo = AppDataSource.getRepository(Book);
-    const book = await bookRepo.findOneBy({ bookId: bookId });
-    if (!book) {
-      throw new NotFoundException('Book not found');
-    }
-    if (bookDto.url) {
-      if (typeof bookDto.url === 'string') {
-        bookDto.url = bookDto.url;
-      } else if (bookDto.url.path) {
-        if (book.url) {
-          try {
-            const oldFileName = path.basename(book.url);
-            const oldFilePath = path.join(process.cwd(), 'images', oldFileName);
-            await fs.unlink(oldFilePath);
-          } catch (error) {
-            console.warn(`Can not remove old image: ${book.url}. Error:`, error);
+    return await AppDataSource.transaction(async (transactionalEntityManager) => {
+      const book = await transactionalEntityManager.findOne(Book, {
+        where: { bookId },
+        relations: {
+          copyBooks: true,
+        },
+      })
+
+      if (!book) {
+        throw new NotFoundException('Book not found');
+      }
+
+      if (bookDto.url) {
+        if (typeof bookDto.url === 'string') {
+          book.url = bookDto.url
+        } else if (bookDto.url.path) {
+          if (book.url) {
+            try {
+              const oldFileName = path.basename(book.url)
+              const oldFilePath = path.join(
+                process.cwd(),
+                'images',
+                oldFileName
+              )
+              await fs.unlink(oldFilePath)
+            } catch (error) {
+              console.warn(
+                `Can not remove old image: ${book.url}. Error:`,
+                error
+              )
+            }
+          }
+          book.url = bookDto.url.path;
+        }
+      }
+
+      if (bookDto.title !== undefined) {
+        book.title = bookDto.title;
+      }
+      if (bookDto.author !== undefined) {
+        book.author = bookDto.author;
+      }
+      if (bookDto.publisher !== undefined) {
+        book.publisher = bookDto.publisher;
+      }
+      if (bookDto.publishYear !== undefined) {
+        book.publishYear = Number(bookDto.publishYear);
+      }
+      if (bookDto.page !== undefined) {
+        book.page = Number(bookDto.page);
+      }
+      if (bookDto.category !== undefined) {
+        book.category = bookDto.category;
+      }
+
+      await transactionalEntityManager.save(Book, book)
+
+      if (bookDto.copyBooks !== undefined) {
+        const existingCopyBooks = book.copyBooks ?? []
+
+        const existingCopyBookMap = new Map(
+          existingCopyBooks.map((copyBook) => [
+            copyBook.copyBookId,
+            copyBook
+          ])
+        )
+
+        for (const copyBookDto of bookDto.copyBooks) {
+          if (copyBookDto.copyBookId) {
+            const existingCopyBook = existingCopyBookMap.get(copyBookDto.copyBookId)
+            if (!existingCopyBook) {
+              throw new NotFoundException(`CopyBook ${copyBookDto.copyBookId} not found`)
+            }
+
+            existingCopyBook.barcode = copyBookDto.barcode
+            existingCopyBook.location = copyBookDto.location
+
+            await transactionalEntityManager.save(
+              CopyBook,
+              existingCopyBook
+            )
+
+            existingCopyBookMap.delete(copyBookDto.copyBookId)
+          }
+          else {
+            const newCopyBook = new CopyBook()
+            newCopyBook.barcode = copyBookDto.barcode
+            newCopyBook.location = copyBookDto.location
+            newCopyBook.book = book
+
+            await transactionalEntityManager.save(CopyBook, newCopyBook)
           }
         }
-        bookDto.url = bookDto.url.path;
+
+        // for (const copyBook of existingCopyBookMap.values()) {
+        //   await transactionalEntityManager.remove(CopyBook, copyBook)
+        // }
       }
-    }
-
-    if(bookDto.publishYear !== undefined) bookDto.publishYear = Number(bookDto.publishYear);
-    if(bookDto.page !== undefined) bookDto.page = Number(bookDto.page);
-    const {url, ...textFields} = bookDto;
-    Object.assign(book, textFields);
-
-    // Kiểm tra xem url có tồn tại và đã được xử lý thành string chưa thì gán vào book
-    if (url && typeof url === 'string') {
-      book.url = url; 
-    }
-
-    return await bookRepo.save(book);
+      return await transactionalEntityManager.findOne(Book, {
+        where: { bookId },
+        relations: {
+          copyBooks: true,
+        },
+      })
+    })
   }
 
   static async getBooksPaginated(page: number, limit: number, title?: string) {

@@ -56,6 +56,7 @@ export const getUserPage = async (page: number, size: number, userName?: string)
     .createQueryBuilder("user")
     .leftJoinAndSelect("user.loans", "loan")
     .leftJoinAndSelect("loan.loanDetails", "loanDetail")
+    .leftJoinAndSelect("user.roles", "role")
     .orderBy("user.createdAt", "DESC");
 
   if (userName) {

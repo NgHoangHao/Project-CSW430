@@ -162,6 +162,12 @@ export const getAllUsers = async (
       expiredBooks,
       totalBorrowedBook,
       status: user.status,
+      roles: user.roles.map((role) => {
+        return {
+          roleId: role.roleId,
+          roleName: role.roleName
+        }
+      })
     };
   });
   return {
