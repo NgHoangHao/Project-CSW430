@@ -33,6 +33,7 @@ import Svg, {
 } from 'react-native-svg';
 import { BookAnalysis } from '../../types/admin/analysis';
 import { userService } from '../../services/user.service';
+import { useAuth } from '../../store/authProvider';
 
 const { width: screenWidth } = Dimensions.get('window');
 const CARD_WIDTH = (screenWidth - 48) / 2;
@@ -58,6 +59,8 @@ export default function DashBoard() {
   const [analysis, setAnalysis] = useState<BookAnalysis | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const { userRole } = useAuth();
+  
   // Chart geometry parameters
   const chartWidth = screenWidth - 72; // Padding in the chart container card
   const chartHeight = 150;
@@ -166,7 +169,7 @@ export default function DashBoard() {
             <Bell size={20} color="#333333" />
           </TouchableOpacity>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>AD</Text>
+            <Text style={styles.avatarText}>{userRole.includes('ADMIN') ? 'AD' : 'LB'}</Text>
           </View>
         </View>
       </View>

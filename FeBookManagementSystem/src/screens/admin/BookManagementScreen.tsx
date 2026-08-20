@@ -36,6 +36,7 @@ import { bookService } from '../../services/book.service';
 import { Book } from '../../types/Book';
 import { BACKEND_URL } from '@env';
 import { launchImageLibrary } from 'react-native-image-picker';
+import { useAuth } from '../../store/authProvider';
 
 interface CopyBookEntry {
   copyBookId?: string | null;
@@ -68,6 +69,8 @@ export default function BookManagementScreen() {
   const [formCategory, setFormCategory] = useState('');
   const [formImage, setFormImage] = useState<any>(null);
   const [formImageUrl, setFormImageUrl] = useState('');
+
+  const { userRole } = useAuth();
 
   // Copy books state — each entry needs barcode + location for BE
   const [copyBooks, setCopyBooks] = useState<CopyBookEntry[]>([
@@ -308,7 +311,7 @@ export default function BookManagementScreen() {
       Alert.alert(
         'Error',
         err.response?.data?.message ||
-        'Unable to save the book. Please try again.',
+          'Unable to save the book. Please try again.',
       );
     } finally {
       setSubmitting(false);
@@ -448,10 +451,17 @@ export default function BookManagementScreen() {
           </View>
           <Text style={styles.headerTitle}>Book Management</Text>
         </View>
-        <TouchableOpacity style={styles.bellBtn}>
-          <Bell size={20} color="#333" />
-          <View style={styles.bellBadge} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <TouchableOpacity style={styles.bellBtn}>
+            <Bell size={20} color="#333" />
+            {/* <View style={styles.bellBadge} /> */}
+          </TouchableOpacity>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>
+              {userRole.includes('ADMIN') ? 'AD' : 'LB'}
+            </Text>
+          </View>
+        </View>
       </View>
 
       <View style={styles.container}>
@@ -720,6 +730,19 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   headerTitle: { fontSize: 20, fontWeight: '700', color: '#333333' },
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#27AE60',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#ffffff',
+  },
   bellBtn: {
     width: 36,
     height: 36,
