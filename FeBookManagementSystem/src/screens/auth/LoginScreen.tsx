@@ -395,7 +395,7 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
                   style={[
                     styles.inputContainer,
                     errors.email &&
-                    styles.inputContainerError,
+                      styles.inputContainerError,
                   ]}
                 >
 
@@ -443,7 +443,7 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
                   style={[
                     styles.inputContainer,
                     errors.password &&
-                    styles.inputContainerError,
+                      styles.inputContainerError,
                   ]}
                 >
 
@@ -540,7 +540,7 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
                   style={[
                     styles.button,
                     isLoading &&
-                    styles.disabledButton,
+                      styles.disabledButton,
                   ]}
                   onPress={handleLogin}
                   disabled={isLoading}
@@ -600,7 +600,7 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
                   style={[
                     styles.googleButton,
                     isLoading &&
-                    styles.disabledGoogleButton,
+                      styles.disabledGoogleButton,
                   ]}
                   onPress={signInGoogle}
                   disabled={isLoading}
