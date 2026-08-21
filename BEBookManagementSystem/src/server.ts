@@ -1,5 +1,6 @@
 import { AppDataSource } from "./config/database";
 import app from "./app";
+import { seedAdminAccount } from "./scripts/seedAdmin";
 import { startLoanCron } from "./scheduler/loanSchuduler";
 import { startUserCron } from "./scheduler/userScheduler";
 
@@ -10,6 +11,7 @@ const HOST = "0.0.0.0";
 AppDataSource.initialize()
   .then(async () => {
     console.log("Database đã kết nối thành công và tự động tạo bảng!");
+    await seedAdminAccount();
 
     // Chạy cron
     await startLoanCron();

@@ -4,7 +4,7 @@ import EncryptedStorage from "react-native-encrypted-storage";
 
 const api = axios.create({
     baseURL: BACKEND_URL || 'http://10.0.2.2:3000/api',
-    timeout: 5000,
+    timeout: 15000,
 })
 
 api.interceptors.request.use(async (config) => {

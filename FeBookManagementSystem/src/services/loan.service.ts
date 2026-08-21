@@ -46,4 +46,8 @@ export const loanService = {
         const res = await api.get(`/loan/loan-home`);
         return res.data;
     },
+    sendLoanEmailNotice: async (loanId: string, customMessage?: string): Promise<any> => {
+        const res = await api.post('/loan/send-email-notice', { loanId, customMessage });
+        return res.data;
+    },
 }

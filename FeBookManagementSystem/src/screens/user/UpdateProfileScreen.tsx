@@ -140,7 +140,7 @@ export default function UpdateProfileScreen() {
                                 </View>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="Nhập số điện thoại (tuỳ chọn)"
+                                    placeholder="Enter phone number (optional)"
                                     placeholderTextColor="#AEAEB2"
                                     value={phone}
                                     onChangeText={setPhone}
@@ -161,7 +161,7 @@ export default function UpdateProfileScreen() {
                                         editable={false}
                                     />
                                     <View style={styles.lockedBadge}>
-                                        <Text style={styles.lockedText}>Cannot be fixed</Text>
+                                        <Text style={styles.lockedText}>Read-only</Text>
                                     </View>
                                 </View>
                             </View>

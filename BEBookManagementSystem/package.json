@@ -8,7 +8,10 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "seed:admin": "ts-node src/scripts/seedAdmin.ts",
+    "test:overdue-mail": "ts-node src/scripts/testOverdueMail.ts",
+    "make:overdue": "ts-node src/scripts/makeOverdue.ts"
   },
   "keywords": [],
   "author": "",

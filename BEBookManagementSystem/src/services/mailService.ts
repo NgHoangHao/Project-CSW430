@@ -94,5 +94,107 @@ export const mailService = {
       console.error('Error sending email:', error);
       throw new Error('Failed to send OTP');
     }
+  },
+
+  sendOverdueNotice: async (
+    to: string,
+    userName: string,
+    bookTitle: string,
+    dueDate: string,
+    barcode: string
+  ) => {
+    try {
+      const emailHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Thông báo sách mượn quá hạn</title>
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #f6f9fc; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+          <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f6f9fc; padding: 40px 20px;">
+            <tr>
+              <td align="center">
+                <table width="100%" style="max-width: 520px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08); border: 1px solid #fee2e2;">
+                  
+                  <!-- Header -->
+                  <tr>
+                    <td align="center" style="padding: 28px 40px; background-color: #fef2f2; border-bottom: 1px solid #fee2e2;">
+                      <h2 style="margin: 0; color: #dc2626; font-size: 22px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        ⚠️ THÔNG BÁO MƯỢN SÁCH QUÁ HẠN
+                      </h2>
+                    </td>
+                  </tr>
+
+                  <!-- Content -->
+                  <tr>
+                    <td style="padding: 32px 40px;">
+                      <p style="margin: 0 0 16px 0; color: #1f2937; font-size: 16px; font-weight: 600;">
+                        Xin chào <strong>${userName}</strong>,
+                      </p>
+                      <p style="margin: 0 0 20px 0; color: #4b5563; font-size: 15px; line-height: 24px;">
+                        Hệ thống nhận thấy bạn có một hoặc nhiều cuốn sách mượn tại <strong>Book Store HHK</strong> đã quá hạn trả. Vui lòng kiểm tra thông tin dưới đây:
+                      </p>
+
+                      <!-- Book Info Card -->
+                      <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 24px; padding: 16px;">
+                        <tr>
+                          <td style="padding-bottom: 8px;">
+                            <span style="color: #6b7280; font-size: 13px;">Tên sách:</span><br>
+                            <strong style="color: #111827; font-size: 15px;">${bookTitle}</strong>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding-bottom: 8px;">
+                            <span style="color: #6b7280; font-size: 13px;">Mã vạch bản sao:</span><br>
+                            <strong style="color: #1d4ed8; font-size: 14px; font-family: monospace;">${barcode}</strong>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <span style="color: #6b7280; font-size: 13px;">Hạn trả quy định:</span><br>
+                            <strong style="color: #dc2626; font-size: 15px;">${dueDate}</strong>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <p style="margin: 0 0 16px 0; color: #4b5563; font-size: 14px; line-height: 22px;">
+                        👉 Vui lòng nhanh chóng mang sách đến thư viện để trả hoặc liên hệ thủ thư để được trợ giúp. Trả sách quá hạn có thể ảnh hưởng đến điểm tín nhiệm của bạn.
+                      </p>
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td align="center" style="padding: 0 40px 32px 40px; border-top: 1px solid #f3f4f6; padding-top: 20px;">
+                      <p style="margin: 0; color: #9ca3af; font-size: 12px;">
+                        © ${new Date().getFullYear()} Book Store HHK. Email tự động, vui lòng không phản hồi trực tiếp.
+                      </p>
+                    </td>
+                  </tr>
+
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+      `;
+
+      await transporter.sendMail({
+        from: '"Book Store HHK" <' + (process.env.EMAIL_USER || 'no-reply@myapp.com') + '>',
+        to,
+        subject: `⚠️ [CẢNH BÁO QUÁ HẠN] Sách "${bookTitle}" đã quá hạn trả!`,
+        text: `Xin chào ${userName}, cuốn sách "${bookTitle}" (Mã: ${barcode}) đã quá hạn trả (${dueDate}). Vui lòng mang sách trả lại thư viện.`,
+        html: emailHtml,
+      });
+
+      console.log(`Overdue notice email sent to ${to} for book "${bookTitle}"`);
+      return true;
+    } catch (error) {
+      console.error('Error sending overdue notice email:', error);
+      throw new Error((error as any)?.message || 'Failed to send overdue email notice');
+    }
   }
 };

@@ -36,6 +36,7 @@ import {
   ScanBarcode,
   SendHorizonal,
   ArrowDownToLine,
+  Mail,
 } from 'lucide-react-native';
 import { loanService } from '../../services/loan.service';
 import { LoanDetailDTO, LoanDetails } from '../../types/loan';
@@ -188,7 +189,7 @@ export default function LoanManagementScreen() {
             ? overdueRes.value?.data?.length ?? 0
             : 0,
       });
-    } catch (_) {}
+    } catch (_) { }
   }, []);
 
   const refreshSelectedLoan = async () => {
@@ -326,7 +327,7 @@ export default function LoanManagementScreen() {
               Alert.alert(
                 'Error',
                 err?.response?.data?.message ||
-                  'An error occurred. Please try again.',
+                'An error occurred. Please try again.',
               );
             } finally {
               setActionLoading(false);
@@ -370,8 +371,33 @@ export default function LoanManagementScreen() {
               Alert.alert(
                 'Error',
                 err?.response?.data?.message ||
-                  'Unable to process book return.',
+                'Unable to process book return.',
               );
+            } finally {
+              setActionLoading(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleSendMailNotice = (loanId: string) => {
+    Alert.alert(
+      'Send Email Notice',
+      'Are you sure you want to send an overdue email notification to this user?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Send Email',
+          style: 'default',
+          onPress: async () => {
+            setActionLoading(true);
+            try {
+              const res = await loanService.sendLoanEmailNotice(loanId);
+              Alert.alert('Success 🎉', res.message || 'Email notification sent successfully!');
+            } catch (err: any) {
+              Alert.alert('Error', err?.response?.data?.message || 'Failed to send email notification.');
             } finally {
               setActionLoading(false);
             }
@@ -583,11 +609,11 @@ export default function LoanManagementScreen() {
     const isPending = item.status === 'PENDING';
     const initials = item.userName
       ? item.userName
-          .split(' ')
-          .map(w => w[0])
-          .slice(-2)
-          .join('')
-          .toUpperCase()
+        .split(' ')
+        .map(w => w[0])
+        .slice(-2)
+        .join('')
+        .toUpperCase()
       : '?';
 
     return (
@@ -866,27 +892,25 @@ export default function LoanManagementScreen() {
 
           {(selectedLoan.status === 'BORROWING' ||
             selectedLoan.status === 'OVERDUE') && (
-            <View style={styles.modalFooter}>
-              <TouchableOpacity
-                style={styles.modalReturnBtn}
-                onPress={() =>
-                  handleReturnLoan(selectedLoan.userId, selectedLoan.loanId)
-                }
-                disabled={actionLoading}
-              >
-                {actionLoading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <>
-                    <ArrowDownToLine size={16} color="#fff" />
-                    <Text style={styles.modalReturnBtnText}>
-                      Confirm Return
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-          )}
+              <View style={styles.modalFooter}>
+                <TouchableOpacity
+                  style={styles.modalReturnBtn}
+                  onPress={() => handleReturnLoan(selectedLoan.userId, selectedLoan.loanId)}
+                  disabled={actionLoading}
+                >
+                  {actionLoading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <>
+                      <ArrowDownToLine size={16} color="#fff" />
+                      <Text style={styles.modalReturnBtnText}>
+                        Confirm Return
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
         </SafeAreaView>
       </Modal>
     );

@@ -372,130 +372,95 @@ export const RegisterScreen = ({
                       color="#6B7280"
                     />
                   ) : (
-                    <EyeOff
-                      size={20}
-                      color="#6B7280"
-                    />
+                    <TouchableOpacity
+                      onPress={() => {
+                        setIsVisiblePassword(!isVisiblePassword);
+                      }}
+                      style={styles.eyeIcon}
+                    >
+                      <EyeOff />
+                    </TouchableOpacity>
                   )}
-                </TouchableOpacity>
               </View>
-
-              {errors.password ? (
-                <Text style={styles.error}>
-                  {errors.password}
-                </Text>
-              ) : null}
-
-
-              <Text style={styles.label}>
-                Confirm password
-              </Text>
-
-              <View
-                style={[
-                  styles.inputContainer,
-                  errors.confirmPassword &&
-                  styles.inputContainerError,
-                ]}
-              >
-                <Lock
-                  size={20}
-                  color="#6B7280"
-                />
-
+              <Text style={styles.label}>Confirm password</Text>
+              <View style={styles.passwordComponent}>
                 <TextInput
-                  style={styles.inputField}
-                  placeholder="Re-enter your password"
-                  placeholderTextColor="#9CA3AF"
-                  secureTextEntry={
-                    !isVisibleConfirmPassword
-                  }
+                  style={[styles.input]}
+                  placeholder="Enter your password"
+                  placeholderTextColor="#aaa"
+                  secureTextEntry={isVisibleConfirmPassword == false}
                   value={confirmPassword}
-                  editable={!isRegistering}
+                  onChangeText={setConfirmPassword}
                   autoCapitalize="none"
-                  autoCorrect={false}
-                  onChangeText={text => {
-                    setConfirmPassword(text);
-                    clearError(
-                      'confirmPassword',
-                    );
-                  }}
                 />
-
-                <TouchableOpacity
-                  onPress={() =>
-                    setIsVisibleConfirmPassword(
-                      prev => !prev,
-                    )
-                  }
-                  style={styles.eyeButton}
-                  activeOpacity={0.7}
-                >
-                  {isVisibleConfirmPassword ? (
-                    <Eye
-                      size={20}
-                      color="#6B7280"
-                    />
-                  ) : (
-                    <EyeOff
-                      size={20}
-                      color="#6B7280"
-                    />
-                  )}
-                </TouchableOpacity>
-              </View>
-
-              {errors.confirmPassword ? (
-                <Text style={styles.error}>
-                  {errors.confirmPassword}
-                </Text>
-              ) : null}
-
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  isRegistering &&
-                  styles.disabledButton,
-                ]}
-                onPress={handleRegister}
-                disabled={isRegistering}
-                activeOpacity={0.85}
-              >
-                {isRegistering ? (
-                  <ActivityIndicator
-                    size="small"
-                    color="#FFFFFF"
+                {errors.confirmPassword ? (
+                  <Text style={styles.error}>{errors.confirmPassword}</Text>
+                ) : null}
+                {isVisibleConfirmPassword ? (
+                  <Eye
+                    size={20}
+                    color="#6B7280"
                   />
                 ) : (
-                  <Text
-                    style={styles.buttonText}
-                  >
-                    Create account
-                  </Text>
+                  <EyeOff
+                    size={20}
+                    color="#6B7280"
+                  />
                 )}
               </TouchableOpacity>
-
-              <View style={styles.footerSection}>
-                <Text style={styles.footerText}>
-                  Already have an account?{' '}
-                </Text>
-
-                <TouchableOpacity
-                  onPress={() =>
-                    navigation.navigate('Login')
-                  }
-                  disabled={isRegistering}
-                >
-                  <Text style={styles.footerLink}>
-                    Sign in
-                  </Text>
-                </TouchableOpacity>
-              </View>
             </View>
-          </ScrollView>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+
+            {errors.confirmPassword ? (
+              <Text style={styles.error}>
+                {errors.confirmPassword}
+              </Text>
+            ) : null}
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                isRegistering &&
+                styles.disabledButton,
+              ]}
+              onPress={handleRegister}
+              disabled={isRegistering}
+              activeOpacity={0.85}
+            >
+              {isRegistering ? (
+                <ActivityIndicator
+                  size="small"
+                  color="#FFFFFF"
+                />
+              ) : (
+                <Text
+                  style={styles.buttonText}
+                >
+                  Create account
+                </Text>
+              )}
+            </TouchableOpacity>
+
+            <View style={styles.footerSection}>
+              <Text style={styles.footerText}>
+                Already have an account?{' '}
+              </Text>
+
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate('Login')
+                }
+                disabled={isRegistering}
+              >
+                <Text style={styles.footerLink}>
+                  Sign in
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
+    </SafeAreaView >
   );
 };
 
