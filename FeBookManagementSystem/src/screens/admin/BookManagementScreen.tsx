@@ -18,7 +18,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  Leaf,
   Bell,
   Search,
   Plus,
@@ -29,13 +28,22 @@ import {
   ChevronLeft,
   ChevronRight,
   BookOpen,
+  Copy,
+  MinusCircle,
+  PlusCircle,
 } from 'lucide-react-native';
 import { bookService } from '../../services/book.service';
 import { Book } from '../../types/Book';
 import { BACKEND_URL } from '@env';
 import { launchImageLibrary } from 'react-native-image-picker';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+interface CopyBookEntry {
+  copyBookId?: string | null;
+  barcode: string;
+  location: string;
+}
+
+const { height: screenHeight } = Dimensions.get('window');
 
 export default function BookManagementScreen() {
   const [books, setBooks] = useState<Book[]>([]);
@@ -47,11 +55,10 @@ export default function BookManagementScreen() {
   const [totalBooks, setTotalBooks] = useState(0);
   const [pageSize] = useState(10);
 
-
   const [modalVisible, setModalVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingBookId, setEditingBookId] = useState<string | null>(null);
-
+  const [submitting, setSubmitting] = useState(false);
 
   const [formTitle, setFormTitle] = useState('');
   const [formAuthor, setFormAuthor] = useState('');
@@ -62,31 +69,43 @@ export default function BookManagementScreen() {
   const [formImage, setFormImage] = useState<any>(null);
   const [formImageUrl, setFormImageUrl] = useState('');
 
-  const fetchBooks = useCallback(async (page: number, search: string, isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
+  // Copy books state — each entry needs barcode + location for BE
+  const [copyBooks, setCopyBooks] = useState<CopyBookEntry[]>([
+    { copyBookId: null, barcode: '', location: '' },
+  ]);
 
-    try {
-      const response = await bookService.getBookByPage(page, pageSize, search || undefined);
-      if (response.data && response.data.success) {
-        const data = response.data.data;
-        if (Array.isArray(data)) {
-          setBooks(data);
-          setTotalPages(1);
-          setTotalBooks(data.length);
-        } else {
-          setBooks(data.content ?? data.data ?? []);
-          setTotalPages(data.totalPages ?? 1);
-          setTotalBooks(data.totalElements ?? 0);
+  const fetchBooks = useCallback(
+    async (page: number, search: string, isRefresh = false) => {
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
+
+      try {
+        const response = await bookService.getBookByPage(
+          page,
+          pageSize,
+          search || undefined,
+        );
+        if (response.data && response.data.success) {
+          const data = response.data.data;
+          if (Array.isArray(data)) {
+            setBooks(data);
+            setTotalPages(1);
+            setTotalBooks(data.length);
+          } else {
+            setBooks(data.content ?? data.data ?? []);
+            setTotalPages(data.totalPages ?? 1);
+            setTotalBooks(data.totalElements ?? 0);
+          }
         }
+      } catch (error) {
+        console.error('Error fetching books:', error);
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-    } catch (error) {
-      console.error('Error fetching books:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [pageSize]);
+    },
+    [pageSize],
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -102,35 +121,29 @@ export default function BookManagementScreen() {
   };
 
   const handleDelete = (bookId: string, title: string) => {
-    Alert.alert(
-      'Delete Book',
-      `Are you sure you want to delete "${title}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const res = await bookService.deleteBook(bookId);
-              if (res.data?.success) {
-                Alert.alert('Success', 'Book deleted successfully.');
-                fetchBooks(currentPage, searchText);
-              } else {
-                Alert.alert('Error', res.data?.message || 'Unable to delete.');
-              }
-            } catch (err: any) {
-              Alert.alert('Error', 'System error while deleting book.');
+    Alert.alert('Delete book', `Are you sure you want to delete "${title}"?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            const res = await bookService.deleteBook(bookId);
+            if (res.data?.success) {
+              Alert.alert('Successfully', 'Book is deleted.');
+              fetchBooks(currentPage, searchText);
+            } else {
+              Alert.alert('Error', res.data?.message || 'Can not delete.');
             }
-          },
+          } catch (err: any) {
+            Alert.alert('Error', 'System error when deleting a book.');
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
-  const openAddModal = () => {
-    setIsEditing(false);
-    setEditingBookId(null);
+  const resetForm = () => {
     setFormTitle('');
     setFormAuthor('');
     setFormPublisher('');
@@ -139,6 +152,13 @@ export default function BookManagementScreen() {
     setFormCategory('');
     setFormImage(null);
     setFormImageUrl('');
+    setCopyBooks([{ barcode: '', location: '' }]);
+  };
+
+  const openAddModal = () => {
+    setIsEditing(false);
+    setEditingBookId(null);
+    resetForm();
     setModalVisible(true);
   };
 
@@ -152,7 +172,16 @@ export default function BookManagementScreen() {
     setFormPage(book.page ? String(book.page) : '');
     setFormCategory(book.category || '');
     setFormImage(null);
-    setFormImageUrl(book.url && (book.url.startsWith('http') || !book.url.startsWith('/')) ? book.url : '');
+    setFormImageUrl(
+      book.url && (book.url.startsWith('http') || !book.url.startsWith('/'))
+        ? book.url
+        : '',
+    );
+    setCopyBooks(
+      book.availableBooks
+        ? book.availableBooks
+        : [{ barcode: '', location: '' }],
+    );
     setModalVisible(true);
   };
 
@@ -167,21 +196,59 @@ export default function BookManagementScreen() {
         setFormImageUrl('');
       }
     } catch (error) {
-      Alert.alert('Error', 'Unable to select image');
+      Alert.alert('Error', 'Can not choose image');
     }
   };
 
+  // ─── Copy Book helpers ────────────────────────────────────────────────────
+  const addCopyRow = () =>
+    setCopyBooks(prev => [...prev, { barcode: '', location: '' }]);
+
+  const removeCopyRow = (index: number) =>
+    setCopyBooks(prev => prev.filter((_, i) => i !== index));
+
+  const updateCopyField = (
+    index: number,
+    field: keyof CopyBookEntry,
+    value: string,
+  ) => {
+    setCopyBooks(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
+
+  // ─── Submit ───────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     if (!formTitle || !formAuthor) {
-      Alert.alert('Error', 'Please enter Book Title and Author.');
+      Alert.alert('Error', 'Please enter the book title and author.');
       return;
     }
 
     if (!isEditing && !formImage?.uri && !formImageUrl.trim()) {
-      Alert.alert('Error', 'Please select a cover image or enter an image URL.');
+      Alert.alert(
+        'Error',
+        'Please select a cover photo or enter an image link.',
+      );
       return;
     }
 
+    // For create: require at least one fully filled copy book entry
+    if (!isEditing) {
+      const validCopies = copyBooks.filter(
+        c => c.barcode.trim() && c.location.trim(),
+      );
+      if (validCopies.length === 0) {
+        Alert.alert(
+          'Error',
+          'Please add at least one copy book with barcode and location.',
+        );
+        return;
+      }
+    }
+
+    setSubmitting(true);
     try {
       const formData = new FormData();
       formData.append('title', formTitle);
@@ -191,8 +258,9 @@ export default function BookManagementScreen() {
       formData.append('page', formPage);
       formData.append('category', formCategory);
 
+      // Multer field on BE is 'url' (route: upload.single('url'))
       if (formImage && formImage.uri && !formImage.uri.startsWith('http')) {
-        formData.append('image', {
+        formData.append('url', {
           uri: formImage.uri,
           type: formImage.type || 'image/jpeg',
           name: formImage.fileName || 'book_cover.jpg',
@@ -201,33 +269,54 @@ export default function BookManagementScreen() {
         formData.append('url', formImageUrl.trim());
       }
 
+      // Attach copy books as JSON string for createBook (BE parses JSON.parse)
+      // if (!isEditing) {
+      const validCopies = copyBooks
+        .filter(c => c.barcode.trim() && c.location.trim())
+        .map(c => ({
+          ...(c.copyBookId ? { copyBookId: c.copyBookId } : {}),
+          barcode: c.barcode.trim(),
+          location: c.location.trim(),
+        }));
+      formData.append('copyBooks', JSON.stringify(validCopies));
+      // }
+
       if (isEditing && editingBookId) {
         const res = await bookService.updateBook(editingBookId, formData);
         if (res.data?.success) {
-          Alert.alert('Success', 'Book details updated successfully.');
+          Alert.alert('Success', 'Book information updated.');
           setModalVisible(false);
           fetchBooks(currentPage, searchText);
         } else {
-          Alert.alert('Error', res.data?.message || 'Unable to update book.');
+          Alert.alert(
+            'Error',
+            res.data?.message || 'Unable to update the book.',
+          );
         }
       } else {
         const res = await bookService.createBook(formData);
         if (res.status === 201 || res.data?.success) {
-          Alert.alert('Success', 'New book added successfully.');
+          Alert.alert('Success', 'New book added.');
           setModalVisible(false);
           fetchBooks(1, searchText);
         } else {
-          Alert.alert('Error', res.data?.message || 'Unable to add new book.');
+          Alert.alert('Error', res.data?.message || 'Cannot add new books.');
         }
       }
     } catch (err: any) {
       console.log(err.response?.data || err);
-      Alert.alert('Error', err.response?.data?.message || 'Unable to save book. Please try again.');
+      Alert.alert(
+        'Error',
+        err.response?.data?.message ||
+        'Unable to save the book. Please try again.',
+      );
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const getImageUrl = (url: string) => {
-    if (!url) return null;
+    if (!url) return undefined;
     if (url.startsWith('http://') || url.startsWith('https://')) return url;
     const baseUrl = (BACKEND_URL || 'http://10.0.2.2:3000').replace('/api', '');
     return url.startsWith('/') ? `${baseUrl}${url}` : `${baseUrl}/${url}`;
@@ -235,14 +324,18 @@ export default function BookManagementScreen() {
 
   const renderBookItem = ({ item }: { item: Book }) => {
     const imageUrl = getImageUrl(item.url);
-    const availableCopies = item.totalAvailableCopy || 0;
+    const availableCopies = item.availableBooks?.length || 0;
 
     return (
       <View style={styles.bookCard}>
         <View style={styles.bookContent}>
           <View style={styles.coverWrapper}>
             {imageUrl ? (
-              <Image source={{ uri: imageUrl }} style={styles.bookCover} resizeMode="cover" />
+              <Image
+                source={{ uri: imageUrl }}
+                style={styles.bookCover}
+                resizeMode="cover"
+              />
             ) : (
               <View style={styles.coverPlaceholder}>
                 <BookOpen size={24} color="#27AE60" />
@@ -251,19 +344,30 @@ export default function BookManagementScreen() {
           </View>
 
           <View style={styles.bookInfo}>
-            <Text style={styles.bookTitle} numberOfLines={2}>{item.title}</Text>
-            <Text style={styles.bookAuthor} numberOfLines={1}>{item.author}</Text>
+            <Text style={styles.bookTitle} numberOfLines={2}>
+              {item.title}
+            </Text>
+            <Text style={styles.bookAuthor} numberOfLines={1}>
+              {item.author}
+            </Text>
 
             <View style={styles.bookMeta}>
               <View style={styles.categoryBadge}>
-                <Text style={styles.categoryText}>{item.category || 'Other'}</Text>
+                <Text style={styles.categoryText}>
+                  {item.category || 'Other'}
+                </Text>
               </View>
               <Text style={styles.metaText}>{item.publishYear}</Text>
             </View>
 
             <View style={styles.stockInfo}>
-              <Text style={styles.stockLabel}>In stock:</Text>
-              <Text style={[styles.stockValue, { color: availableCopies > 0 ? '#27AE60' : '#EB5757' }]}>
+              <Text style={styles.stockLabel}>Remaining:</Text>
+              <Text
+                style={[
+                  styles.stockValue,
+                  { color: availableCopies > 0 ? '#27AE60' : '#EB5757' },
+                ]}
+              >
                 {availableCopies} copies
               </Text>
             </View>
@@ -271,14 +375,22 @@ export default function BookManagementScreen() {
         </View>
 
         <View style={styles.actionRow}>
-          <TouchableOpacity style={styles.actionBtn} onPress={() => openEditModal(item)}>
+          <TouchableOpacity
+            style={styles.actionBtn}
+            onPress={() => openEditModal(item)}
+          >
             <Edit2 size={16} color="#4F4F4F" />
             <Text style={styles.actionText}>Edit</Text>
           </TouchableOpacity>
           <View style={styles.actionDivider} />
-          <TouchableOpacity style={styles.actionBtn} onPress={() => handleDelete(item.bookId!, item.title)}>
+          <TouchableOpacity
+            style={styles.actionBtn}
+            onPress={() => handleDelete(item.bookId!, item.title)}
+          >
             <Trash2 size={16} color="#EB5757" />
-            <Text style={[styles.actionText, { color: '#EB5757' }]}>Delete</Text>
+            <Text style={[styles.actionText, { color: '#EB5757' }]}>
+              Delete
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -291,20 +403,37 @@ export default function BookManagementScreen() {
       <View style={styles.paginationContainer}>
         <TouchableOpacity
           style={[styles.pageBtn, currentPage === 1 && styles.pageBtnDisabled]}
-          onPress={() => { setCurrentPage(prev => prev - 1); fetchBooks(currentPage - 1, searchText); }}
+          onPress={() => {
+            setCurrentPage(prev => prev - 1);
+            fetchBooks(currentPage - 1, searchText);
+          }}
           disabled={currentPage === 1}
         >
-          <ChevronLeft size={18} color={currentPage === 1 ? '#C4C4C4' : '#27AE60'} />
+          <ChevronLeft
+            size={18}
+            color={currentPage === 1 ? '#C4C4C4' : '#27AE60'}
+          />
         </TouchableOpacity>
 
-        <Text style={styles.paginationInfo}>{currentPage} / {totalPages}</Text>
+        <Text style={styles.paginationInfo}>
+          {currentPage} / {totalPages}
+        </Text>
 
         <TouchableOpacity
-          style={[styles.pageBtn, currentPage === totalPages && styles.pageBtnDisabled]}
-          onPress={() => { setCurrentPage(prev => prev + 1); fetchBooks(currentPage + 1, searchText); }}
+          style={[
+            styles.pageBtn,
+            currentPage === totalPages && styles.pageBtnDisabled,
+          ]}
+          onPress={() => {
+            setCurrentPage(prev => prev + 1);
+            fetchBooks(currentPage + 1, searchText);
+          }}
           disabled={currentPage === totalPages}
         >
-          <ChevronRight size={18} color={currentPage === totalPages ? '#C4C4C4' : '#27AE60'} />
+          <ChevronRight
+            size={18}
+            color={currentPage === totalPages ? '#C4C4C4' : '#27AE60'}
+          />
         </TouchableOpacity>
       </View>
     );
@@ -312,7 +441,6 @@ export default function BookManagementScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={styles.headerIconWrapper}>
@@ -327,7 +455,6 @@ export default function BookManagementScreen() {
       </View>
 
       <View style={styles.container}>
-
         <View style={styles.topActions}>
           <View style={styles.searchBar}>
             <Search size={18} color="#8E8E93" style={{ marginRight: 8 }} />
@@ -357,11 +484,17 @@ export default function BookManagementScreen() {
             keyExtractor={(item, index) => item.bookId || index.toString()}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#27AE60']} />}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                colors={['#27AE60']}
+              />
+            }
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <BookOpen size={48} color="#C8D6C8" />
-                <Text style={styles.emptyText}>No books found.</Text>
+                <Text style={styles.emptyText}>No books available.</Text>
               </View>
             }
             ListFooterComponent={renderPagination}
@@ -369,64 +502,193 @@ export default function BookManagementScreen() {
         )}
       </View>
 
-
       <Modal visible={modalVisible} animationType="slide" transparent={true}>
-        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{isEditing ? 'Edit Book' : 'Add New Book'}</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
+              <Text style={styles.modalTitle}>
+                {isEditing ? 'Edit Book' : 'Add New Book'}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setModalVisible(false)}
+                style={styles.closeBtn}
+              >
                 <X size={20} color="#333" />
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.formContainer}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.formContainer}
+            >
               <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
                 {formImage && formImage.uri ? (
-                  <Image source={{ uri: formImage.uri }} style={styles.previewImage} />
+                  <Image
+                    source={{ uri: formImage.uri }}
+                    style={styles.previewImage}
+                  />
                 ) : formImageUrl ? (
-                  <Image source={{ uri: formImageUrl }} style={styles.previewImage} />
+                  <Image
+                    source={{ uri: getImageUrl(formImageUrl) }}
+                    style={styles.previewImage}
+                  />
                 ) : (
                   <View style={styles.imagePlaceholder}>
                     <ImageIcon size={32} color="#8E8E93" />
-                    <Text style={styles.imagePlaceholderText}>Choose image</Text>
+                    <Text style={styles.imagePlaceholderText}>
+                      Choose image from device
+                    </Text>
                   </View>
                 )}
               </TouchableOpacity>
 
-              <Text style={styles.inputLabel}>Or enter image URL directly</Text>
-              <TextInput style={styles.input} value={formImageUrl} onChangeText={(text) => { setFormImageUrl(text); setFormImage(null); }} placeholder="e.g. https://example.com/image.jpg" />
+              <Text style={styles.inputLabel}>
+                Or enter cover image link directly
+              </Text>
+              <TextInput
+                style={styles.input}
+                value={formImageUrl}
+                onChangeText={text => {
+                  setFormImageUrl(text);
+                  setFormImage(null);
+                }}
+                placeholder="Ex: https://example.com/image.jpg"
+              />
 
               <Text style={styles.inputLabel}>Book Title *</Text>
-              <TextInput style={styles.input} value={formTitle} onChangeText={setFormTitle} placeholder="Enter book title" />
+              <TextInput
+                style={styles.input}
+                value={formTitle}
+                onChangeText={setFormTitle}
+                placeholder="Enter book title"
+              />
 
               <Text style={styles.inputLabel}>Author *</Text>
-              <TextInput style={styles.input} value={formAuthor} onChangeText={setFormAuthor} placeholder="Enter author name" />
+              <TextInput
+                style={styles.input}
+                value={formAuthor}
+                onChangeText={setFormAuthor}
+                placeholder="Enter author name"
+              />
 
               <Text style={styles.inputLabel}>Publisher</Text>
-              <TextInput style={styles.input} value={formPublisher} onChangeText={setFormPublisher} placeholder="Enter publisher" />
+              <TextInput
+                style={styles.input}
+                value={formPublisher}
+                onChangeText={setFormPublisher}
+                placeholder="Enter publisher"
+              />
 
               <View style={styles.rowInputs}>
                 <View style={{ flex: 1, marginRight: 8 }}>
-                  <Text style={styles.inputLabel}>Publication Year</Text>
-                  <TextInput style={styles.input} value={formYear} onChangeText={setFormYear} keyboardType="numeric" placeholder="e.g. 2023" />
+                  <Text style={styles.inputLabel}>Publish Year</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={formYear}
+                    onChangeText={setFormYear}
+                    keyboardType="numeric"
+                    placeholder="Ex: 2023"
+                  />
                 </View>
                 <View style={{ flex: 1, marginLeft: 8 }}>
                   <Text style={styles.inputLabel}>Pages</Text>
-                  <TextInput style={styles.input} value={formPage} onChangeText={setFormPage} keyboardType="numeric" placeholder="e.g. 300" />
+                  <TextInput
+                    style={styles.input}
+                    value={formPage}
+                    onChangeText={setFormPage}
+                    keyboardType="numeric"
+                    placeholder="Ex: 300"
+                  />
                 </View>
               </View>
 
               <Text style={styles.inputLabel}>Category</Text>
-              <TextInput style={styles.input} value={formCategory} onChangeText={setFormCategory} placeholder="e.g. Fiction" />
+              <TextInput
+                style={styles.input}
+                value={formCategory}
+                onChangeText={setFormCategory}
+                placeholder="Ex: Novel"
+                placeholderTextColor="#AEAEB2"
+              />
+
+              {/* Copy Books section — only shown when adding a new book */}
+              {true && (
+                <View style={styles.copySection}>
+                  <View style={styles.copySectionHeader}>
+                    <View style={styles.copySectionTitleRow}>
+                      <Copy size={16} color="#27AE60" />
+                      <Text style={styles.copySectionTitle}>Copy Books *</Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={addCopyRow}
+                      style={styles.addCopyBtn}
+                    >
+                      <PlusCircle size={22} color="#27AE60" />
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.copySectionHint}>
+                    Add barcode &amp; shelf location for each physical copy
+                  </Text>
+
+                  {copyBooks.map((copy, index) => (
+                    <View key={index} style={styles.copyRow}>
+                      <View style={styles.copyRowIndex}>
+                        <Text style={styles.copyIndexText}>#{index + 1}</Text>
+                      </View>
+                      <View style={styles.copyRowFields}>
+                        <TextInput
+                          style={styles.copyInput}
+                          value={copy.barcode}
+                          onChangeText={val =>
+                            updateCopyField(index, 'barcode', val)
+                          }
+                          placeholder="Barcode"
+                          placeholderTextColor="#AEAEB2"
+                        />
+                        <TextInput
+                          style={[styles.copyInput, { marginTop: 6 }]}
+                          value={copy.location}
+                          onChangeText={val =>
+                            updateCopyField(index, 'location', val)
+                          }
+                          placeholder="Shelf location (e.g. A1-03)"
+                          placeholderTextColor="#AEAEB2"
+                        />
+                      </View>
+                      {copyBooks.length > 1 && (
+                        <TouchableOpacity
+                          onPress={() => removeCopyRow(index)}
+                          style={styles.removeCopyBtn}
+                        >
+                          <MinusCircle size={20} color="#EB5757" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              )}
             </ScrollView>
 
             <View style={styles.modalFooter}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setModalVisible(false)}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => setModalVisible(false)}
+              >
                 <Text style={styles.cancelBtnText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.saveBtn} onPress={handleSubmit}>
-                <Text style={styles.saveBtnText}>Save</Text>
+              <TouchableOpacity
+                style={[styles.saveBtn, submitting && styles.saveBtnDisabled]}
+                onPress={handleSubmit}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.saveBtnText}>Save</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -439,89 +701,315 @@ export default function BookManagementScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#ffffff' },
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F2F2F7',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F2F2F7',
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center' },
   headerIconWrapper: {
-    width: 32, height: 32, borderRadius: 16, backgroundColor: '#27AE60',
-    justifyContent: 'center', alignItems: 'center', marginRight: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#27AE60',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
   },
   headerTitle: { fontSize: 20, fontWeight: '700', color: '#333333' },
   bellBtn: {
-    width: 36, height: 36, borderRadius: 18, backgroundColor: '#F8F9FA',
-    justifyContent: 'center', alignItems: 'center', position: 'relative',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F8F9FA',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
   },
   bellBadge: {
-    position: 'absolute', top: 8, right: 8, width: 6, height: 6,
-    borderRadius: 3, backgroundColor: '#EB5757',
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#EB5757',
   },
-  container: { flex: 1, backgroundColor: '#F8F9FA', paddingHorizontal: 16, paddingTop: 16 },
+  container: {
+    flex: 1,
+    backgroundColor: '#F8F9FA',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
   topActions: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   searchBar: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff',
-    borderRadius: 24, borderWidth: 1, borderColor: '#E5E5EA', paddingHorizontal: 16, height: 48,
-    marginRight: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05,
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    paddingHorizontal: 16,
+    height: 48,
+    marginRight: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
   },
   searchInput: { flex: 1, fontSize: 15, color: '#333' },
   addBtn: {
-    width: 48, height: 48, borderRadius: 24, backgroundColor: '#27AE60',
-    justifyContent: 'center', alignItems: 'center', shadowColor: '#27AE60',
-    shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#27AE60',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#27AE60',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  totalText: { fontSize: 13, color: '#8E8E93', fontWeight: '500', marginBottom: 12, marginLeft: 4 },
+  totalText: {
+    fontSize: 13,
+    color: '#8E8E93',
+    fontWeight: '500',
+    marginBottom: 12,
+    marginLeft: 4,
+  },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   listContent: { paddingBottom: 24 },
   bookCard: {
-    backgroundColor: '#ffffff', borderRadius: 16, padding: 14, marginBottom: 12,
-    borderWidth: 1, borderColor: '#F0F0F0', shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04, shadowRadius: 8, elevation: 2,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
   bookContent: { flexDirection: 'row', marginBottom: 12 },
   coverWrapper: {
-    width: 64, height: 90, borderRadius: 8, backgroundColor: '#EAFBF1',
-    overflow: 'hidden', marginRight: 12,
+    width: 64,
+    height: 90,
+    borderRadius: 8,
+    backgroundColor: '#EAFBF1',
+    overflow: 'hidden',
+    marginRight: 12,
   },
   bookCover: { width: '100%', height: '100%' },
-  coverPlaceholder: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
+  coverPlaceholder: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   bookInfo: { flex: 1 },
-  bookTitle: { fontSize: 15, fontWeight: '700', color: '#0D1B2A', marginBottom: 4 },
+  bookTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0D1B2A',
+    marginBottom: 4,
+  },
   bookAuthor: { fontSize: 13, color: '#8E8E93', marginBottom: 8 },
-  bookMeta: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  categoryBadge: { backgroundColor: '#EAFBF1', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  bookMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  categoryBadge: {
+    backgroundColor: '#EAFBF1',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
   categoryText: { fontSize: 11, color: '#27AE60', fontWeight: '600' },
   metaText: { fontSize: 12, color: '#AEAEB2' },
   stockInfo: { flexDirection: 'row', alignItems: 'center' },
   stockLabel: { fontSize: 12, color: '#8E8E93', marginRight: 4 },
   stockValue: { fontSize: 12, fontWeight: '700' },
-  actionRow: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#F0F0F0', paddingTop: 10 },
-  actionBtn: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 6 },
-  actionText: { fontSize: 13, fontWeight: '600', color: '#4F4F4F', marginLeft: 6 },
+  actionRow: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+    paddingTop: 10,
+  },
+  actionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+  actionText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#4F4F4F',
+    marginLeft: 6,
+  },
   actionDivider: { width: 1, backgroundColor: '#F0F0F0' },
   emptyContainer: { alignItems: 'center', paddingVertical: 40 },
   emptyText: { marginTop: 12, fontSize: 14, color: '#8E8E93' },
-  paginationContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 16 },
-  pageBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#ffffff', justifyContent: 'center', alignItems: 'center', marginHorizontal: 16, borderWidth: 1, borderColor: '#E5E5EA' },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  pageBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
   pageBtnDisabled: { opacity: 0.5 },
   paginationInfo: { fontSize: 14, fontWeight: '600', color: '#4F4F4F' },
 
-
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: screenHeight * 0.9 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    maxHeight: screenHeight * 0.9,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
   modalTitle: { fontSize: 18, fontWeight: '700', color: '#0D1B2A' },
   closeBtn: { padding: 4 },
   formContainer: { paddingBottom: 20 },
-  imagePicker: { width: 100, height: 140, borderRadius: 12, backgroundColor: '#F4F4F6', alignSelf: 'center', marginBottom: 20, overflow: 'hidden', borderWidth: 1, borderColor: '#E5E5EA', borderStyle: 'dashed' },
+  imagePicker: {
+    width: 100,
+    height: 140,
+    borderRadius: 12,
+    backgroundColor: '#F4F4F6',
+    alignSelf: 'center',
+    marginBottom: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    borderStyle: 'dashed',
+  },
   previewImage: { width: '100%', height: '100%' },
   imagePlaceholder: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   imagePlaceholderText: { fontSize: 11, color: '#8E8E93', marginTop: 8 },
-  inputLabel: { fontSize: 13, fontWeight: '600', color: '#4F4F4F', marginBottom: 6, marginTop: 12 },
-  input: { backgroundColor: '#F8F9FA', borderWidth: 1, borderColor: '#E5E5EA', borderRadius: 12, paddingHorizontal: 14, height: 44, fontSize: 14, color: '#333' },
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#4F4F4F',
+    marginBottom: 6,
+    marginTop: 12,
+  },
+  input: {
+    backgroundColor: '#F8F9FA',
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    height: 44,
+    fontSize: 14,
+    color: '#333',
+  },
   rowInputs: { flexDirection: 'row' },
-  modalFooter: { flexDirection: 'row', gap: 12, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#F0F0F0' },
-  cancelBtn: { flex: 1, height: 48, borderRadius: 12, backgroundColor: '#F4F4F6', justifyContent: 'center', alignItems: 'center' },
+  modalFooter: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  cancelBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#F4F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   cancelBtnText: { fontSize: 15, fontWeight: '600', color: '#4F4F4F' },
-  saveBtn: { flex: 1, height: 48, borderRadius: 12, backgroundColor: '#27AE60', justifyContent: 'center', alignItems: 'center' },
+  saveBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#27AE60',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   saveBtnText: { fontSize: 15, fontWeight: '600', color: '#fff' },
+  saveBtnDisabled: { opacity: 0.6 },
+
+  // Copy Books section
+  copySection: {
+    marginTop: 20,
+    backgroundColor: '#F0FBF4',
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#C8EDD8',
+  },
+  copySectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  copySectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  copySectionTitle: { fontSize: 14, fontWeight: '700', color: '#1A7A40' },
+  addCopyBtn: { padding: 2 },
+  copySectionHint: { fontSize: 11, color: '#6AAD80', marginBottom: 12 },
+  copyRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#D8EDDF',
+  },
+  copyRowIndex: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#EAFBF1',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+    marginTop: 8,
+  },
+  copyIndexText: { fontSize: 11, fontWeight: '700', color: '#27AE60' },
+  copyRowFields: { flex: 1 },
+  copyInput: {
+    backgroundColor: '#F8F9FA',
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    height: 38,
+    fontSize: 13,
+    color: '#333',
+  },
+  removeCopyBtn: { padding: 4, marginLeft: 8, marginTop: 8 },
 });

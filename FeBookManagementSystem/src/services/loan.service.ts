@@ -1,6 +1,6 @@
 import api from "../lib/axios"
 import { LoanDetailsByPageAdmin } from "../types/admin/loan";
-import { ConfirmLoanRequest, CreateLoanRequest, LoanDetailDTO, LoanUser } from "../types/loan"
+import { ConfirmLoanRequest, CreateLoanRequest, LoanDetailDTO, LoanHomeResponse, LoanResponse, LoanUser } from "../types/loan"
 import { ApiResponse } from "../types/response/ApiResponse";
 
 export const loanService = {
@@ -16,8 +16,8 @@ export const loanService = {
         const res = await api.get("/loan/get-all-loan-details");
         return res.data;
     },
-    returnBookByBarcode: async (barcodes: string[], userId?: string): Promise<any> => {
-        const res = await api.post('/loan/return-book', { barcodes, userId });
+    returnBookByBarcode: async (userId: string, barcodes: string[]): Promise<any> => {
+        const res = await api.post('/loan/return-book', { userId, barcodes });
         return res.data;
     },
     getMyLoans: async (): Promise<ApiResponse<LoanUser[]>> => {
@@ -32,8 +32,18 @@ export const loanService = {
         const res = await api.get(`/loan/get-loan-by-status/${status}`);
         return res.data;
     },
-    sendLoanEmailNotice: async (loanId: string, customMessage?: string): Promise<any> => {
-        const res = await api.post('/loan/send-email-notice', { loanId, customMessage });
+    getLoanByUser: async (page: number, size: number, status?: string) => {
+        const res = await api.get("/loan/loan-detail", {
+            params: {
+                page,
+                size,
+                ...(status?.trim() ? { status } : {}),
+            },
+        });
+        return res;
+    },
+    getLoanHome: async (): Promise<LoanHomeResponse> => {
+        const res = await api.get(`/loan/loan-home`);
         return res.data;
-    }
+    },
 }

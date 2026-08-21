@@ -9,8 +9,6 @@ import {
   TouchableOpacity,
   View,
   Dimensions,
-  Modal,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -30,12 +28,8 @@ import {
   AlignLeft,
   CheckCircle,
   XCircle,
-  Clock,
-  Check,
-  X,
 } from 'lucide-react-native';
 import { bookService } from '../../services/book.service';
-import { loanService } from '../../services/loan.service';
 import { Book, CopyBook } from '../../types/Book';
 import { BACKEND_URL } from '@env';
 import { UserStackParamList } from '../../navigation/types';
@@ -59,55 +53,6 @@ export default function BookDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
-
-  // Borrow modal states
-  const [borrowModalVisible, setBorrowModalVisible] = useState(false);
-  const [borrowing, setBorrowing] = useState(false);
-  const [selectedDuration, setSelectedDuration] = useState(14); // default 14 days
-  const [selectedCopyIndex, setSelectedCopyIndex] = useState(0);
-
-  const getCalculatedDueDate = (days: number) => {
-    const targetDate = new Date();
-    targetDate.setDate(targetDate.getDate() + days);
-    return targetDate.toLocaleDateString('en-US');
-  };
-
-  const handleCreateLoan = async () => {
-    if (!book || !book.availableBooks || book.availableBooks.length === 0) {
-      Alert.alert('Notice', 'Currently no copy of this book is available for loan.');
-      return;
-    }
-
-    const selectedCopy = book.availableBooks[selectedCopyIndex] || book.availableBooks[0];
-    const copyBookId = selectedCopy.copyBookId;
-
-    if (!copyBookId) {
-      Alert.alert('Error', 'Unable to identify the copy ID for this book.');
-      return;
-    }
-
-    setBorrowing(true);
-    try {
-      const targetDate = new Date();
-      targetDate.setDate(targetDate.getDate() + selectedDuration);
-      const dueDateStr = targetDate.toISOString().slice(0, 10);
-
-      await loanService.createLoan({
-        bookIds: [copyBookId],
-        dueDate: dueDateStr,
-      });
-
-      setBorrowModalVisible(false);
-      Alert.alert('Success 🎉', 'Book loan request created successfully! Waiting for librarian approval.');
-      fetchBookDetail();
-    } catch (err: any) {
-      console.log('Create loan error:', err?.response?.data || err);
-      const msg = err?.response?.data?.message || 'An error occurred while creating the book loan request.';
-      Alert.alert('Loan Request Failed', msg);
-    } finally {
-      setBorrowing(false);
-    }
-  };
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
@@ -258,7 +203,7 @@ export default function BookDetailScreen() {
                 <XCircle size={14} color="#FF6B6B" style={{ marginRight: 6 }} />
               )}
               <Text style={[styles.statusText, isAvailable ? styles.statusTextAvail : styles.statusTextUnavail]}>
-                {isAvailable ? 'Available' : 'On Loan'}
+                {isAvailable ? 'Available' : 'Borrowed'}
               </Text>
             </View>
           </View>
@@ -267,7 +212,7 @@ export default function BookDetailScreen() {
           <View style={styles.infoGrid}>
             <InfoTile icon={<FileText size={16} color="#27AE60" />} label="CATEGORY" value={book.category || '—'} />
             <InfoTile icon={<Package size={16} color="#27AE60" />} label="PAGES" value={book.page ? `${book.page} pages` : '—'} />
-            <InfoTile icon={<Calendar size={16} color="#27AE60" />} label="YEAR" value={book.publishYear ? String(book.publishYear) : '—'} />
+            <InfoTile icon={<Calendar size={16} color="#27AE60" />} label="PUBLISH YEAR" value={book.publishYear ? String(book.publishYear) : '—'} />
             <InfoTile icon={<Building2 size={16} color="#27AE60" />} label="PUBLISHER" value={book.publisher || '—'} />
           </View>
 
@@ -303,160 +248,6 @@ export default function BookDetailScreen() {
           )}
         </Animated.View>
       </ScrollView>
-
-      {/* Sticky Bottom Action Bar */}
-      <View style={styles.bottomBar}>
-        <View style={styles.bottomInfo}>
-          <Text style={styles.bottomStatusLabel}>Status</Text>
-          <Text style={[styles.bottomStatusValue, isAvailable ? styles.textSuccess : styles.textDanger]}>
-            {isAvailable
-              ? `Available (${book.availableBooks?.length || book.totalAvailableCopy || 1} copies)`
-              : 'Out of stock'}
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          style={[styles.borrowBtn, !isAvailable && styles.borrowBtnDisabled]}
-          disabled={!isAvailable}
-          onPress={() => {
-            setSelectedCopyIndex(0);
-            setBorrowModalVisible(true);
-          }}
-          activeOpacity={0.8}
-        >
-          <BookOpen size={18} color="#fff" style={{ marginRight: 6 }} />
-          <Text style={styles.borrowBtnText}>
-            {isAvailable ? 'Borrow Now' : 'Out of Stock'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Borrow Confirmation Modal */}
-      <Modal
-        visible={borrowModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setBorrowModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            {/* Modal Header */}
-            <View style={styles.modalHeader}>
-              <View style={styles.modalTitleRow}>
-                <BookOpen size={22} color="#27AE60" />
-                <Text style={styles.modalTitle}>Confirm Book Loan</Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => setBorrowModalVisible(false)}
-                style={styles.modalCloseBtn}
-              >
-                <X size={20} color="#8E8E93" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Book Summary Card */}
-            <View style={styles.modalBookSummary}>
-              <Text style={styles.summaryTitle} numberOfLines={1}>
-                {book.title}
-              </Text>
-              <Text style={styles.summaryAuthor}>{book.author}</Text>
-            </View>
-
-            {/* Copy Selection */}
-            {book.availableBooks && book.availableBooks.length > 1 && (
-              <View style={styles.modalSection}>
-                <Text style={styles.modalSectionLabel}>Select Copy (Barcode):</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.copySelector}>
-                  {book.availableBooks.map((copy, index) => (
-                    <TouchableOpacity
-                      key={copy.copyBookId || copy.barcode || index}
-                      style={[
-                        styles.copyChip,
-                        selectedCopyIndex === index && styles.copyChipActive,
-                      ]}
-                      onPress={() => setSelectedCopyIndex(index)}
-                    >
-                      <Barcode size={14} color={selectedCopyIndex === index ? '#fff' : '#27AE60'} />
-                      <Text style={[styles.copyChipText, selectedCopyIndex === index && styles.copyChipTextActive]}>
-                        {copy.barcode} {copy.location ? `(${copy.location})` : ''}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-            )}
-
-            {/* Duration Selection */}
-            <View style={styles.modalSection}>
-              <Text style={styles.modalSectionLabel}>Loan Duration:</Text>
-              <View style={styles.durationRow}>
-                {[7, 14, 30].map((days) => (
-                  <TouchableOpacity
-                    key={days}
-                    style={[
-                      styles.durationChip,
-                      selectedDuration === days && styles.durationChipActive,
-                    ]}
-                    onPress={() => setSelectedDuration(days)}
-                  >
-                    <Text style={[styles.durationText, selectedDuration === days && styles.durationTextActive]}>
-                      {days} Days
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            {/* Loan Details summary */}
-            <View style={styles.loanDetailBox}>
-              <View style={styles.loanDetailRow}>
-                <Calendar size={15} color="#8E8E93" style={{ marginRight: 6 }} />
-                <Text style={styles.loanDetailLabel}>Borrow Date:</Text>
-                <Text style={styles.loanDetailValue}>{new Date().toLocaleDateString('en-US')}</Text>
-              </View>
-              <View style={styles.loanDetailRow}>
-                <Clock size={15} color="#8E8E93" style={{ marginRight: 6 }} />
-                <Text style={styles.loanDetailLabel}>Due Date:</Text>
-                <Text style={styles.loanDetailValueHighlight}>
-                  {getCalculatedDueDate(selectedDuration)}
-                </Text>
-              </View>
-              <View style={styles.loanDetailRow}>
-                <Barcode size={15} color="#8E8E93" style={{ marginRight: 6 }} />
-                <Text style={styles.loanDetailLabel}>Selected Copy:</Text>
-                <Text style={styles.loanDetailValue}>
-                  {book.availableBooks?.[selectedCopyIndex]?.barcode || '—'}
-                </Text>
-              </View>
-            </View>
-
-            {/* Action Buttons */}
-            <View style={styles.modalActionRow}>
-              <TouchableOpacity
-                style={styles.cancelBtn}
-                onPress={() => setBorrowModalVisible(false)}
-              >
-                <Text style={styles.cancelBtnText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.confirmBtn, borrowing && styles.confirmBtnDisabled]}
-                disabled={borrowing}
-                onPress={handleCreateLoan}
-                activeOpacity={0.8}
-              >
-                {borrowing ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <>
-                    <Check size={18} color="#fff" style={{ marginRight: 6 }} />
-                    <Text style={styles.confirmBtnText}>Confirm Loan</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -867,238 +658,5 @@ heroBg: {
     fontSize: 14,
     color: '#8E8E93',
     fontWeight: '500',
-  },
-
-  // Bottom Bar
-  bottomBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#F2F2F7',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 10,
-  },
-  bottomInfo: {
-    justifyContent: 'center',
-  },
-  bottomStatusLabel: {
-    fontSize: 11,
-    color: '#8E8E93',
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  bottomStatusValue: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  textSuccess: {
-    color: '#27AE60',
-  },
-  textDanger: {
-    color: '#FF6B6B',
-  },
-  borrowBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#27AE60',
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    borderRadius: 14,
-    shadowColor: '#27AE60',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  borrowBtnDisabled: {
-    backgroundColor: '#C7C7CC',
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  borrowBtnText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-
-  // Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    padding: 24,
-    gap: 16,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  modalTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  modalTitle: {
-    fontSize: 19,
-    fontWeight: '800',
-    color: '#0D1B2A',
-  },
-  modalCloseBtn: {
-    padding: 6,
-    borderRadius: 16,
-    backgroundColor: '#F4F4F6',
-  },
-  modalBookSummary: {
-    backgroundColor: '#F8FBF8',
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#EBF5EB',
-  },
-  summaryTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0D1B2A',
-    marginBottom: 4,
-  },
-  summaryAuthor: {
-    fontSize: 13,
-    color: '#27AE60',
-    fontWeight: '600',
-  },
-  modalSection: {
-    gap: 8,
-  },
-  modalSectionLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#0D1B2A',
-  },
-  copySelector: {
-    flexDirection: 'row',
-  },
-  copyChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#EAFBF1',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginRight: 8,
-    gap: 6,
-  },
-  copyChipActive: {
-    backgroundColor: '#27AE60',
-  },
-  copyChipText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#27AE60',
-  },
-  copyChipTextActive: {
-    color: '#fff',
-  },
-  durationRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  durationChip: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F4F4F6',
-    borderRadius: 12,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: '#E5E5EA',
-  },
-  durationChipActive: {
-    backgroundColor: '#EAFBF1',
-    borderColor: '#27AE60',
-  },
-  durationText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#8E8E93',
-  },
-  durationTextActive: {
-    color: '#27AE60',
-    fontWeight: '700',
-  },
-  loanDetailBox: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 14,
-    padding: 14,
-    gap: 10,
-    borderWidth: 1,
-    borderColor: '#F2F2F7',
-  },
-  loanDetailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  loanDetailLabel: {
-    fontSize: 13,
-    color: '#8E8E93',
-    fontWeight: '500',
-    flex: 1,
-  },
-  loanDetailValue: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#0D1B2A',
-  },
-  loanDetailValueHighlight: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#27AE60',
-  },
-  modalActionRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 4,
-  },
-  cancelBtn: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F4F4F6',
-    borderRadius: 14,
-    paddingVertical: 14,
-  },
-  cancelBtnText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#8E8E93',
-  },
-  confirmBtn: {
-    flex: 2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#27AE60',
-    borderRadius: 14,
-    paddingVertical: 14,
-  },
-  confirmBtnDisabled: {
-    opacity: 0.6,
-  },
-  confirmBtnText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#fff',
   },
 });

@@ -38,7 +38,6 @@ import {
   ScanBarcode,
   SendHorizonal,
   ArrowDownToLine,
-  Mail,
 } from 'lucide-react-native';
 import { loanService } from '../../services/loan.service';
 import { LoanDetailDTO, LoanDetails } from '../../types/loan';
@@ -49,10 +48,7 @@ type TabType = 'ALL' | 'PENDING' | 'REJECTED';
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING: 'Pending',
-  // BORROWING: 'Borrowing',
-  // RETURNED: 'Returned',
   REJECTED: 'Rejected',
-  // OVERDUE: 'Overdue',
 };
 
 // --------------------------------------------------------------------------
@@ -68,15 +64,6 @@ const StatusBadge = ({ status }: { status: string }) => {
     case 'PENDING':
       bg = '#FEF3C7'; color = '#B45309'; IconComp = Clock;
       break;
-    // case 'BORROWING':
-    //   bg = '#DBEAFE'; color = '#1D4ED8'; IconComp = BookOpen;
-    //   break;
-    // case 'RETURNED':
-    //   bg = '#D1FAE5'; color = '#065F46'; IconComp = CheckCircle2;
-    //   break;
-    // case 'OVERDUE':
-    //   bg = '#FEE2E2'; color = '#991B1B'; IconComp = AlertTriangle;
-    //   break;
     case 'REJECTED':
       bg = '#F3F4F6'; color = '#e62323ff'; IconComp = XCircle;
       break;
@@ -140,10 +127,7 @@ export default function RequestManagementScreen() {
   // Stats (computed from the full dataset via getLoanByStatus)
   const [stats, setStats] = useState({
     pending: 0
-    // , borrowing: 0
     , rejected: 0
-    // , returned: 0
-    // , overdue: 0 
   });
 
   // -----------------------------------------------------------------------
@@ -152,24 +136,13 @@ export default function RequestManagementScreen() {
 
   const fetchStats = useCallback(async () => {
     try {
-      const [pendingRes
-        // , borrowingRes
-        , rejectedRes
-        // , returnedRes
-        // , overdueRes
-      ] = await Promise.allSettled([
+      const [pendingRes, rejectedRes] = await Promise.allSettled([
         loanService.getLoanByStatus('PENDING'),
-        // loanService.getLoanByStatus('BORROWING'),
         loanService.getLoanByStatus('REJECTED'),
-        // loanService.getLoanByStatus('RETURNED'),
-        // loanService.getLoanByStatus('OVERDUE'),
       ]);
       setStats({
         pending: pendingRes.status === 'fulfilled' ? (pendingRes.value?.data?.length ?? 0) : 0,
-        // borrowing: borrowingRes.status === 'fulfilled' ? (borrowingRes.value?.data?.length ?? 0) : 0,
         rejected: rejectedRes.status === 'fulfilled' ? (rejectedRes.value?.data?.length ?? 0) : 0,
-        // returned: returnedRes.status === 'fulfilled' ? (returnedRes.value?.data?.length ?? 0) : 0,
-        // overdue: overdueRes.status === 'fulfilled' ? (overdueRes.value?.data?.length ?? 0) : 0,
       });
     } catch (_) { }
   }, []);
@@ -180,10 +153,7 @@ export default function RequestManagementScreen() {
 
     try {
       if (activeTab === 'ALL') {
-        // Use the paginated endpoint for "all" view
         const response = await loanService.getLoanDetails();
-        // Group the flat LoanDetailsByPageAdmin[] into LoanDetailDTO[]
-        // The endpoint returns flat rows (one per book copy), group by loanId
         const flatData = response.data || [];
         const grouped = new Map<string, LoanDetailDTO>();
         for (const row of flatData) {
@@ -194,7 +164,7 @@ export default function RequestManagementScreen() {
               dueDate: row.dueDate,
               status: row.status as any,
               userName: row.userName,
-              userId: row.userId,
+              userId: row.userId || "",
               loanDetails: [],
             });
           }
@@ -211,15 +181,14 @@ export default function RequestManagementScreen() {
         }
         setLoans(Array.from(grouped.values()));
       } else {
-        // Use the status-based endpoint for filtered views
         const response = await loanService.getLoanByStatus(activeTab);
         const data: LoanDetailDTO[] = response?.data ?? [];
         setLoans(data);
-        setTotalPages(1); // status endpoint returns all, no pagination
+        setTotalPages(1);
       }
     } catch (error) {
       console.error('Error fetching loan requests:', error);
-      Alert.alert('Error', 'Unable to load loan requests list.');
+      Alert.alert('Error', 'Unable to load loan requests.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -259,6 +228,19 @@ export default function RequestManagementScreen() {
     }
   };
 
+  const refreshSelectedLoan = async () => {
+    if (!selectedLoan?.loanId) return;
+    try {
+      setDetailLoading(true);
+      const res = await loanService.getLoanDetail(selectedLoan.loanId);
+      if (res?.data) setSelectedLoan(res.data);
+    } catch (error) {
+      console.error('Error refreshing loan detail:', error);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
   const handleConfirmAction = (loanId: string, status: 'BORROWING' | 'REJECTED') => {
     const isApprove = status === 'BORROWING';
     Alert.alert(
@@ -290,14 +272,14 @@ export default function RequestManagementScreen() {
     );
   };
 
-  const handleReturnLoan = (loanId: string) => {
+  const handleReturnLoan = (userId: string, loanId: string) => {
     Alert.alert(
-      'Confirm Book Return',
-      'Are you sure you want to confirm return of all books in this request?',
+      'Confirm Return',
+      'Are you sure you want to confirm the return of all books in this request?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Return Books',
+          text: 'Return Book',
           style: 'default',
           onPress: async () => {
             if (!selectedLoan) return;
@@ -306,16 +288,16 @@ export default function RequestManagementScreen() {
               .map((d) => d.barcode)
               .filter(Boolean);
             if (!barcodes || barcodes.length === 0) {
-              Alert.alert('Notice', 'No books are currently borrowed in this request.');
+              Alert.alert('Info', 'No books are currently borrowed in this request.');
               return;
             }
             setActionLoading(true);
             try {
-              await loanService.returnBookByBarcode(barcodes, selectedLoan.userId);
+              await loanService.returnBookByBarcode(userId, barcodes);
               Alert.alert('Success', 'Book return confirmed successfully.');
-              setSelectedLoan(null);
               fetchLoans(page);
               fetchStats();
+              await refreshSelectedLoan();
             } catch (err: any) {
               Alert.alert('Error', err?.response?.data?.message || 'Unable to process book return.');
             } finally {
@@ -327,63 +309,29 @@ export default function RequestManagementScreen() {
     );
   };
 
-  const handleBarcodeReturn = async () => {
+  const handleBarcodeReturn = async (userId: string) => {
     const trimmed = barcodeInput.trim();
     if (!trimmed) {
-      Alert.alert('Notice', 'Please enter or scan barcode.');
+      Alert.alert('Info', 'Please enter or scan the barcode.');
+      return;
+    }
+    if (!userId) {
+      Alert.alert('Error', 'No loan selected.');
       return;
     }
     setActionLoading(true);
     try {
-      await loanService.returnBookByBarcode([trimmed]);
-      Alert.alert('Success', `Book return processed for barcode: ${trimmed}`);
+      await loanService.returnBookByBarcode(userId, [trimmed]);
+      Alert.alert('Success', `Processed book return for barcode: ${trimmed}`);
       setBarcodeInput('');
       fetchLoans(page);
       fetchStats();
+      await refreshSelectedLoan();
     } catch (err: any) {
       Alert.alert('Error', err?.response?.data?.message || 'Unable to process book return.');
     } finally {
       setActionLoading(false);
     }
-  };
-
-  const handleSendMailNotice = (loan: LoanDetailDTO) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const dueDate = loan.dueDate ? new Date(loan.dueDate) : null;
-    if (dueDate) dueDate.setHours(0, 0, 0, 0);
-
-    const isOverdue = loan.status === 'OVERDUE' || (dueDate && dueDate < today);
-
-    if (!isOverdue) {
-      Alert.alert(
-        'Notice',
-        'This loan record has not reached its due date yet. Email notice cannot be sent.'
-      );
-      return;
-    }
-
-    Alert.alert(
-      'Send Email Notification',
-      `Send loan / overdue notification email to reader ${loan.userName || ''}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Send Email',
-          onPress: async () => {
-            setActionLoading(true);
-            try {
-              const res = await loanService.sendLoanEmailNotice(loan.loanId);
-              Alert.alert('Success', res?.message || `Email notification sent successfully!`);
-            } catch (err: any) {
-              Alert.alert('Error', err?.response?.data?.message || 'Failed to send email notification.');
-            } finally {
-              setActionLoading(false);
-            }
-          },
-        },
-      ]
-    );
   };
 
   // -----------------------------------------------------------------------
@@ -412,7 +360,6 @@ export default function RequestManagementScreen() {
   const TABS: { key: TabType; label: string }[] = [
     { key: 'ALL', label: 'All' },
     { key: 'PENDING', label: 'Pending' },
-    // { key: 'BORROWING', label: 'Borrowing' },
     { key: 'REJECTED', label: 'Rejected' },
   ];
 
@@ -424,7 +371,6 @@ export default function RequestManagementScreen() {
 
     return (
       <TouchableOpacity style={styles.card} onPress={() => handleOpenDetail(item)} activeOpacity={0.85}>
-        {/* Card header: Borrower info + Status */}
         <View style={styles.cardHeader}>
           <View style={styles.avatarCircle}>
             <Text style={styles.avatarInitials}>{initials}</Text>
@@ -438,7 +384,6 @@ export default function RequestManagementScreen() {
           <StatusBadge status={item.status} />
         </View>
 
-        {/* Dates */}
         <View style={styles.cardDates}>
           <View style={styles.dateChip}>
             <Calendar size={12} color="#6B7280" />
@@ -452,22 +397,20 @@ export default function RequestManagementScreen() {
           </View>
         </View>
 
-        {/* Book list preview (max 2) */}
         {item.loanDetails && item.loanDetails.length > 0 && (
           <View style={styles.bookListPreview}>
             <Text style={styles.bookListLabel}>
-              Registered Books ({item.loanDetails.length})
+              Registered Books ({item.loanDetails.length} items)
             </Text>
             {item.loanDetails.slice(0, 2).map((detail) => (
               <BookItemRow key={detail.loanDetailId} item={detail} />
             ))}
             {item.loanDetails.length > 2 && (
-              <Text style={styles.moreBooks}>+{item.loanDetails.length - 2} more...</Text>
+              <Text style={styles.moreBooks}>+{item.loanDetails.length - 2} more items...</Text>
             )}
           </View>
         )}
 
-        {/* Action buttons (PENDING only) */}
         {isPending && (
           <View style={styles.cardActions}>
             <TouchableOpacity
@@ -488,14 +431,13 @@ export default function RequestManagementScreen() {
               ) : (
                 <>
                   <ShieldCheck size={14} color="#ffffff" />
-                  <Text style={styles.approveBtnText}>Approve Request</Text>
+                  <Text style={styles.approveBtnText}>Approve</Text>
                 </>
               )}
             </TouchableOpacity>
           </View>
         )}
 
-        {/* Return button (BORROWING / OVERDUE) */}
         {(item.status === 'BORROWING' || item.status === 'OVERDUE') && (
           <View style={styles.cardActions}>
             <TouchableOpacity
@@ -528,7 +470,6 @@ export default function RequestManagementScreen() {
         onRequestClose={() => setSelectedLoan(null)}
       >
         <SafeAreaView style={styles.modalSafe}>
-          {/* Modal header */}
           <View style={styles.modalHeader}>
             <View>
               <Text style={styles.modalTitle}>Request Details</Text>
@@ -540,12 +481,11 @@ export default function RequestManagementScreen() {
           </View>
 
           <ScrollView contentContainerStyle={styles.modalScroll} showsVerticalScrollIndicator={false}>
-            {/* Borrower info card */}
             <View style={styles.modalSection}>
               <View style={styles.modalBorrowerRow}>
                 <View style={[styles.avatarCircle, styles.avatarCircleLg]}>
                   <Text style={[styles.avatarInitials, styles.avatarInitialsLg]}>
-                    {(selectedLoan.userName ?? '?').split(' ').map((w) => w[0]).slice(-2).join('').toUpperCase()}
+                    {(selectedLoan.userName ?? 'Unknown').split(' ').map((w) => w[0]).slice(-2).join('').toUpperCase()}
                   </Text>
                 </View>
                 <View style={{ flex: 1, marginLeft: 12 }}>
@@ -556,7 +496,6 @@ export default function RequestManagementScreen() {
               </View>
             </View>
 
-            {/* Dates */}
             <View style={styles.modalSection}>
               <Text style={styles.sectionLabel}>Time Information</Text>
               <View style={styles.infoRow}>
@@ -573,10 +512,9 @@ export default function RequestManagementScreen() {
               </View>
             </View>
 
-            {/* Book list */}
             <View style={styles.modalSection}>
               <Text style={styles.sectionLabel}>
-                Registered Books ({selectedLoan.loanDetails?.length ?? 0})
+                Registered Books ({selectedLoan.loanDetails?.length ?? 0} items)
               </Text>
               {detailLoading ? (
                 <ActivityIndicator color="#10B981" style={{ marginTop: 12 }} />
@@ -585,11 +523,10 @@ export default function RequestManagementScreen() {
                   <BookItemRow key={detail.loanDetailId} item={detail} />
                 ))
               ) : (
-                <Text style={styles.emptySubText}>No books registered.</Text>
+                <Text style={styles.emptySubText}>No books available.</Text>
               )}
             </View>
 
-            {/* Barcode quick return */}
             <View style={styles.modalSection}>
               <Text style={styles.sectionLabel}>Scan / Enter barcode for quick return</Text>
               <View style={styles.barcodeInputRow}>
@@ -601,32 +538,19 @@ export default function RequestManagementScreen() {
                   value={barcodeInput}
                   onChangeText={setBarcodeInput}
                   returnKeyType="send"
-                  onSubmitEditing={handleBarcodeReturn}
+                  onSubmitEditing={() => handleBarcodeReturn(selectedLoan.userId)}
                 />
                 <TouchableOpacity
                   style={styles.barcodeSendBtn}
-                  onPress={handleBarcodeReturn}
+                  onPress={() => handleBarcodeReturn(selectedLoan.userId)}
                   disabled={actionLoading}
                 >
                   <SendHorizonal size={16} color="#fff" />
                 </TouchableOpacity>
               </View>
             </View>
-
-            <View style={styles.modalSection}>
-              <Text style={styles.sectionLabel}>Email Notification</Text>
-              <TouchableOpacity
-                style={styles.mailNoticeBtn}
-                onPress={() => handleSendMailNotice(selectedLoan)}
-                disabled={actionLoading}
-              >
-                <Mail size={16} color="#2563EB" style={{ marginRight: 8 }} />
-                <Text style={styles.mailNoticeBtnText}>Send Email Reminder / Notice</Text>
-              </TouchableOpacity>
-            </View>
           </ScrollView>
 
-          {/* Sticky action footer (PENDING only) */}
           {isPending && (
             <View style={styles.modalFooter}>
               <TouchableOpacity
@@ -654,12 +578,11 @@ export default function RequestManagementScreen() {
             </View>
           )}
 
-          {/* Sticky action footer (BORROWING / OVERDUE) */}
           {(selectedLoan.status === 'BORROWING' || selectedLoan.status === 'OVERDUE') && (
             <View style={styles.modalFooter}>
               <TouchableOpacity
                 style={styles.modalReturnBtn}
-                onPress={() => handleReturnLoan(selectedLoan.loanId)}
+                onPress={() => handleReturnLoan(selectedLoan.userId, selectedLoan.loanId)}
                 disabled={actionLoading}
               >
                 {actionLoading ? (
@@ -684,7 +607,6 @@ export default function RequestManagementScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      {/* App header */}
       <View style={styles.header}>
         <View style={styles.logoContainer}>
           <View style={styles.logoIcon}>
@@ -716,37 +638,20 @@ export default function RequestManagementScreen() {
         }
         ListHeaderComponent={
           <>
-            {/* Page title */}
             <View style={styles.titleContainer}>
               <View style={styles.titleRow}>
                 <ClipboardList size={22} color="#10B981" style={{ marginRight: 8 }} />
                 <Text style={styles.titleText}>Loan Requests</Text>
               </View>
-              <Text style={styles.subtitleText}>Approve, reject, and track borrowing requests.</Text>
+              <Text style={styles.subtitleText}>Approve, reject and track loan requests.</Text>
             </View>
 
-            {/* Stats row */}
             <View style={styles.statsRow}>
               <View style={[styles.statCard, { borderTopColor: '#F59E0B' }]}>
                 <Clock size={16} color="#F59E0B" />
                 <Text style={[styles.statNum, { color: '#B45309' }]}>{stats.pending}</Text>
                 <Text style={styles.statLabel}>Pending</Text>
               </View>
-              {/* <View style={[styles.statCard, { borderTopColor: '#3B82F6' }]}>
-                <BookOpen size={16} color="#3B82F6" />
-                <Text style={[styles.statNum, { color: '#1D4ED8' }]}>{stats.borrowing}</Text>
-                <Text style={styles.statLabel}>Borrowing</Text>
-              </View>
-              <View style={[styles.statCard, { borderTopColor: '#10B981' }]}>
-                <CheckCircle2 size={16} color="#10B981" />
-                <Text style={[styles.statNum, { color: '#065F46' }]}>{stats.returned}</Text>
-                <Text style={styles.statLabel}>Returned</Text>
-              </View>
-              <View style={[styles.statCard, { borderTopColor: '#EF4444' }]}>
-                <AlertTriangle size={16} color="#EF4444" />
-                <Text style={[styles.statNum, { color: '#991B1B' }]}>{stats.overdue}</Text>
-                <Text style={styles.statLabel}>Overdue</Text>
-              </View> */}
               <View style={[styles.statCard, { borderTopColor: '#EF4444' }]}>
                 <XCircle size={16} color="#EF4444" />
                 <Text style={[styles.statNum, { color: '#ff0000ff' }]}>{stats.rejected}</Text>
@@ -754,12 +659,11 @@ export default function RequestManagementScreen() {
               </View>
             </View>
 
-            {/* Search bar */}
             <View style={styles.searchContainer}>
               <Search size={17} color="#9CA3AF" style={{ marginRight: 8 }} />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Search books, borrowers, barcode..."
+                placeholder="Search book, borrower, barcode..."
                 placeholderTextColor="#D1D5DB"
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -771,7 +675,6 @@ export default function RequestManagementScreen() {
               )}
             </View>
 
-            {/* Status tabs */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll}>
               <View style={styles.tabsContainer}>
                 {TABS.map((tab) => {
@@ -800,7 +703,7 @@ export default function RequestManagementScreen() {
             <View style={styles.emptyContainer}>
               <Inbox size={52} color="#D1D5DB" />
               <Text style={styles.emptyText}>No requests found.</Text>
-              <Text style={styles.emptySubText}>Try changing filters or refresh the list.</Text>
+              <Text style={styles.emptySubText}>Try changing filters or refreshing.</Text>
             </View>
           )
         }
@@ -1117,11 +1020,4 @@ const styles = StyleSheet.create({
     backgroundColor: '#3B82F6',
   },
   modalReturnBtnText: { fontSize: 14, fontWeight: '700', color: '#ffffff' },
-
-  mailNoticeBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE',
-    borderRadius: 10, paddingVertical: 11, paddingHorizontal: 14,
-  },
-  mailNoticeBtnText: { fontSize: 13, fontWeight: '700', color: '#2563EB' },
 });

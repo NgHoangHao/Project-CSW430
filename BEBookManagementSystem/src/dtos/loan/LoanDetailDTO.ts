@@ -34,3 +34,4 @@ export interface LoanDetailsByPage {
     barcode: string;
     url: string;
 }
+

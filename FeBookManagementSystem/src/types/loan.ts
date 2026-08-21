@@ -25,7 +25,7 @@ export interface LoanDetailDTO {
     dueDate: string;
     status: 'PENDING' | 'REJECTED' | 'BORROWING' | 'RETURNED' | 'OVERDUE';
     loanDetails: LoanDetails[];
-    userId?: string;
+    userId: string;
     userName?: string;
 }
 
@@ -38,4 +38,30 @@ export interface LoanDetails {
     bookId: string;
     bookName: string;
     barcode: string;
+}
+
+export interface LoanDetailResponse {
+    borrowDate: Date;
+    dueDate: Date;
+    author: string;
+    url: string;
+    title: string;
+    status: 'PENDING' | 'REJECTED' | 'BORROWING' | 'RETURNED' | 'OVERDUE';
+    borrowedRemain: number;
+}
+
+export interface LoanResponse {
+    page: number;
+    size: number;
+    total: number;
+    totalPages: number;
+    list: LoanDetailResponse[];
+}
+
+export interface LoanHomeResponse {
+    totalBorrowing: number;
+    totalOverdue: number;
+    totalReturned: number;
+    progress: number;
+    recentLoan: LoanDetailResponse | null;
 }

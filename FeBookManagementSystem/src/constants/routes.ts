@@ -1,4 +1,5 @@
 export const ROUTES = {
+    SPLASH: "Splash",
     LOGIN: "Login",
     REGISTER: "Register",
     OTP_VERIFY: "OtpVerify",
@@ -21,4 +22,5 @@ export const USER_ROUTES = {
     BORROW: "Borrow",
     PROFILE: "Profile",
     BOOK_DETAIL: "BookDetail",
+    ABOUT:"About"
 }

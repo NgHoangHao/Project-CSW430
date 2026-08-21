@@ -56,6 +56,7 @@ export const getUserPage = async (page: number, size: number, userName?: string)
     .createQueryBuilder("user")
     .leftJoinAndSelect("user.loans", "loan")
     .leftJoinAndSelect("loan.loanDetails", "loanDetail")
+    .leftJoinAndSelect("user.roles", "role")
     .orderBy("user.createdAt", "DESC");
 
   if (userName) {
@@ -84,3 +85,48 @@ export const countBlockedUsers = async () => {
     where: { status: UserStatus.LOCK },
   });
 }
+
+export const getAnalysisAdmin = async (): Promise<{ totalBooks: number, borrowing: number, overdue: number, totalUsers: number, monthlyLoans: number, avgDuration: number }> => {
+  const result = await AppDataSource.query(`
+    SELECT
+      (SELECT COUNT(*) FROM book) AS totalBooks,
+      
+      (SELECT COUNT(*) FROM loan WHERE status = 'BORROWED') AS borrowing,
+      
+      (SELECT COUNT(*) FROM loan WHERE status = 'BORROWED' AND dueDate < NOW()) AS overdue,
+      
+      (SELECT COUNT(*) FROM user) AS totalUsers,
+      
+      (SELECT COUNT(*) FROM loan WHERE createdAt >= DATE_FORMAT(NOW(), '%Y-%m-01')) AS monthlyLoans,
+      
+      IFNULL(
+        (SELECT AVG(DATEDIFF(dueDate, borrowDate)) FROM loan), 0
+      ) AS avgDuration
+    `);
+  const stats = result[0];
+  return {
+    totalBooks: Number(stats?.totalBooks) || 0,
+    borrowing: Number(stats?.borrowing) || 0,
+    overdue: Number(stats?.overdue) || 0,
+    totalUsers: Number(stats?.totalUsers) || 0,
+    monthlyLoans: Number(stats?.monthlyLoans) || 0,
+    avgDuration: Number(parseFloat(stats?.avgDuration || 0).toFixed(1)),
+  }
+}
+
+export const userRepository = AppDataSource.getRepository(User).extend({
+  async deductCredit(user: User, amount: number) {
+    user.credit = Math.max(0, user.credit - amount);
+    return this.save(user);
+  },
+  async addCreditsToAllUsers(){
+    await userRepository
+      .createQueryBuilder()
+      .update(User)
+      .set({
+        credit: () => 'CASE WHEN credit + 10 > 100 THEN 100 ELSE credit + 10 END',
+      })
+      .where('credit < :maxCredit', { maxCredit: 100 })
+      .execute();
+  }
+});

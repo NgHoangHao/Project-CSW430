@@ -1,8 +1,7 @@
 import { Router } from 'express';
-import { assignRoleUserController, deleteRoleUserController, getProfile, getUserPage, resetPasswordHandler, updateProfile,deleteUser ,verifyOtpHandler } from '../controllers/userController';
+import { assignRoleUserController, deleteRoleUserController, getProfile, getUserPage, resetPasswordHandler, updateProfile,deleteUser ,verifyOtpHandler, getAnalysisController } from '../controllers/userController';
 import { validateAssignAndDeleteRole, validateForgetPassword } from '../middlewares/userValidate';
 import { authorize } from '../middlewares/authorize';
-import {  } from '../services/userService';
 
 
 const userRouters = Router();
@@ -23,4 +22,5 @@ userRouters.post('/delete-role', authorize(['ADMIN']), validateAssignAndDeleteRo
 
 userRouters.delete("/:userId", authorize(['ADMIN']),deleteUser);
 
+userRouters.get('/admin-analysis', authorize(['ADMIN']), getAnalysisController)
 export default userRouters;

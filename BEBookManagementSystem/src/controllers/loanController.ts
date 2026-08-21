@@ -46,9 +46,9 @@ export const LoanController = {
 
     returnBookByBarcode: async (req: Request, res: Response) => {
         try {
-            const userId = (req as any).user.id;
-            const { barcodes, userId: targetUserId } = req.body;
-            const result = await LoanService.returnBookByBarcode(userId, barcodes, targetUserId);
+
+            const { userId, barcodes } = req.body;
+            const result = await LoanService.returnBookByBarcode(userId, barcodes);
             return res.status(200).json({ message: 'Return book successfully', data: result });
         } catch (error: any) {
             if (error instanceof NotFoundException) {
@@ -122,27 +122,41 @@ export const LoanController = {
             });
         }
     },
-
-    sendLoanEmailNotice: async (req: Request, res: Response) => {
+    getLoanDetails: async (req: Request, res: Response) => {
         try {
-            const { loanId, customMessage } = req.body;
-            if (!loanId) {
-                return res.status(400).json({ success: false, message: 'loanId is required' });
-            }
-            const result = await LoanService.sendLoanEmailNotice(loanId, customMessage);
+            const userId = (req as any).user.id;
+            const page = Number(req.query.page) || 1;
+            const size = Number(req.query.size) || 10;
+            const status = req.query.status as LoanStatus | undefined;
+            const result = await LoanService.getLoanDetails(
+                userId,
+                page,
+                size,
+                status
+            );
             return res.status(200).json({
                 success: true,
-                message: `Email notification sent successfully to ${result.userEmail}`,
                 data: result
             });
-        } catch (error: any) {
-            if (error instanceof NotFoundException) {
-                return res.status(404).json({ success: false, message: error.message });
+        } catch (err: any) {
+            return res.status(500).json({
+                success: false,
+                message: err.message
+            });
+        }
+    },
+    getHomeData: async (req: Request, res: Response) => {
+        try {
+            const userId = (req as any).user.id;
+            if (!userId) {
+                res.status(400).json({ message: 'userId is required' });
+                return;
             }
-            if (error instanceof BadRequestException) {
-                return res.status(400).json({ success: false, message: error.message });
-            }
-            return res.status(500).json({ success: false, message: error.message || 'Failed to send email notice' });
+            const response = await LoanService.getLoanHomeData(userId);
+            res.status(200).json(response);
+        } catch (error) {
+            console.error('Error in getHomeData:', error);
+            res.status(500).json({ message: 'Internal Server Error' });
         }
     }
 }

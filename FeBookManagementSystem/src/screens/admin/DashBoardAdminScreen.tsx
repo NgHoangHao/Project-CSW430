@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -31,6 +31,8 @@ import Svg, {
   LinearGradient,
   Stop,
 } from 'react-native-svg';
+import { BookAnalysis } from '../../types/admin/analysis';
+import { userService } from '../../services/user.service';
 
 const { width: screenWidth } = Dimensions.get('window');
 const CARD_WIDTH = (screenWidth - 48) / 2;
@@ -45,14 +47,17 @@ const topBooks = [
 
 // Mock data for recent activities
 const recentActivities = [
-  { id: '1', user: 'A', action: 'borrowed', book: 'Dune', time: '5 mins ago', status: 'Approved', statusColor: '#27AE60', statusBg: '#EAFBF1' },
-  { id: '2', user: 'B', action: 'returned', book: 'Sapiens', time: '12 mins ago', status: 'Returned', statusColor: '#2F80ED', statusBg: '#EAF2FF' },
-  { id: '3', user: 'C', action: 'overdue', book: 'The Alchemist', time: '1 hour ago', status: 'Overdue', statusColor: '#EB5757', statusBg: '#FEE8E7' },
-  { id: '4', user: 'D', action: 'borrowed', book: 'Atomic Habits', time: '2 hours ago', status: 'Approved', statusColor: '#27AE60', statusBg: '#EAFBF1' },
-  { id: '5', user: 'E', action: 'renewed', book: '1984', time: '3 hours ago', status: 'Renewed', statusColor: '#F2994A', statusBg: '#FFF5E6' },
+  { id: '1', user: 'A', action: 'borrow', book: 'Dune', time: '5 phút trước', status: 'Approved', statusColor: '#27AE60', statusBg: '#EAFBF1' },
+  { id: '2', user: 'B', action: 'return', book: 'Sapiens', time: '12 phút trước', status: 'Returned', statusColor: '#2F80ED', statusBg: '#EAF2FF' },
+  { id: '3', user: 'C', action: 'overdue', book: 'The Alchemist', time: '1 giờ trước', status: 'Overdue', statusColor: '#EB5757', statusBg: '#FEE8E7' },
+  { id: '4', user: 'D', action: 'borrow', book: 'Atomic Habits', time: '2 giờ trước', status: 'Approved', statusColor: '#27AE60', statusBg: '#EAFBF1' },
+  { id: '5', user: 'E', action: 'extend', book: '1984', time: '3 giờ trước', status: 'Extended', statusColor: '#F2994A', statusBg: '#FFF5E6' },
 ];
 
 export default function DashBoard() {
+  const [analysis, setAnalysis] = useState<BookAnalysis | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   // Chart geometry parameters
   const chartWidth = screenWidth - 72; // Padding in the chart container card
   const chartHeight = 150;
@@ -113,6 +118,36 @@ export default function DashBoard() {
 
   let accumulatedPercentage = 0;
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchAnalysis = async () => {
+      try {
+        setLoading(true)
+        const res = await userService.getAnalysisByAdmin()
+
+        if(isMounted && res.success && res.data){
+          setAnalysis(res.data)
+        }
+      } catch (error: any) {
+        if(isMounted){
+          setError(error?.response?.data?.message || 'Something is error')
+        }
+      } finally{
+        if(isMounted){
+          setLoading(false)
+        }
+      }
+    }
+
+    fetchAnalysis();
+
+    // Cleanup function
+    return () => {
+      isMounted = false;
+    };
+  }, [])
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       {/* ── Header ── */}
@@ -150,7 +185,7 @@ export default function DashBoard() {
                 <Text style={[styles.badgeText, { color: '#27AE60' }]}>+89</Text>
               </View>
             </View>
-            <Text style={styles.metricValue}>12,543</Text>
+            <Text style={styles.metricValue}>{analysis?.totalBooks}</Text>
             <Text style={styles.metricLabel}>Total number of titles</Text>
           </View>
 
@@ -165,7 +200,7 @@ export default function DashBoard() {
                 <Text style={[styles.badgeText, { color: '#27AE60' }]}>+23</Text>
               </View>
             </View>
-            <Text style={styles.metricValue}>342</Text>
+            <Text style={styles.metricValue}>{analysis?.borrowing}</Text>
             <Text style={styles.metricLabel}>Borrowing</Text>
           </View>
 
@@ -180,7 +215,7 @@ export default function DashBoard() {
                 <Text style={[styles.badgeText, { color: '#EB5757' }]}>-8</Text>
               </View>
             </View>
-            <Text style={styles.metricValue}>47</Text>
+            <Text style={styles.metricValue}>{analysis?.overdue}</Text>
             <Text style={styles.metricLabel}>Overdue books</Text>
           </View>
 
@@ -195,7 +230,7 @@ export default function DashBoard() {
                 <Text style={[styles.badgeText, { color: '#27AE60' }]}>+128</Text>
               </View>
             </View>
-            <Text style={styles.metricValue}>5,234</Text>
+            <Text style={styles.metricValue}>{analysis?.totalUsers}</Text>
             <Text style={styles.metricLabel}>Total users</Text>
           </View>
 
@@ -210,7 +245,7 @@ export default function DashBoard() {
                 <Text style={[styles.badgeText, { color: '#27AE60' }]}>+12%</Text>
               </View>
             </View>
-            <Text style={styles.metricValue}>1,847</Text>
+            <Text style={styles.metricValue}>{analysis?.monthlyLoans}</Text>
             <Text style={styles.metricLabel}>Loans per month</Text>
           </View>
 
@@ -225,7 +260,7 @@ export default function DashBoard() {
                 <Text style={[styles.badgeText, { color: '#EB5757' }]}>-0.8</Text>
               </View>
             </View>
-            <Text style={styles.metricValue}>9.2</Text>
+            <Text style={styles.metricValue}>{analysis?.avgDuration}</Text>
             <Text style={styles.metricLabel}>Average borrowing duration (days)</Text>
           </View>
         </View>

@@ -1,8 +1,9 @@
 import { Eye, EyeOff } from 'lucide-react-native';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -14,10 +15,13 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../store/authProvider';
 import { authApi } from '../../services/auth.service';
 import { ROUTES } from '../../constants/routes';
+import auth from '@react-native-firebase/auth';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 export const LoginScreen = ({ navigation }: { navigation: any }) => {
   const [email, setEmail] = useState('');
@@ -29,7 +33,34 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
     email: '',
     password: '',
   });
-  const { login } = useAuth();
+  const { login, loginGG } = useAuth();
+  const splashOpacity = useRef(new Animated.Value(1)).current;
+  const loginOpacity = useRef(new Animated.Value(0)).current;
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      Animated.parallel([
+        // Books image fades out
+        Animated.timing(splashOpacity, {
+          toValue: 0,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+
+        // Login fades in
+        Animated.timing(loginOpacity, {
+          toValue: 1,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setShowSplash(false);
+      });
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [splashOpacity, loginOpacity]);
 
   const handleLogin = async () => {
     const newErrors = {
@@ -55,7 +86,8 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
       await login({ email: email.trim(), password });
     } catch (error: any) {
       console.log(error);
-      const message = error?.response?.data?.message || 'Login failed. Please check again.';
+      const message =
+        error?.response?.data?.message || 'Login failed. Please check again.';
       Alert.alert('Login failed', message);
     } finally {
       setIsLoading(false);
@@ -64,7 +96,10 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
 
   const handleForgotPassword = async () => {
     if (!email.trim()) {
-      Alert.alert('Please enter your email', 'Enter your email to recover your password.');
+      Alert.alert(
+        'Please enter your email',
+        'Enter your email to recover your password.',
+      );
       return;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -76,145 +111,305 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
     try {
       setIsSendingOtp(true);
       await authApi.resendOTP(email.trim());
-      navigation.navigate(ROUTES.OTP_VERIFY, { email: email.trim(), isForgetPass: true });
+      navigation.navigate(ROUTES.OTP_VERIFY, {
+        email: email.trim(),
+        isForgetPass: true,
+      });
     } catch (error: any) {
       console.log('Forgot password OTP send error:', error);
-      const message = error?.response?.data?.message || 'Unable to send the verification code. Please try again.';
-      Alert.alert('Error', message);
+      const message =
+        error?.response?.data?.message ||
+        'Unable to send the verification code. Please try again.';
+      Alert.alert('Lỗi', message);
     } finally {
       setIsSendingOtp(false);
     }
   };
 
+  const signInGoogle = async () => {
+    try {
+      setIsLoading(true);
+      await GoogleSignin.hasPlayServices();
+      try {
+        await GoogleSignin.signOut();
+      } catch (e) {
+        // Bỏ qua lỗi nếu trước đó chưa từng đăng nhập
+      }
+
+      // 1. Thực hiện đăng nhập
+      const signInResponse = await GoogleSignin.signIn();
+
+      // 2. Lấy idToken từ response (tương thích v11+ và bản cũ)
+      let idToken =
+        (signInResponse as any)?.data?.idToken ||
+        (signInResponse as any)?.idToken;
+
+      // 3. Lấy đầy đủ tokens từ GoogleSignin.getTokens()
+      const tokens = await GoogleSignin.getTokens();
+      idToken = idToken || tokens.idToken;
+      const accessToken = tokens.accessToken;
+
+      if (!idToken) {
+        throw new Error('Google sign-in did not return an idToken');
+      }
+
+      // 4. Truyền accessToken (hoặc null nếu undefined) vào credential
+      const googleCredential = auth.GoogleAuthProvider.credential(
+        idToken,
+        accessToken,
+      );
+
+      // 5. Đăng nhập vào Firebase
+      await auth().signInWithCredential(googleCredential);
+
+      const currentUser = auth().currentUser;
+      if (!currentUser) {
+        throw new Error('No authenticated user found');
+      }
+
+      const firebaseToken = await currentUser.getIdToken();
+      await loginGG(firebaseToken);
+    } catch (error: any) {
+      console.log('Google login error:', error);
+      const message =
+        error?.response?.data?.message ||
+        error.message ||
+        'Google login failed. Please try again.';
+      Alert.alert('Login failed', message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Đưa KeyboardAvoidingView ra ngoài cùng để đẩy toàn màn hình mượt mà hơn */}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
+    <View style={styles.rootContainer}>
+      {/* LOGIN SCREEN */}
+      <Animated.View
+        style={[
+          styles.loginScreen,
+          {
+            opacity: loginOpacity,
+          },
+        ]}
       >
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
-          {/* Header Section */}
-          <View style={styles.topSection}>
-            <Image
-              source={require('../../../assets/auth/logo.png')}
-              style={styles.logo}
-            />
-            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-              <Text style={styles.registerButtonText}>Register</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Title Section */}
-          <View style={styles.titleSection}>
-            <Text style={styles.title}>Welcome Back!</Text>
-            <Text style={styles.subtitle}>
-              Login to your account to continue
-            </Text>
-          </View>
-
-          {/* Form Section */}
-          <View style={styles.form}>
-            {/* Input Email */}
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your email"
-              placeholderTextColor={'#aaa'}
-              value={email}
-              onChangeText={(text) => {
-                setEmail(text);
-                if (errors.email) {
-                  setErrors(prev => ({ ...prev, email: '' }));
-                }
-              }}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            {errors.email ? (
-              <Text style={styles.error}>{errors.email}</Text>
-            ) : null}
-
-            {/* Input Password */}
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.passwordContainer}>
-              <TextInput
-                style={styles.passwordInput}
-                placeholder="Enter your password"
-                placeholderTextColor="#aaa"
-                secureTextEntry={!isVisiblePassword}
-                value={password}
-                onChangeText={(text) => {
-                  setPassword(text);
-                  if (errors.password) {
-                    setErrors(prev => ({ ...prev, password: '' }));
-                  }
-                }}
-                autoCapitalize="none"
-              />
-              <TouchableOpacity
-                onPress={() => setIsVisiblePassword(!isVisiblePassword)}
-                style={styles.eyeIcon}
-                activeOpacity={0.7}
-              >
-                {isVisiblePassword ? (
-                  <Eye size={22} color="#666" />
-                ) : (
-                  <EyeOff size={22} color="#666" />
-                )}
-              </TouchableOpacity>
-            </View>
-            {errors.password ? (
-              <Text style={styles.error}>{errors.password}</Text>
-            ) : null}
-
-            {/* Forgot Password Link */}
-            <TouchableOpacity
-              onPress={handleForgotPassword}
-              style={styles.forgotPasswordContainer}
-              disabled={isSendingOtp || isLoading}
-              activeOpacity={0.7}
+        <SafeAreaView style={styles.container}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1 }}
+          >
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.scrollContent}
             >
-              {isSendingOtp ? (
-                <ActivityIndicator size="small" color="#2c9e56" style={{ marginRight: 10 }} />
-              ) : (
-                <Text style={styles.forgotPasswordText}>Forgot password?</Text>
-              )}
-            </TouchableOpacity>
+              {/* YOUR EXISTING LOGIN UI STARTS HERE */}
 
-            {/* Button Login */}
-            {isLoading ? (
-              <ActivityIndicator size="large" color="#2c9e56" style={{ marginVertical: 15 }} />
-            ) : (
-              <TouchableHighlight
-                style={styles.button}
-                underlayColor="#227a43"
-                onPress={handleLogin}
-              >
-                <Text style={styles.buttonText}>Login</Text>
-              </TouchableHighlight>
-            )}
+              {/* Header Section */}
+              <View style={styles.topSection}>
+                <View style={styles.logoContainer}>
+                  <Image
+                    source={require('../../../assets/auth/logo.png')}
+                    style={styles.logo}
+                  />
 
-            {/* Footer Section */}
-            <View style={styles.footerSection}>
-              <Text style={styles.footerText}>
-                Don't have an account?{' '}
-              </Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                <Text style={styles.footerLink}>Register</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+                  <Text style={styles.logoText}>K2H</Text>
+                </View>
+
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('Register')}
+                >
+                  <Text style={styles.registerButtonText}>Register</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Title Section */}
+              <View style={styles.titleSection}>
+                <Text style={styles.title}>Welcome Back!</Text>
+
+                <Text style={styles.subtitle}>
+                  Login to your account to continue
+                </Text>
+              </View>
+
+              {/* Form Section */}
+              <View style={styles.form}>
+                <Text style={styles.label}>Email</Text>
+
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your email"
+                  placeholderTextColor="#aaa"
+                  value={email}
+                  onChangeText={text => {
+                    setEmail(text);
+
+                    if (errors.email) {
+                      setErrors(prev => ({
+                        ...prev,
+                        email: '',
+                      }));
+                    }
+                  }}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+
+                {errors.email ? (
+                  <Text style={styles.error}>{errors.email}</Text>
+                ) : null}
+
+                <Text style={styles.label}>Password</Text>
+
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    style={styles.passwordInput}
+                    placeholder="Enter your password"
+                    placeholderTextColor="#aaa"
+                    secureTextEntry={!isVisiblePassword}
+                    value={password}
+                    onChangeText={text => {
+                      setPassword(text);
+
+                      if (errors.password) {
+                        setErrors(prev => ({
+                          ...prev,
+                          password: '',
+                        }));
+                      }
+                    }}
+                    autoCapitalize="none"
+                  />
+
+                  <TouchableOpacity
+                    onPress={() => setIsVisiblePassword(!isVisiblePassword)}
+                    style={styles.eyeIcon}
+                    activeOpacity={0.7}
+                  >
+                    {isVisiblePassword ? (
+                      <Eye size={22} color="#666" />
+                    ) : (
+                      <EyeOff size={22} color="#666" />
+                    )}
+                  </TouchableOpacity>
+                </View>
+
+                {errors.password ? (
+                  <Text style={styles.error}>{errors.password}</Text>
+                ) : null}
+
+                {/* Forgot Password */}
+                <TouchableOpacity
+                  onPress={handleForgotPassword}
+                  style={styles.forgotPasswordContainer}
+                  disabled={isSendingOtp || isLoading}
+                  activeOpacity={0.7}
+                >
+                  {isSendingOtp ? (
+                    <ActivityIndicator
+                      size="small"
+                      color="#2c9e56"
+                      style={{ marginRight: 10 }}
+                    />
+                  ) : (
+                    <Text style={styles.forgotPasswordText}>
+                      Forgot password?
+                    </Text>
+                  )}
+                </TouchableOpacity>
+
+                {/* Login Button */}
+                {isLoading ? (
+                  <ActivityIndicator
+                    size="large"
+                    color="#2c9e56"
+                    style={{ marginVertical: 15 }}
+                  />
+                ) : (
+                  <>
+                    <TouchableHighlight
+                      style={styles.button}
+                      underlayColor="#227a43"
+                      onPress={handleLogin}
+                    >
+                      <Text style={styles.buttonText}>Login</Text>
+                    </TouchableHighlight>
+
+                    <TouchableHighlight
+                      style={styles.googleButton}
+                      underlayColor="#f5f5f5"
+                      onPress={signInGoogle}
+                    >
+                      <Text style={styles.googleButtonText}>
+                        Login with Google
+                      </Text>
+                    </TouchableHighlight>
+                  </>
+                )}
+
+                {/* Footer */}
+                <View style={styles.footerSection}>
+                  <Text style={styles.footerText}>
+                    You already have an account?{' '}
+                  </Text>
+
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate('Register')}
+                  >
+                    <Text style={styles.footerLink}>Register</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      </Animated.View>
+
+      {/* BOOK SPLASH SCREEN */}
+      {showSplash && (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.splashContainer,
+            {
+              opacity: splashOpacity,
+            },
+          ]}
+        >
+          <Image
+            source={require('../../../assets/animation/books.jpg')}
+            style={styles.splashImage}
+            resizeMode="cover"
+          />
+          <View style={styles.splashOverlay} />
+        </Animated.View>
+      )}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  rootContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+
+  loginScreen: {
+    flex: 1,
+  },
+
+  splashContainer: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: '#000',
+    zIndex: 999,
+    elevation: 999,
+  },
+  splashOverlay: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+  },
+
+  splashImage: {
+    width: '100%',
+    height: '100%',
+  },
   container: {
     flex: 1,
     backgroundColor: '#fff', // Thêm nền trắng chủ đạo cho sạch sẽ
@@ -230,10 +425,20 @@ const styles = StyleSheet.create({
     height: 60,
     width: '100%',
   },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   logo: {
     width: 45,
     height: 45,
     resizeMode: 'contain',
+    marginRight: 8,
+  },
+  logoText: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#2c9e56',
   },
   registerButtonText: {
     color: '#2c9e56',
@@ -324,6 +529,25 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  googleButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    paddingVertical: 15,
+    borderRadius: 30,
+    alignItems: 'center',
+    marginTop: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  googleButtonText: {
+    color: '#444',
     fontSize: 16,
     fontWeight: 'bold',
   },

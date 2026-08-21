@@ -1,5 +1,6 @@
 // src/controllers/auth.controller.ts
 import { Request, Response } from 'express';
+import { auth } from "../config/filebase";
 import * as authService from '../services/authService';
 import { RegisterDTO } from '../dtos/auth/RegisterDTO';
 
@@ -101,4 +102,21 @@ export const logout = async (req: Request, res: Response) => {
     console.error("Logout Error: ", error);
     return res.status(500).json({ message: "Internal server error" });
   }
+};
+
+export const googleLogin = async (req: Request, res: Response) => {
+    const { token } = req.body;
+    try {
+        const decoded = await auth.verifyIdToken(token);
+        const result = await authService.googleLogin(decoded);
+        res.json(result);
+
+    } catch (err) {
+
+        res.status(401).json({
+            message: "Invalid Google Token"
+        });
+
+    }
+
 };

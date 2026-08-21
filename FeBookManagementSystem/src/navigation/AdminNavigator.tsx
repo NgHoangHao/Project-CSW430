@@ -2,18 +2,21 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native'; // Import thêm View và StyleSheet
 import BookManagementScreen from '../screens/admin/BookManagementScreen';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { book, home, loan, user, users } from '../constants/icon';
 import { ADMIN_ROUTES } from '../constants/routes';
-import { AdminStackParamList } from './types';
-import ProfileScreen from '../screens/admin/ProfileScreen';
+import { AdminStackParamList, AdminTabParamList } from './types';
+import ProfileScreen from '../screens/admin/AdminProfileScreen';
 import Dashboard from '../screens/admin/DashBoardAdminScreen';
 import UserManagement from '../screens/admin/UserManagementScreen';
 import { useAuth } from '../store/authProvider';
 import LoanManagement from '../screens/admin/LoanManagementScreen';
+import UpdateProfileScreen from '../screens/user/UpdateProfileScreen';
 
-const Tab = createBottomTabNavigator<AdminStackParamList>();
+const Tab = createBottomTabNavigator<AdminTabParamList>();
+const Stack = createNativeStackNavigator<AdminStackParamList>();
 
-export const AdminNavigator = () => {
+function AdminTabs() {
   const { userRole } = useAuth();
 
   return (
@@ -23,7 +26,7 @@ export const AdminNavigator = () => {
         tabBarActiveTintColor: '#27AE60',
         tabBarInactiveTintColor: '#828282',
         tabBarStyle: {
-          height: 85,                 // Tăng chiều cao tổng thể của thanh bottom bar (bạn có thể tăng lên 90 nếu muốn cao hơn nữa)
+          height: 90,                 // Tăng chiều cao tổng thể của thanh bottom bar (bạn có thể tăng lên 90 nếu muốn cao hơn nữa)
           paddingTop: 10,             // Đẩy icon xuống một chút cho đỡ sát mép trên
           paddingBottom: 15,          // Đẩy chữ lên một chút cho đỡ sát mép dưới
           backgroundColor: '#FFFFFF',
@@ -59,14 +62,23 @@ export const AdminNavigator = () => {
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
+}
+
+export const AdminNavigator = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Dashboard" component={AdminTabs} />
+      <Stack.Screen name="UpdateProfile" component={UpdateProfileScreen} />
+    </Stack.Navigator>
+  );
 };
 
 // Tạo Styles để code sạch sẽ hơn
 const styles = StyleSheet.create({
   iconContainer: {
-    width: 45,
-    height: 45,
-    borderRadius: 22.5, // Tạo hình tròn hoàn hảo
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'transparent', // Mặc định không có nền

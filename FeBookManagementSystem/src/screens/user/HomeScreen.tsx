@@ -26,11 +26,11 @@ import {
   BoxIcon,
   ArchiveIcon,
   BookOpenIcon,
-  AlertCircle,
 } from 'lucide-react-native';
 import { UserStackParamList } from '../../navigation/types';
 import { bookService } from '../../services/book.service';
 import { loanService } from '../../services/loan.service';
+import { LoanHomeResponse } from '../../types/loan';
 import { BACKEND_URL } from '@env';
 import { useAuth } from '../../store/authProvider';
 
@@ -42,9 +42,9 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
-  const [overdueCount, setOverdueCount] = useState(0);
+  const [loanHome, setLoanHome] = useState<LoanHomeResponse | null>(null);
 
-  // FAB animation
+  
   const fabScale = useRef(new Animated.Value(1)).current;
 
   const handleFabPress = () => {
@@ -65,30 +65,27 @@ export default function HomeScreen() {
       }
     } catch (error) {
       console.log('Failed to fetch books:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
-  const fetchMyOverdueLoans = async () => {
+  const fetchLoanHome = async () => {
     try {
-      const res = await loanService.getMyLoans();
-      if (res && Array.isArray(res.data)) {
-        const count = res.data.filter((l) => l.status === 'OVERDUE').length;
-        setOverdueCount(count);
-      }
-    } catch (_) {}
+      const res = await loanService.getLoanHome();
+      setLoanHome(res);
+    } catch (error) {
+      console.log('Failed to fetch loan home:', error);
+    }
   };
 
   const loadData = async () => {
     setLoading(true);
-    await Promise.all([fetchBooks(), fetchMyOverdueLoans()]);
+    await Promise.all([fetchBooks(), fetchLoanHome()]);
     setLoading(false);
   };
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([fetchBooks(), fetchMyOverdueLoans()]);
+    await Promise.all([fetchBooks(), fetchLoanHome()]);
     setRefreshing(false);
   };
 
@@ -113,7 +110,7 @@ export default function HomeScreen() {
     return url.startsWith('/') ? `${baseUrl}${url}` : `${baseUrl}/${url}`;
   };
 
-  const displayName = user?.userName || 'User';
+  const displayName = user?.userName || 'Nguyễn Văn A';
   const displayAvatarLetter = displayName.charAt(0).toUpperCase();
 
   return (
@@ -137,31 +134,13 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Overdue Notification Banner */}
-        {overdueCount > 0 && (
-          <TouchableOpacity
-            style={styles.overdueHomeBanner}
-            activeOpacity={0.85}
-            onPress={() => navigation.navigate('Borrow')}
-          >
-            <AlertCircle size={22} color="#DC2626" style={{ marginRight: 10 }} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.overdueHomeBannerTitle}>⚠️ OVERDUE BOOK NOTICE</Text>
-              <Text style={styles.overdueHomeBannerSubtitle}>
-                You have {overdueCount} overdue book(s). Tap to view and return your books!
-              </Text>
-            </View>
-            <ChevronRight size={18} color="#DC2626" />
-          </TouchableOpacity>
-        )}
-
         {/* Stats Grid */}
         <View style={styles.statsContainer}>
           <View style={styles.statsCard}>
             <View style={[styles.iconWrapper, { backgroundColor: '#EAFBF1' }]}>
               <BookOpen size={20} color="#27AE60" />
             </View>
-            <Text style={styles.statsValue}>28</Text>
+            <Text style={styles.statsValue}>{loanHome?.totalReturned ?? '-'}</Text>
             <Text style={styles.statsLabel}>Read</Text>
           </View>
 
@@ -169,60 +148,76 @@ export default function HomeScreen() {
             <View style={[styles.iconWrapper, { backgroundColor: '#FFF3EB' }]}>
               <Flame size={20} color="#FF6B00" />
             </View>
-            <Text style={styles.statsValue}>12</Text>
-            <Text style={styles.statsLabel}>Consecutive days</Text>
+            <Text style={styles.statsValue}>{loanHome?.totalOverdue ?? '-'}</Text>
+            <Text style={styles.statsLabel}>Overdue</Text>
           </View>
 
           <View style={styles.statsCard}>
             <View style={[styles.iconWrapper, { backgroundColor: '#EBF3FE' }]}>
               <BarChart2 size={20} color="#2F80ED" />
             </View>
-            <Text style={styles.statsValue}>3</Text>
+            <Text style={styles.statsValue}>{loanHome?.totalBorrowing ?? '-'}</Text>
             <Text style={styles.statsLabel}>Borrowing</Text>
           </View>
         </View>
 
-        {/* Reading Section */}
         <View style={styles.sectionHeaderContainer}>
           <Text style={styles.sectionTitle}>Reading</Text>
         </View>
 
-        <View style={styles.readingCard}>
-          <Image
-            source={{
-              uri: 'https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1602193746i/52578297.jpg',
-            }}
-            style={styles.readingBookImage}
-          />
-          <View style={styles.readingBookInfo}>
-            <View>
-              <Text style={styles.readingBookTitle} numberOfLines={1}>
-                The Midnight Library
-              </Text>
-              <Text style={styles.readingBookAuthor}>Matt Haig</Text>
-            </View>
+        {loanHome?.recentLoan ? (
+          <View style={styles.readingCard}>
+            <Image
+              source={{ uri: getImageUrl(loanHome.recentLoan.url) }}
+              style={styles.readingBookImage}
+            />
+            <View style={styles.readingBookInfo}>
+              <View>
+                <Text style={styles.readingBookTitle} numberOfLines={1}>
+                  {loanHome.recentLoan.title}
+                </Text>
+                <Text style={styles.readingBookAuthor}>{loanHome.recentLoan.author}</Text>
+              </View>
 
-            <View style={styles.readingBookDueDateRow}>
-              <View style={styles.dueDateWrapper}>
-                <Calendar size={14} color="#8E8E93" style={{ marginRight: 4 }} />
-                <Text style={styles.dueDateText}>Due date: 07/15/2026</Text>
+              <View style={styles.readingBookDueDateRow}>
+                <View style={styles.dueDateWrapper}>
+                  <Calendar size={14} color="#8E8E93" style={{ marginRight: 4 }} />
+                  <Text style={styles.dueDateText}>
+                    Due Date: {new Date(loanHome.recentLoan.dueDate).toLocaleDateString('vi-VN')}
+                  </Text>
+                </View>
+                {(() => {
+                  const daysLeft = Math.ceil(
+                    (new Date(loanHome.recentLoan.dueDate).getTime() - Date.now()) / 86400000
+                  );
+                  const isOverdue = daysLeft < 0;
+                  return (
+                    <View style={[styles.daysLeftBadge, isOverdue && { backgroundColor: '#FF3B30' }]}>
+                      <Text style={styles.daysLeftText}>
+                        {isOverdue ? `${Math.abs(daysLeft)}d overdue` : `${daysLeft} days`}
+                      </Text>
+                    </View>
+                  );
+                })()}
               </View>
-              <View style={styles.daysLeftBadge}>
-                <Text style={styles.daysLeftText}>5 days</Text>
-              </View>
-            </View>
 
-            <View style={styles.progressContainer}>
-              <View style={styles.progressTextRow}>
-                <Text style={styles.progressLabel}>Progress</Text>
-                <Text style={styles.progressValue}>65%</Text>
-              </View>
-              <View style={styles.progressBarBackground}>
-                <View style={[styles.progressBarFill, { width: '65%' }]} />
+              <View style={styles.progressContainer}>
+                <View style={styles.progressTextRow}>
+                  <Text style={styles.progressLabel}>Progress</Text>
+                  <Text style={styles.progressValue}>{loanHome.recentLoan.borrowedRemain}%</Text>
+                </View>
+                <View style={styles.progressBarBackground}>
+                  <View style={[styles.progressBarFill, { width: `${loanHome.recentLoan.borrowedRemain}%` }]} />
+                </View>
               </View>
             </View>
           </View>
-        </View>
+        ) : (
+          <View style={[styles.readingCard, { justifyContent: 'center', alignItems: 'center', paddingVertical: 24 }]}>
+            <BookOpenIcon size={36} color="#C8D6C8" />
+            <Text style={{ color: '#8E8E93', marginTop: 8, fontWeight: '500' }}>No active borrowing</Text>
+          </View>
+        )}
 
         {/* Recommended Books */}
         <View style={styles.sectionHeaderContainerWithAction}>
@@ -287,7 +282,6 @@ export default function HomeScreen() {
           </ScrollView>
         )}
 
-        {/* Quick Actions */}
         <View style={styles.sectionHeaderContainer}>
           <Text style={styles.sectionTitle}>Quick actions</Text>
         </View>
@@ -302,7 +296,7 @@ export default function HomeScreen() {
               <BookOpen size={20} color="#fff" />
             </View>
             <Text style={styles.actionTitle}>Browse categories</Text>
-            <Text style={styles.actionSubtext}>12,543 books</Text>
+            <Text style={styles.actionSubtext}>{books?.length} categories</Text>
             <ArrowRight size={18} color="#27AE60" style={styles.actionArrow} />
           </TouchableOpacity>
 
@@ -315,22 +309,11 @@ export default function HomeScreen() {
               <BarChart2 size={20} color="#27AE60" />
             </View>
             <Text style={styles.actionTitle}>My books</Text>
-            <Text style={styles.actionSubtext}>3 borrowings</Text>
+            <Text style={styles.actionSubtext}>{loanHome?.totalBorrowing ?? '-'} borrowings</Text>
             <ArrowRight size={18} color="#27AE60" style={styles.actionArrow} />
           </TouchableOpacity>
         </View>
       </ScrollView>
-
-      {/* Floating Search Button
-      <Animated.View style={[styles.fab, { transform: [{ scale: fabScale }] }]}>
-        <TouchableOpacity
-          style={styles.fabInner}
-          onPress={handleFabPress}
-          activeOpacity={0.9}
-        >
-          <BookOpen size={24} color="#fff" />
-        </TouchableOpacity>
-      </Animated.View> */}
       </View>
     </SafeAreaView>
   );
@@ -534,7 +517,6 @@ const styles = StyleSheet.create({
     marginVertical: 24,
   },
   recommendedList: {
-    flex:1,
     paddingLeft: 20,
     paddingRight: 4,
     paddingBottom: 24,
@@ -667,33 +649,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 40,
-  },
-  overdueHomeBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FEF2F2',
-    borderWidth: 1.5,
-    borderColor: '#FCA5A5',
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 20,
-    shadowColor: '#EF4444',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  overdueHomeBannerTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#DC2626',
-    marginBottom: 2,
-  },
-  overdueHomeBannerSubtitle: {
-    fontSize: 12,
-    color: '#991B1B',
-    lineHeight: 16,
-    fontWeight: '500',
-  },
+  }
 });
 
