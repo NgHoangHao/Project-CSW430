@@ -221,8 +221,23 @@ export default function BookManagementScreen() {
 
   // ─── Submit ───────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
-    if (!formTitle || !formAuthor) {
-      Alert.alert('Error', 'Please enter the book title and author.');
+    if (
+      !formTitle.trim() ||
+      !formAuthor.trim() ||
+      !formPublisher.trim() ||
+      !formYear.trim() ||
+      !formPage.trim() ||
+      !formCategory.trim()
+    ) {
+      Alert.alert(
+        'Error',
+        'Please fill in all required fields (Title, Author, Publisher, Publish Year, Pages, Category).',
+      );
+      return;
+    }
+
+    if (isNaN(Number(formYear.trim())) || isNaN(Number(formPage.trim()))) {
+      Alert.alert('Error', 'Publish Year and Pages must be valid numbers.');
       return;
     }
 
@@ -251,12 +266,12 @@ export default function BookManagementScreen() {
     setSubmitting(true);
     try {
       const formData = new FormData();
-      formData.append('title', formTitle);
-      formData.append('author', formAuthor);
-      formData.append('publisher', formPublisher);
-      formData.append('publishYear', formYear);
-      formData.append('page', formPage);
-      formData.append('category', formCategory);
+      formData.append('title', formTitle.trim());
+      formData.append('author', formAuthor.trim());
+      formData.append('publisher', formPublisher.trim());
+      formData.append('publishYear', formYear.trim());
+      formData.append('page', formPage.trim());
+      formData.append('category', formCategory.trim());
 
       // Multer field on BE is 'url' (route: upload.single('url'))
       if (formImage && formImage.uri && !formImage.uri.startsWith('http')) {
@@ -270,7 +285,6 @@ export default function BookManagementScreen() {
       }
 
       // Attach copy books as JSON string for createBook (BE parses JSON.parse)
-      // if (!isEditing) {
       const validCopies = copyBooks
         .filter(c => c.barcode.trim() && c.location.trim())
         .map(c => ({
@@ -279,7 +293,6 @@ export default function BookManagementScreen() {
           location: c.location.trim(),
         }));
       formData.append('copyBooks', JSON.stringify(validCopies));
-      // }
 
       if (isEditing && editingBookId) {
         const res = await bookService.updateBook(editingBookId, formData);
@@ -304,12 +317,13 @@ export default function BookManagementScreen() {
         }
       }
     } catch (err: any) {
-      console.log(err.response?.data || err);
-      Alert.alert(
-        'Error',
+      console.log('Save Book Error:', err.response?.data || err);
+      const serverMsg =
         err.response?.data?.message ||
-        'Unable to save the book. Please try again.',
-      );
+        err.response?.data?.error ||
+        err.message ||
+        'Unable to save the book. Please try again.';
+      Alert.alert('Error', serverMsg);
     } finally {
       setSubmitting(false);
     }
@@ -574,7 +588,7 @@ export default function BookManagementScreen() {
                 placeholder="Enter author name"
               />
 
-              <Text style={styles.inputLabel}>Publisher</Text>
+              <Text style={styles.inputLabel}>Publisher *</Text>
               <TextInput
                 style={styles.input}
                 value={formPublisher}
@@ -584,7 +598,7 @@ export default function BookManagementScreen() {
 
               <View style={styles.rowInputs}>
                 <View style={{ flex: 1, marginRight: 8 }}>
-                  <Text style={styles.inputLabel}>Publish Year</Text>
+                  <Text style={styles.inputLabel}>Publish Year *</Text>
                   <TextInput
                     style={styles.input}
                     value={formYear}
@@ -594,7 +608,7 @@ export default function BookManagementScreen() {
                   />
                 </View>
                 <View style={{ flex: 1, marginLeft: 8 }}>
-                  <Text style={styles.inputLabel}>Pages</Text>
+                  <Text style={styles.inputLabel}>Pages *</Text>
                   <TextInput
                     style={styles.input}
                     value={formPage}
@@ -605,7 +619,7 @@ export default function BookManagementScreen() {
                 </View>
               </View>
 
-              <Text style={styles.inputLabel}>Category</Text>
+              <Text style={styles.inputLabel}>Category *</Text>
               <TextInput
                 style={styles.input}
                 value={formCategory}

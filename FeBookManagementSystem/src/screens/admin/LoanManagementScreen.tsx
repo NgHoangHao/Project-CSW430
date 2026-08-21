@@ -36,6 +36,7 @@ import {
   ScanBarcode,
   SendHorizonal,
   ArrowDownToLine,
+  Mail,
 } from 'lucide-react-native';
 import { loanService } from '../../services/loan.service';
 import { LoanDetailDTO, LoanDetails } from '../../types/loan';
@@ -370,6 +371,31 @@ export default function LoanManagementScreen() {
                 'Error',
                 err?.response?.data?.message || 'Unable to process book return.',
               );
+            } finally {
+              setActionLoading(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleSendMailNotice = (loanId: string) => {
+    Alert.alert(
+      'Send Email Notice',
+      'Are you sure you want to send an overdue email notification to this user?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Send Email',
+          style: 'default',
+          onPress: async () => {
+            setActionLoading(true);
+            try {
+              const res = await loanService.sendLoanEmailNotice(loanId);
+              Alert.alert('Success 🎉', res.message || 'Email notification sent successfully!');
+            } catch (err: any) {
+              Alert.alert('Error', err?.response?.data?.message || 'Failed to send email notification.');
             } finally {
               setActionLoading(false);
             }
@@ -855,9 +881,27 @@ export default function LoanManagementScreen() {
 
           {(selectedLoan.status === 'BORROWING' ||
             selectedLoan.status === 'OVERDUE') && (
-              <View style={styles.modalFooter}>
+              <View style={[styles.modalFooter, { gap: 10 }]}>
+                {selectedLoan.status === 'OVERDUE' && (
+                  <TouchableOpacity
+                    style={[styles.modalReturnBtn, { backgroundColor: '#E67E22', flex: 1 }]}
+                    onPress={() => handleSendMailNotice(selectedLoan.loanId)}
+                    disabled={actionLoading}
+                  >
+                    {actionLoading ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <>
+                        <Mail size={16} color="#fff" />
+                        <Text style={styles.modalReturnBtnText}>
+                          Send Email Notice
+                        </Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity
-                  style={styles.modalReturnBtn}
+                  style={[styles.modalReturnBtn, { flex: 1 }]}
                   onPress={() => handleReturnLoan(selectedLoan.userId, selectedLoan.loanId)}
                   disabled={actionLoading}
                 >

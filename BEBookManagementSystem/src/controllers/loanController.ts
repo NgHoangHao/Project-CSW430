@@ -158,5 +158,27 @@ export const LoanController = {
             console.error('Error in getHomeData:', error);
             res.status(500).json({ message: 'Internal Server Error' });
         }
+    },
+    sendLoanEmailNotice: async (req: Request, res: Response) => {
+        try {
+            const { loanId, customMessage } = req.body;
+            if (!loanId) {
+                return res.status(400).json({ success: false, message: 'loanId is required' });
+            }
+            const result = await LoanService.sendLoanEmailNotice(loanId, customMessage);
+            return res.status(200).json({
+                success: true,
+                message: `Email notification sent successfully to ${result.userEmail}`,
+                data: result
+            });
+        } catch (error: any) {
+            if (error instanceof NotFoundException) {
+                return res.status(404).json({ success: false, message: error.message });
+            }
+            if (error instanceof BadRequestException) {
+                return res.status(400).json({ success: false, message: error.message });
+            }
+            return res.status(500).json({ success: false, message: error.message || 'Failed to send email notice' });
+        }
     }
 }

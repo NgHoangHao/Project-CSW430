@@ -16,6 +16,7 @@ import {
 } from "../utils/enums";
 import { Book } from "../entities/Book";
 import { LoanDetailDTO } from "../dtos/loan/LoanDetailDTO";
+import { mailService } from "./mailService";
 import { loanDetailRepository } from "../repositories/loanDetailRepository";
 import {
   LoanDetailResponse,
@@ -487,5 +488,41 @@ export const LoanService = {
       await userRepository.deductCredit(loan.user, 10);
       console.log(`Loan ${loan.loanId} -> OVERDUE`);
     }
+  },
+
+  sendLoanEmailNotice: async (loanId: string, customMessage?: string) => {
+    const loan = await AppDataSource.getRepository(Loan).findOne({
+      where: { loanId },
+      relations: { user: true, loanDetails: { copyBook: { book: true } } }
+    });
+    if (!loan) throw new NotFoundException('Loan not found');
+    if (!loan.user || !loan.user.email) throw new BadRequestException('User email not found');
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dueDate = new Date(loan.dueDate);
+    dueDate.setHours(0, 0, 0, 0);
+
+    const isOverdue = loan.status === LoanStatus.OVERDUE || dueDate < today;
+    if (!isOverdue) {
+      throw new BadRequestException('This loan has not reached its due date yet. Email notice cannot be sent.');
+    }
+
+    const userEmail = loan.user.email;
+    const userName = loan.user.userName || 'Reader';
+    const dueDateFormatted = dueDate.toISOString().slice(0, 10);
+
+    const firstDetail = loan.loanDetails?.[0];
+    const bookTitle = firstDetail?.copyBook?.book?.title || 'Library Book';
+    const barcode = firstDetail?.copyBook?.barcode || 'N/A';
+
+    await mailService.sendOverdueNotice(
+      userEmail,
+      userName,
+      bookTitle,
+      dueDateFormatted,
+      barcode
+    );
+    return { userEmail, userName, bookTitle };
   },
 };

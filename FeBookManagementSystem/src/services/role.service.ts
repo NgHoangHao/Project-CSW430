@@ -4,7 +4,7 @@ export const RoleService = {
 
     async getAllRole(): Promise<Role[]> {
         const response = await api.get('/role/get-all');
-        return response.data.data;
+        return response.data;
     },
 
 }
