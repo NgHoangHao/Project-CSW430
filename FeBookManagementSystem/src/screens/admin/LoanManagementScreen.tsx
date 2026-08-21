@@ -893,6 +893,16 @@ export default function LoanManagementScreen() {
           {(selectedLoan.status === 'BORROWING' ||
             selectedLoan.status === 'OVERDUE') && (
               <View style={styles.modalFooter}>
+                {selectedLoan.status === 'OVERDUE' && (
+                  <TouchableOpacity
+                    style={styles.modalMailBtn}
+                    onPress={() => handleSendMailNotice(selectedLoan.loanId)}
+                    disabled={actionLoading}
+                  >
+                    <Mail size={16} color="#B45309" />
+                    <Text style={styles.modalMailBtnText}>Send Notice</Text>
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity
                   style={styles.modalReturnBtn}
                   onPress={() => handleReturnLoan(selectedLoan.userId, selectedLoan.loanId)}
@@ -1538,4 +1548,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#3B82F6',
   },
   modalReturnBtnText: { fontSize: 14, fontWeight: '700', color: '#ffffff' },
+  modalMailBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 13,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#F59E0B',
+    backgroundColor: '#FEF3C7',
+  },
+  modalMailBtnText: { fontSize: 14, fontWeight: '700', color: '#B45309' },
 });
