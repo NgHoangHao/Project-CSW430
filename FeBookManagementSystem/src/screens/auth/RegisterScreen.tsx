@@ -58,6 +58,9 @@ export const RegisterScreen = ({
     confirmPassword: '',
   });
 
+  // =========================
+  // CLEAR ERROR
+  // =========================
 
   const clearError = (
     field:
@@ -74,6 +77,9 @@ export const RegisterScreen = ({
     }
   };
 
+  // =========================
+  // VALIDATE FORM
+  // =========================
 
   const validateRegister = () => {
     const newErrors = {
@@ -85,6 +91,7 @@ export const RegisterScreen = ({
 
     let isValid = true;
 
+    // Full name
     if (!userName.trim()) {
       newErrors.userName =
         'Please enter your full name.';
@@ -95,6 +102,7 @@ export const RegisterScreen = ({
       isValid = false;
     }
 
+    // Email
     if (!email.trim()) {
       newErrors.email =
         'Please enter your email address.';
@@ -110,6 +118,7 @@ export const RegisterScreen = ({
       }
     }
 
+    // Password
     if (!password.trim()) {
       newErrors.password =
         'Please enter a password.';
@@ -120,6 +129,7 @@ export const RegisterScreen = ({
       isValid = false;
     }
 
+    // Confirm password
     if (!confirmPassword.trim()) {
       newErrors.confirmPassword =
         'Please confirm your password.';
@@ -135,7 +145,9 @@ export const RegisterScreen = ({
     return isValid;
   };
 
-
+  // =========================
+  // REGISTER
+  // =========================
 
   const handleRegister = async () => {
     if (isRegistering) return;
@@ -201,6 +213,9 @@ export const RegisterScreen = ({
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
+            {/* =====================
+                HEADER
+            ====================== */}
 
             <View style={styles.topSection}>
               <View style={styles.logoContainer}>
@@ -228,6 +243,9 @@ export const RegisterScreen = ({
               </Pressable>
             </View>
 
+            {/* =====================
+                TITLE
+            ====================== */}
 
             <View style={styles.titleSection}>
               <Text style={styles.title}>
@@ -240,7 +258,12 @@ export const RegisterScreen = ({
               </Text>
             </View>
 
+            {/* =====================
+                FORM
+            ====================== */}
+
             <View style={styles.form}>
+              {/* FULL NAME */}
 
               <Text style={styles.label}>
                 Full name
@@ -250,7 +273,7 @@ export const RegisterScreen = ({
                 style={[
                   styles.inputContainer,
                   errors.userName &&
-                  styles.inputContainerError,
+                    styles.inputContainerError,
                 ]}
               >
                 <User
@@ -278,6 +301,8 @@ export const RegisterScreen = ({
                 </Text>
               ) : null}
 
+              {/* EMAIL */}
+
               <Text style={styles.label}>
                 Email address
               </Text>
@@ -286,7 +311,7 @@ export const RegisterScreen = ({
                 style={[
                   styles.inputContainer,
                   errors.email &&
-                  styles.inputContainerError,
+                    styles.inputContainerError,
                 ]}
               >
                 <Mail
@@ -316,6 +341,8 @@ export const RegisterScreen = ({
                 </Text>
               ) : null}
 
+              {/* PASSWORD */}
+
               <Text style={styles.label}>
                 Password
               </Text>
@@ -324,7 +351,7 @@ export const RegisterScreen = ({
                 style={[
                   styles.inputContainer,
                   errors.password &&
-                  styles.inputContainerError,
+                    styles.inputContainerError,
                 ]}
               >
                 <Lock
@@ -372,98 +399,142 @@ export const RegisterScreen = ({
                       color="#6B7280"
                     />
                   ) : (
-                    <TouchableOpacity
-                      onPress={() => {
-                        setIsVisiblePassword(!isVisiblePassword);
-                      }}
-                      style={styles.eyeIcon}
-                    >
-                      <EyeOff />
-                    </TouchableOpacity>
+                    <EyeOff
+                      size={20}
+                      color="#6B7280"
+                    />
                   )}
+                </TouchableOpacity>
               </View>
-              <Text style={styles.label}>Confirm password</Text>
-              <View style={styles.passwordComponent}>
-                <TextInput
-                  style={[styles.input]}
-                  placeholder="Enter your password"
-                  placeholderTextColor="#aaa"
-                  secureTextEntry={isVisibleConfirmPassword == false}
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  autoCapitalize="none"
-                />
-                {errors.confirmPassword ? (
-                  <Text style={styles.error}>{errors.confirmPassword}</Text>
-                ) : null}
-                {isVisibleConfirmPassword ? (
-                  <Eye
-                    size={20}
-                    color="#6B7280"
-                  />
-                ) : (
-                  <EyeOff
-                    size={20}
-                    color="#6B7280"
-                  />
-                )}
-              </TouchableOpacity>
-            </View>
 
-            {errors.confirmPassword ? (
-              <Text style={styles.error}>
-                {errors.confirmPassword}
-              </Text>
-            ) : null}
-
-            <TouchableOpacity
-              style={[
-                styles.button,
-                isRegistering &&
-                styles.disabledButton,
-              ]}
-              onPress={handleRegister}
-              disabled={isRegistering}
-              activeOpacity={0.85}
-            >
-              {isRegistering ? (
-                <ActivityIndicator
-                  size="small"
-                  color="#FFFFFF"
-                />
-              ) : (
-                <Text
-                  style={styles.buttonText}
-                >
-                  Create account
+              {errors.password ? (
+                <Text style={styles.error}>
+                  {errors.password}
                 </Text>
-              )}
-            </TouchableOpacity>
+              ) : null}
 
-            <View style={styles.footerSection}>
-              <Text style={styles.footerText}>
-                Already have an account?{' '}
+              {/* CONFIRM PASSWORD */}
+
+              <Text style={styles.label}>
+                Confirm password
               </Text>
+
+              <View
+                style={[
+                  styles.inputContainer,
+                  errors.confirmPassword &&
+                    styles.inputContainerError,
+                ]}
+              >
+                <Lock
+                  size={20}
+                  color="#6B7280"
+                />
+
+                <TextInput
+                  style={styles.inputField}
+                  placeholder="Re-enter your password"
+                  placeholderTextColor="#9CA3AF"
+                  secureTextEntry={
+                    !isVisibleConfirmPassword
+                  }
+                  value={confirmPassword}
+                  editable={!isRegistering}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  onChangeText={text => {
+                    setConfirmPassword(text);
+                    clearError(
+                      'confirmPassword',
+                    );
+                  }}
+                />
+
+                <TouchableOpacity
+                  onPress={() =>
+                    setIsVisibleConfirmPassword(
+                      prev => !prev,
+                    )
+                  }
+                  style={styles.eyeButton}
+                  activeOpacity={0.7}
+                >
+                  {isVisibleConfirmPassword ? (
+                    <Eye
+                      size={20}
+                      color="#6B7280"
+                    />
+                  ) : (
+                    <EyeOff
+                      size={20}
+                      color="#6B7280"
+                    />
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              {errors.confirmPassword ? (
+                <Text style={styles.error}>
+                  {errors.confirmPassword}
+                </Text>
+              ) : null}
+
+              {/* REGISTER BUTTON */}
 
               <TouchableOpacity
-                onPress={() =>
-                  navigation.navigate('Login')
-                }
+                style={[
+                  styles.button,
+                  isRegistering &&
+                    styles.disabledButton,
+                ]}
+                onPress={handleRegister}
                 disabled={isRegistering}
+                activeOpacity={0.85}
               >
-                <Text style={styles.footerLink}>
-                  Sign in
-                </Text>
+                {isRegistering ? (
+                  <ActivityIndicator
+                    size="small"
+                    color="#FFFFFF"
+                  />
+                ) : (
+                  <Text
+                    style={styles.buttonText}
+                  >
+                    Create account
+                  </Text>
+                )}
               </TouchableOpacity>
+
+              {/* FOOTER */}
+
+              <View style={styles.footerSection}>
+                <Text style={styles.footerText}>
+                  Already have an account?{' '}
+                </Text>
+
+                <TouchableOpacity
+                  onPress={() =>
+                    navigation.navigate('Login')
+                  }
+                  disabled={isRegistering}
+                >
+                  <Text style={styles.footerLink}>
+                    Sign in
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        </ScrollView>
-      </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
-    </SafeAreaView >
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
+
+// =========================
+// STYLES
+// =========================
 
 const styles = StyleSheet.create({
   container: {
