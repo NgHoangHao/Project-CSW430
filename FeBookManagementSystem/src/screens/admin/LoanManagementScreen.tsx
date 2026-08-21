@@ -41,6 +41,7 @@ import {
 import { loanService } from '../../services/loan.service';
 import { LoanDetailDTO, LoanDetails } from '../../types/loan';
 import { BACKEND_URL } from '@env';
+import { useAuth } from '../../store/authProvider';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -132,7 +133,7 @@ export default function LoanManagementScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>('ALL');
-
+  const { userRole } = useAuth();
   // Pagination
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -227,7 +228,7 @@ export default function LoanManagementScreen() {
                 dueDate: row.dueDate,
                 status: row.status as any,
                 userName: row.userName,
-                userId: row.userId || "",
+                userId: row.userId || '',
                 loanDetails: [],
               });
             }
@@ -369,7 +370,8 @@ export default function LoanManagementScreen() {
             } catch (err: any) {
               Alert.alert(
                 'Error',
-                err?.response?.data?.message || 'Unable to process book return.',
+                err?.response?.data?.message ||
+                'Unable to process book return.',
               );
             } finally {
               setActionLoading(false);
@@ -405,11 +407,17 @@ export default function LoanManagementScreen() {
     );
   };
 
-  const handleReturnBookByBarCode = async (userId: string, barcodeId?: string) => {
+  const handleReturnBookByBarCode = async (
+    userId: string,
+    barcodeId?: string,
+  ) => {
     // Fall back to the currently selected loan's userId if the passed value is empty
     const resolvedUserId = userId?.trim() || selectedLoan?.userId || '';
     if (!resolvedUserId) {
-      Alert.alert('Error', 'Unable to identify the borrower. Please try again.');
+      Alert.alert(
+        'Error',
+        'Unable to identify the borrower. Please try again.',
+      );
       return;
     }
     Alert.alert('Confirm return book', 'Are you sure to return book ?', [
@@ -571,7 +579,12 @@ export default function LoanManagementScreen() {
         {(item.status == 'BORROWING' || item.status == 'OVERDUE') && (
           <TouchableOpacity
             style={styles.buttonReturn}
-            onPress={() => handleReturnBookByBarCode(selectedLoan?.userId ?? '', item.barcode)}
+            onPress={() =>
+              handleReturnBookByBarCode(
+                selectedLoan?.userId ?? '',
+                item.barcode,
+              )
+            }
           >
             <Text style={{ color: '#fff', fontWeight: '500' }}>Return</Text>
           </TouchableOpacity>
@@ -870,9 +883,7 @@ export default function LoanManagementScreen() {
                 ) : (
                   <>
                     <ShieldCheck size={16} color="#fff" />
-                    <Text style={styles.modalApproveBtnText}>
-                      Approve
-                    </Text>
+                    <Text style={styles.modalApproveBtnText}>Approve</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -881,27 +892,9 @@ export default function LoanManagementScreen() {
 
           {(selectedLoan.status === 'BORROWING' ||
             selectedLoan.status === 'OVERDUE') && (
-              <View style={[styles.modalFooter, { gap: 10 }]}>
-                {selectedLoan.status === 'OVERDUE' && (
-                  <TouchableOpacity
-                    style={[styles.modalReturnBtn, { backgroundColor: '#E67E22', flex: 1 }]}
-                    onPress={() => handleSendMailNotice(selectedLoan.loanId)}
-                    disabled={actionLoading}
-                  >
-                    {actionLoading ? (
-                      <ActivityIndicator size="small" color="#fff" />
-                    ) : (
-                      <>
-                        <Mail size={16} color="#fff" />
-                        <Text style={styles.modalReturnBtnText}>
-                          Send Email Notice
-                        </Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                )}
+              <View style={styles.modalFooter}>
                 <TouchableOpacity
-                  style={[styles.modalReturnBtn, { flex: 1 }]}
+                  style={styles.modalReturnBtn}
                   onPress={() => handleReturnLoan(selectedLoan.userId, selectedLoan.loanId)}
                   disabled={actionLoading}
                 >
@@ -943,8 +936,10 @@ export default function LoanManagementScreen() {
           <TouchableOpacity style={styles.headerIconButton}>
             <Bell size={20} color="#374151" />
           </TouchableOpacity>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarInitials}>AD</Text>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>
+              {userRole.includes('ADMIN') ? 'AD' : 'LB'}
+            </Text>
           </View>
         </View>
       </View>
@@ -1156,6 +1151,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
+  },
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#27AE60',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#ffffff',
   },
   logoTitle: { fontSize: 14, fontWeight: '700', color: '#111827' },
   logoSubtitle: {

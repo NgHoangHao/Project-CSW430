@@ -32,6 +32,7 @@ import {
 import { userService } from '../../services/user.service';
 import { Role } from '../../types/admin/role';
 import { RoleService } from '../../services/role.service';
+import { useAuth } from '../../store/authProvider';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -59,6 +60,8 @@ export default function UserManagementScreen() {
   const [totalPages, setTotalPages] = useState(1);
   const [pageSize] = useState(10);
   const [roles, setRoles] = useState<Role[]>([]);
+  const { userRole } = useAuth();
+
 
   const [stats, setStats] = useState({
     total: 0,
@@ -407,10 +410,15 @@ export default function UserManagementScreen() {
           </View>
           <Text style={styles.headerTitle}>Users</Text>
         </View>
-        <TouchableOpacity style={styles.bellBtn} activeOpacity={0.7}>
+        <View style={{gap: 10, flexDirection: 'row'}}>
+          <TouchableOpacity style={styles.bellBtn} activeOpacity={0.7}>
           <Bell size={20} color="#333" />
           <View style={styles.bellBadge} />
         </TouchableOpacity>
+        <View style={styles.avatarRole}>
+            <Text style={styles.avatarTextRole}>{userRole.includes('ADMIN') ? 'AD' : 'LB'}</Text>
+          </View>
+        </View>
       </View>
 
 
@@ -729,7 +737,8 @@ const styles = StyleSheet.create({
   },
   tabsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: 10,
+    // justifyContent: 'space-between',
     marginBottom: 16,
   },
   tab: {
@@ -817,6 +826,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
+  },
+  avatarRole: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#27AE60',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarTextRole: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#ffffff',
   },
   avatar: {
     width: 40,
