@@ -6,7 +6,7 @@ import AboutScreen from '../screens/user/AboutScreen';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import ProfileScreen from '../screens/user/ProfileScreen';
-import { book, borrowBook, home, user,about } from '../constants/icon';
+import { book, borrowBook, home, user, about } from '../constants/icon';
 import { USER_ROUTES } from '../constants/routes';
 import { UserStackParamList, UserTabParamList } from './types';
 import BookScreen from '../screens/user/BookScreen';
@@ -24,9 +24,9 @@ function UserTabs() {
         tabBarActiveTintColor: '#27AE60',
         tabBarInactiveTintColor: '#828282',
         tabBarStyle: {
-          height: 85,                
-          paddingTop: 10,             
-          paddingBottom: 15,          
+          height: 85,
+          paddingTop: 10,
+          paddingBottom: 15,
           backgroundColor: '#FFFFFF',
           borderTopWidth: 1,
           borderTopColor: '#E0E0E0',
@@ -52,10 +52,10 @@ function UserTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-       <Tab.Screen name="About" component={AboutScreen} />
       <Tab.Screen name="Books" component={BookScreen} />
       <Tab.Screen name="Borrow" component={BorrowedBookScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="About" component={AboutScreen} />
     </Tab.Navigator>
   );
 }
